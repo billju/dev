@@ -4,30 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TreeView</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/fontawesome.css">
+    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"> -->
 </head>
 <body>
-    <div style="display: flex;">
-        <div id="treeview"></div>
-        <div id="gantt">
-            <div id="stripe-container">
-
-            </div>
-            <div class="bar">
-                <div class="bar-node head"></div>
-                <div class="bar-node tail"></div>
-            </div>
-        </div>
-    </div>
+    <div id="treeview"></div>
 </body>
 <style>
 html,body{
     margin:0;
 }
-.menu{
-    position: fixed;
-}
 i{
+    width: 30px;
+    text-align: center;
     cursor: pointer;
     user-select: none;
 }
@@ -35,272 +24,165 @@ i{
     display: flex;
     align-items: center;
 }
-#gantt{
-    position: relative;
-    width: 800px;
-    height: 500px;
-    border: 1px solid #000;
-    overflow: hidden;
-    user-select: none;
+.tree-content:hover{
+    background: #eee;
 }
-.stripe-container{
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-.stripe{
-    position: absolute;
-    left: 10px;
-    top: 0;
-    height: 100%;
-    border: 1px solid #000;
-}
-.bar{
-    position: absolute;
-    left: 0;
-    top: 50px;
-    width: 130px;
-    height: 50px;
-    border-radius: 25px;
-    background: pink;
-    cursor: w-resize;   
-}
-.bar:hover .bar-node{
-    display: block
-}
-.bar-node{
-    display: none;
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    top: 50%;
-    border: 2px solid #000;
-}
-.head{
-    left: 0;
-    transform: translate(-50%,-50%);
-}
-.tail{
-    right: 0;
-    transform: translate(50%,-50%);
-}
-
 </style>
 <script>
     class Task{
-        constructor(el){
-            this.el = el||document.createElement('div')
-            this.level = 0
-            this.expanded = true
+        constructor(root){
+            this.level = -1
             this.parent = null
+            this.container = document.createElement('div')
+            this.content = null            
+            this.childWrapper = null
             this.children = []
+            this.expanded = true
+            if(root){
+                root.appendChild(this.container)   
+            }else{
+                this.container.className = 'tree-container'
+            }
         }
-        appendChild(el){
-            var newTask = new Task(el)
+        createContent(){
+            var div = document.createElement('div')
+            div.className = 'tree-content'
+            var i = document.createElement('i')
+            i.className = 'fas'
+            var span = document.createElement('span')
+            span.innerText = this.level
+            var checkbox = document.createElement('input')
+            checkbox.type = 'checkbox'
+            div.appendChild(i)
+            div.appendChild(checkbox)
+            div.appendChild(span)
+            i.onclick = e=>{
+                e.stopPropagation()
+                this.toggle()
+            }
+            div.oncontextmenu = e=>{
+                e.preventDefault()
+                this.appendChild()
+            }
+            div.style.paddingLeft = 30*this.level+'px'
+            return div
+        }
+        appendChild(content){
+            if(!this.childWrapper){
+                this.childWrapper = document.createElement('div')
+                this.container.appendChild(this.childWrapper)
+            }
+            var newTask = new Task()
             newTask.level = this.level+1
             newTask.parent = this
+            newTask.content = content||newTask.createContent()
+            newTask.container.appendChild(newTask.content)
             this.children.push(newTask)
+            this.childWrapper.appendChild(newTask.container)
+            if(this.parent){
+                this.expand(newTask.container.clientHeight)
+            }
+            return newTask
         }
         remove(){
             if(this.parent){
-                var pc = this.parent.children
-                pc = pc.filter(x=>x!=this)
+                this.parent.children = this.parent.children.filter(x=>x!=this)
             }
         }
-        flatten(onlyExpanded){
+        toggle(){
+            if(this.childWrapper){
+                this.expanded = !this.expanded
+                if(this.expanded){
+                    this.expand()
+                }else{
+                    this.collapse()
+                }
+            }
+        }
+        expand(diff){
+            var height = this.children.reduce((acc,cur)=>acc+cur.container.clientHeight,0)
+            diff = diff||(height - this.childWrapper.clientHeight)
+            var parent = this.parent
+            while(parent){
+                parent.childWrapper.style.height = parent.childWrapper.clientHeight+diff+'px'
+                if(parent.content)
+                    parent.content.querySelector('span').innerText = parent.childWrapper.style.height
+                parent = parent.parent
+            }
+            this.childWrapper.style.height = height+'px'
+            this.childWrapper.style.overflow = 'hidden'
+            this.childWrapper.style.transition = '0.3s'
+            this.content.querySelector('span').innerText = this.childWrapper.style.height
+            //
+            this.content.querySelector('i').className = 'fas fa-caret-down'
+            this.content.querySelector('i').style.transition = '0.3s'
+            this.content.querySelector('i').style.transform = 'rotate(0)'
+            
+        }
+        collapse(){
+            this.childWrapper.style.height = 0
+            var diff = -this.childWrapper.clientHeight
+            var parent = this.parent
+            while(parent){
+                parent.childWrapper.style.height = parent.childWrapper.clientHeight+diff+'px'
+                if(parent.content)
+                    parent.content.querySelector('span').innerText = parent.childWrapper.style.height
+                parent = parent.parent
+            }
+            this.content.querySelector('span').innerText = this.childWrapper.style.height
+            //
+            this.content.querySelector('i').style.transform = 'rotate(-90deg)'
+        }
+        flatten(){
             var result = [this]
             for(let child of this.children){
                 result = result.concat(child.flatten())
             }
             return result
         }
-        expand(){
-            var result = [this]
-            if(this.expanded){
-                for(let child of this.children){
-                    result = result.concat(child.expand())
-                }
-            }
-            return result
-        }
-        collapse(){
-            this.flatten().slice(1).map(child=>{
-                child.expanded = false
-            })
-        }
     }
     var root = new Task(document.getElementById('treeview'))
-    root.appendChild()
-    render()
+    root.appendChild().appendChild()
+    root.appendChild().appendChild()
 
-    function render(){
-        root.el.innerHTML = ''
-        root.expand().slice(1).map((task,idx)=>{
-            var div = document.createElement('div')
-            div.className = 'd-flex'
-            div.style.paddingLeft = task.level*10+'px'
-            if(task.children.length){
-                var i = document.createElement('i')
-                i.className = 'material-icons'
-                i.innerText = task.expanded?'arrow_drop_down':'arrow_right'
-                div.appendChild(i)
-            }
-            var p = document.createElement('p')
-            p.innerText = 'task'+idx+task.expanded+task.level
-            div.appendChild(p)
-            div.onclick = ()=>{
-                task.expanded = !task.expanded
-                if(task.expanded==false){
-                    task.collapse()
+    function createContextMenu(coord){
+        let div = document.createElement('div')
+        var button = document.createElement('button')
+        button.innerHTML = 'bang'
+        button.onclick = ()=>{
+
+        }
+        div.appendChild(button)
+        Object.assign(div.style,{
+            position: 'fixed',
+            left: coord.x+'px',
+            top: coord.y+'px'
+        })
+        document.body.appendChild(div)
+        return div
+    }
+
+function xml_string_to_json(xmlstr) {
+    let parser = new DOMParser();
+    let srcDOM = parser.parseFromString(xmlstr, "application/xml");
+    function xml2json(srcDOM) {
+        let children = [...srcDOM.children];
+        if (!children.length) { return srcDOM.innerHTML } 
+        let jsonResult = {};
+        for (let child of children) {
+            let childIsArray = children.filter(eachChild => eachChild.nodeName === child.nodeName).length > 1;
+            if (childIsArray) {
+                if (jsonResult[child.nodeName] === undefined) {
+                    jsonResult[child.nodeName] = [xml2json(child)];
+                } else {
+                    jsonResult[child.nodeName].push(xml2json(child));
                 }
-                render()
+            } else {
+                jsonResult[child.nodeName] = xml2json(child);
             }
-            div.oncontextmenu = e=>{
-                e.preventDefault()
-                task.expanded = true
-                task.appendChild()
-                render()
-            }
-            root.el.appendChild(div)
-        })
-    }
-
-
-    var gantt = document.getElementById('gantt')
-    var gEvent = {el:null, x:0, y:0}
-    var bar = document.querySelector('.bar')
-    bar.style.width = 130+'px'
-    var barHead = bar.querySelector('.bar-node.head')
-    var barTail = bar.querySelector('.bar-node.tail')
-    bar.onmousedown = e=>{
-        gEvent = {
-            el: bar,
-            type:'bar',
-            x:e.clientX,
-            y:e.clientY
         }
+        return jsonResult;
     }
-    barHead.onmousedown = e=>{
-        e.stopPropagation()
-        gEvent = {
-            el: bar,
-            type: 'bar-head',
-            x:e.clientX,
-            y:e.clientY
-        }
-    }
-    barTail.onmousedown = e=>{
-        e.stopPropagation()
-        gEvent = {
-            el: bar,
-            type: 'bar-tail',
-            x:e.clientX,
-            y:e.clientY
-        }
-    }
-    var now = new Date()
-    var sc = document.getElementById('stripe-container')
-    var ox = 0
-    gantt.onwheel = e=>{
-        ox +=e.deltaY/5
-        sc.innerHTML = ''
-        var dates = Array.from(Array(10).keys(),i=>{
-            var date = new Date()
-            date.setTime(now.getTime()+i*24*60*60*1000)
-            return date
-        })
-        var counts = dates.map(date=>{
-            let YYYY = date.getFullYear()
-            let MM = ('0'+(date.getMonth()+1)).substr(-2)
-            return YYYY+'/'+MM
-        }).reduce((acc,cur,i)=>{
-            acc[cur] = acc[cur]?acc[cur]+1:1
-            return acc
-        },{})
-        var W = 70, accLeft = 0
-        Object.entries(counts).map(([date,count])=>{
-            let div = document.createElement('div')
-            div.innerText = date
-            Object.assign(div.style,{
-                border: '1px solid #000',
-                position: 'absolute',
-                left: accLeft*W,
-                width: count*W+'px',
-                height: '20px',
-                textAlign: 'center',
-                lineHeight: '20px'
-            })
-            accLeft+= count
-            sc.appendChild(div)
-        })
-        dates.map((date,i)=>{
-            var stripe = document.createElement('div')
-            stripe.className = 'stripe'
-            stripe.innerText = date.getDate()
-            Object.assign(stripe.style,{
-                top: '20px',
-                left: ox+i*W+'px',
-                width: W+'px'
-            })
-            sc.appendChild(stripe)
-        })
-    }
-
-    gantt.onmousemove = e=>{
-        e.stopPropagation()
-        if(gEvent.el){
-            var el = gEvent.el
-            gantt.style.cursor = 'w-resize'
-            
-            if(gEvent.type=='bar-head'){
-                el.style.left = el.style.left.slice(0,-2)*1+e.clientX-gEvent.x+'px'
-                el.style.width = el.style.width.slice(0,-2)*1-(e.clientX-gEvent.x)+'px'
-            }else if(gEvent.type=='bar-tail'){
-                el.style.width = el.style.width.slice(0,-2)*1+(e.clientX-gEvent.x)+'px'
-            }else{
-                el.style.left = el.style.left.slice(0,-2)*1+e.clientX-gEvent.x+'px'
-            }
-            gEvent.x = e.clientX
-        }
-    }
-    gantt.onmouseup = e=>{
-        gEvent.el = null
-        gantt.style.cursor = 'default'
-    }
-    gantt.onmouseleave = e=>{
-        gEvent.el = null
-        gantt.style.cursor = 'default'
-    }
-
-    // var contextmenu = null
-    // window.onclick = e=>{
-    //     if(contextmenu){
-    //         contextmenu.remove()
-    //     }else{
-
-    //     }
-    // }
-    // window.oncontextmenu = e=>{
-    //     e.preventDefault()
-    //     if(contextmenu){
-    //         contextmenu.remove()
-    //     }
-    //     contextmenu = document.createElement('div')
-    //     contextmenu.className = 'menu'
-    //     var button = document.createElement('button')
-    //     button.innerHTML = 'bang'
-    //     button.onclick = ()=>{
-    //         console.log('bang')
-    //     }
-    //     contextmenu.appendChild(button)
-    //     Object.assign(contextmenu.style,{
-    //         left: e.clientX+'px',
-    //         top: e.clientY+'px'
-    //     })
-    //     document.body.appendChild(contextmenu)
-    // }
+};
 </script>
 </html>
