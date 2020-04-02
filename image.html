@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image</title>
+</head>
+<body>
+    <div id="text-editor" contenteditable="true"></div>
+    <canvas id="canvas"></canvas>
+    <input type="file" id="file" onchange="handleFile(event)">
+</body>
+<style>
+    html,body{
+        margin: 0;
+    }
+</style>
+<script src="js/tfjs.js"></script>
+<script src="js/coco-ssd.js"></script>
+<script>
+// const img = document.getElementById('img')
+// cocoSsd.load().then(model=>{
+//     model.detect(img).then(predictions=>{
+//         console.log(predictions)
+//     })
+// })
+var canvas = document.getElementById('canvas')
+var ctx = canvas.getContext('2d')
+var img = new Image()
+var hint = {x:0,y:0,r:0,fill:'transaprent'}
+canvas.onmousemove = e=>{
+    canvas.style.cursor = 'none'
+    hint.r = 10
+    ctx.drawImage(img,0,0,canvas.width,canvas.height)
+    var [r,g,b,a] = ctx.getImageData(e.clientX,e.clientY,1,1).data
+    hint.x = e.clientX
+    hint.y = e.clientY
+    hint.fill = `rgba(${r},${g},${b},${a})`
+}
+canvas.onmouseleave = e=>{
+    canvas.style.cursor = 'auto'
+    hint.r = 0
+}
+loop()
+function loop(){
+    window.requestAnimationFrame(loop)
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    ctx.drawImage(img,0,0,canvas.width,canvas.height)
+    drawHint()
+}
+function drawHint(){
+    ctx.beginPath()
+    ctx.arc(hint.x,hint.y,hint.r,0,2*Math.PI,false)
+    ctx.fillStyle = hint.fill
+    ctx.strokeStyle = 'grey'
+    ctx.fill()
+    ctx.stroke()
+    ctx.closePath()
+}
+var textEditor = document.getElementById('text-editor')
+document.execCommand('foreColor', false, 'dodgerblue');
+document.execCommand('fontName', false, '微軟正黑體');
+document.execCommand('fontSize', false, 20);
+
+function copyToClipboard(element){
+    var range = document.createRange();
+    range.setStartBefore(element);
+    range.setEndAfter(element);
+    range.selectNode(element);
+    var selection = window.getSelection();
+    selection.addRange(range);
+    document.execCommand('copy')
+    selection.removeAllRanges()
+    alert('copied')
+}
+function handleFile(e){
+    var reader = new FileReader()
+    reader.onload = evt=>{
+        img.src = evt.target.result
+        img.onload = ()=>{
+            resize()
+            ctx.drawImage(img,0,0,canvas.width,canvas.height)
+            colorize()
+            // download()
+        }
+    }
+    reader.readAsDataURL(e.target.files[0])
+}
+function colorize(){
+    var imgData = ctx.getImageData(0,0,canvas.width,canvas.height)
+    for(var i=0;i<imgData.data.length;i+=4){
+        var [r,g,b,a] = imgData.data.slice(i,i+4)
+        if(r>254&&g>254&&b>254){
+            imgData.data[i+3] = 0
+        }
+    }
+    ctx.putImageData(imgData,0,0)
+}
+function download(){
+    var a = document.createElement('a')
+    a.download = 'transparent.png'
+    a.href = canvas.toDataURL('image/png')
+    a.click()
+}
+function resize(){
+    canvas.width = canvas.style.width = img.width
+    canvas.height = canvas.height.width = img.height
+}
+</script>
+</html>

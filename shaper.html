@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Shaper</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+<style>
+    html,body{
+        margin: 0;
+        height: 100%;
+    }
+    #canvas{
+        width: 100%;
+        height: 100%;
+    }
+</style>
+<script>
+    var canvas = document.getElementById('canvas')
+    var rect = canvas.getBoundingClientRect()
+    canvas.width = rect.width
+    canvas.height = rect.height
+    var ctx = canvas.getContext('2d')
+    class Vector{
+        constructor(coords){
+            this.initCoords = []
+            this.coords = []
+            this.bbox = []
+            this.initFrame = {}
+            this.frame = []
+            this.anchor = {}
+            this.setCoords(coords)
+            this.buffer = 10
+            this.event = {
+                type:null,
+                target:{x:0,y:0},
+                radian:0, 
+                shiftKey:false,
+                ctrlKey:false,
+                verticalFlip: false,
+            }
+        }
+        rotate(vector,radian){
+            radian = -radian
+            return {
+                x: vector.x*Math.cos(radian)-vector.y*Math.sin(radian),
+                y: vector.x*Math.sin(radian)+vector.y*Math.cos(radian)
+            }
+        }
+        add(v1,v2){
+            return {x:v1.x+v2.x,y:v1.y+v2.y}
+        }
+        setCoords(coords){
+            this.initCoords = coords.map(c=>c.slice())
+            this.coords = coords //傳入值會變更
+            this.bbox = this.getBbox(coords)
+            this.initFrame = {
+                x: (this.bbox[0]+this.bbox[2])/2,
+                y: (this.bbox[1]+this.bbox[3])/2,
+                w: this.bbox[2]-this.bbox[0],
+                h: this.bbox[3]-this.bbox[1],
+                r: 0//radian
+            }
+            this.frame = Object.assign({},this.initFrame)
+            this.updateAnchor()
+        }
+        getBbox(coords){
+            var xArr = coords.map(c=>c[0]),
+                yArr = coords.map(c=>c[1])
+            return [
+                Math.min(...xArr),
+                Math.min(...yArr),
+                Math.max(...xArr),
+                Math.max(...yArr),
+            ]
+        }
+        updateAnchor(){
+            var {x,y,w,h,r} = this.frame
+            this.anchor = {
+                RO: this.add({x,y},this.rotate({x:0,y:-h/2-30},r)),
+                LT: this.add({x,y},this.rotate({x:-w/2,y:-h/2},r)),
+                T: this.add({x,y},this.rotate({x:0,y:-h/2},r)),
+                RT: this.add({x,y},this.rotate({x:w/2,y:-h/2},r)),
+                R: this.add({x,y},this.rotate({x:w/2,y:0},r)),
+                RB: this.add({x,y},this.rotate({x:w/2,y:h/2},r)),
+                B: this.add({x,y},this.rotate({x:0,y:h/2},r)),
+                LB: this.add({x,y},this.rotate({x:-w/2,y:h/2},r)),
+                L: this.add({x,y},this.rotate({x:-w/2,y:0},r)),
+            }   
+        }
+        updateCoords(){
+            var {x,y,w,h,r} = this.frame
+            var frame = this.initFrame
+            this.initCoords.map((coord,i)=>{
+                let vToC = {x:coord[0]-frame.x,y:coord[1]-frame.y}
+                vToC = this.rotate(vToC,-frame.r) //先轉正
+                vToC.x*= w/frame.w
+                vToC.y*= h/frame.h
+                vToC = this.rotate(vToC,r) //再轉到新的
+                this.coords[i][0] = vToC.x+x
+                this.coords[i][1] = vToC.y+y
+            })
+        }
+        reflection(m,coord){
+            var M = [
+                [(1-m*m)/(m*m+1),(2*m*m)/(m*m+1)],
+                [(2*m*m)/(m*m+1),(m*m-1)/(m*m+1)]
+            ]
+            return {
+                x:M[0][0]*coord.x+M[0][1]*coord.y,
+                y:M[1][0]*coord.x+M[1][1]*coord.y,
+            }
+        }
+        verticalFlip(){
+            this.initCoords.map((coord,i)=>{
+                this.initCoords[i][0] = 2*this.initFrame.x-coord[0]
+            })
+        }
+        handleMousedown(e){
+            var {x,y,w,h,r} = this.frame
+            this.event.verticalFlip = false
+            for(let key in this.anchor){
+                var dx = e.clientX-this.anchor[key].x
+                var dy = this.anchor[key].y-e.clientY
+                var dis = Math.sqrt(dx*dx+dy*dy)
+                if(dis<this.buffer){
+                    switch(key){
+                        case 'LT':
+                            this.event.sign = {x:-1,y:1}
+                            this.event.radian = Math.atan2(h,-w)
+                            this.event.target = this.anchor['RB'];break;
+                        case 'T':
+                            this.event.target = this.anchor['B'];break;
+                        case 'RT':
+                            this.event.radian = Math.atan2(-h,-w)
+                            this.event.target = this.anchor['LB'];break;
+                        case 'R':
+                            this.event.target = this.anchor['L'];break;
+                        case 'RB':
+                            this.event.radian = Math.atan2(-h,w)
+                            this.event.target = this.anchor['LT'];break;
+                        case 'B':
+                            this.event.target = this.anchor['T'];break;
+                        case 'LB':
+                            this.event.radian = Math.atan2(h,w)
+                            this.event.target = this.anchor['RT'];break;
+                        case 'L':
+                            this.event.target = this.anchor['R'];break;
+                        case 'RO':
+                            this.event.target = {x,y};break;
+                        default: break;
+                    }
+                    this.event.type = key
+                    return true
+                }
+            }
+            var client = {x:e.clientX, y:e.clientY}
+            var polygon = [
+                this.anchor['LT'],
+                this.anchor['RT'],
+                this.anchor['RB'],
+                this.anchor['LB']
+            ]
+            if(this.isInPolygon(client,polygon)){
+                this.event.type = 'M'
+                this.event.target = client
+                return true
+            }
+        }
+        handleMousemove(e){
+            if(this.event.type!=null){
+                var {x,y,w,h,r} = this.frame
+                var dx, dy, dr, dis
+                if(this.event.ctrlKey){
+                    dx = e.clientX-x
+                    dy = y-e.clientY
+                    dr = Math.atan2(dy,dx)
+                    dis = 2*Math.sqrt(dx*dx+dy*dy)
+                }else{
+                    dx = e.clientX-this.event.target.x
+                    dy = this.event.target.y-e.clientY
+                    dr = Math.atan2(dy,dx)
+                    dis = Math.sqrt(dx*dx+dy*dy)
+                }
+                if(this.event.type=='RO'){
+                    if(this.event.shiftKey){
+                        var step = Math.PI/12
+                        var int = Math.round((dr-Math.PI/2)/step)
+                        this.frame.r = int*step
+                    }else{
+                        this.frame.r = dr-Math.PI/2
+                    }
+                }else if(this.event.type=='M'){
+                    this.frame.x+= e.clientX-this.event.target.x
+                    this.frame.y+= e.clientY-this.event.target.y
+                    this.event.target.x = e.clientX
+                    this.event.target.y = e.clientY
+                }else{
+                    var pw = dis*Math.cos(dr-r)
+                    var ph = dis*Math.sin(dr-r)
+                    var vToC = {x:0,y:0}
+                    if(['RT','RB','LT','LB'].includes(this.event.type)){
+                        if(this.event.shiftKey){
+                            if(Math.sin(dr-(this.event.radian+r))>0){
+                                ph = pw*Math.tan(this.event.radian)
+                            }else{
+                                pw = ph/Math.tan(this.event.radian)
+                            }
+                        }
+                        this.frame.w = Math.abs(pw)
+                        this.frame.h = Math.abs(ph)
+                        vToC = this.rotate({x:pw/2,y:-ph/2},r)
+                    }else if(['R','L'].includes(this.event.type)){
+                        this.frame.w = Math.abs(pw)
+                        vToC = this.rotate({x:pw/2,y:0},r)
+                    }else if(['T','B'].includes(this.event.type)){
+                        this.frame.h = Math.abs(ph)
+                        vToC = this.rotate({x:0,y:-ph/2},r)
+                    }
+                    if(!this.event.ctrlKey){
+                        this.frame.x = this.event.target.x+vToC.x
+                        this.frame.y = this.event.target.y+vToC.y
+                    }
+                    var shouldHorizontalFlip = 
+                        (Math.sin(dr-r)>0&&['RB','B','LB'].includes(this.event.type)) ||
+                        (Math.sin(dr-r)<0&&['RT','T','LT'].includes(this.event.type))
+                    if(shouldHorizontalFlip){
+                        this.frame.r+= Math.PI
+                    }
+                    var shouldVerticalFlip = false
+                    if(this.event.verticalFlip){
+                        shouldVerticalFlip = 
+                            (Math.cos(dr-r)>0&&['RT','R','RB'].includes(this.event.type))||
+                            (Math.cos(dr-r)<0&&['LT','T','LB'].includes(this.event.type))
+                    }else{
+                        shouldVerticalFlip = 
+                            (Math.cos(dr-r)<0&&['RT','R','RB'].includes(this.event.type))||
+                            (Math.cos(dr-r)>0&&['LT','T','LB'].includes(this.event.type))
+                    }
+                        // (Math.cos(dr-r)>0&&this.event.verticalFlip) ||
+                        // (Math.cos(dr-r)<0&&this.event.verticalFlip==false)
+                    if(shouldVerticalFlip||shouldHorizontalFlip){
+                        this.event.verticalFlip = !this.event.verticalFlip
+                        this.verticalFlip()
+                    }
+                }
+                this.updateAnchor()
+                this.updateCoords()
+                this.bbox = this.getBbox(this.coords)
+            }
+        }
+        handleMouseup(e){
+            this.event.type = null
+        }
+        handleKeydown(e){
+            if(e.shiftKey){this.event.shiftKey=true}
+            if(e.ctrlKey){this.event.ctrlKey=true}
+        }
+        handleKeyup(e){
+            this.event.shiftKey=false
+            this.event.ctrlKey=false
+        }
+        drawCoords(){
+            ctx.beginPath()
+            this.coords.map((c,i)=>{
+                if(i==0){
+                    ctx.moveTo(c[0],c[1])
+                }else{
+                    ctx.lineTo(c[0],c[1])
+                }
+            })
+            ctx.stroke()
+            ctx.closePath()
+        }
+        drawFrame(){
+            var anchor = this.anchor
+            var coords = Object.values(anchor)
+            var lineOrder = ['RO','T','RT','RB','LB','LT','T']
+            ctx.beginPath()
+            lineOrder.map((key,i)=>{
+                if(i==0){
+                    ctx.moveTo(anchor[key].x,anchor[key].y)
+                }else{
+                    ctx.lineTo(anchor[key].x,anchor[key].y)
+                }
+            })
+            ctx.stroke()
+            ctx.closePath()
+            ctx.beginPath()
+            coords.map(val=>{
+                ctx.moveTo(val.x,val.y)
+                ctx.arc(val.x,val.y,5,0,2*Math.PI,true)
+                ctx.stroke()
+                ctx.fillStyle = 'white'
+                ctx.fill()
+            })
+            ctx.closePath()
+        }
+        isInPolygon(p, polygon) {
+            var isInside = false,
+                [minX, minY, maxX, maxY] = this.getBbox(polygon)
+            if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) {
+                return false;
+            }
+            for(var i=0, j=polygon.length-1; i<polygon.length; j=i++) {
+                var p1 = polygon[j],
+                    p2 = polygon[i]
+                if(
+                    (p2.y > p.y) != (p1.y > p.y) &&
+                    (p.x < (p1.x - p2.x) * (p.y - p2.y) / (p1.y - p2.y) + p2.x)
+                ){
+                    isInside = !isInside
+                }
+            }
+            return isInside;
+        }
+    }
+    var shapes = Array.from(Array(10),()=>new Vector([[150,150],[500,300],[100,200]]))
+    function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height)
+        shapes.map(shape=>{
+            shape.drawFrame()
+            shape.drawCoords()
+        })
+        window.requestAnimationFrame(draw)
+    }
+    draw()
+    window.addEventListener('mousedown',e=>{
+        for(shape of shapes){
+            if(shape.handleMousedown(e)){
+                break
+            }
+        }
+    })
+    window.addEventListener('mousemove',e=>{
+        shapes.map(shape=>{shape.handleMousemove(e)})
+    })
+    window.addEventListener('mouseup',e=>{
+        shapes.map(shape=>{shape.handleMouseup(e)})
+    })
+    window.addEventListener('keydown',e=>{
+        shapes.map(shape=>{shape.handleKeydown(e)})
+    })
+    window.addEventListener('keyup',e=>{
+        shapes.map(shape=>{shape.handleKeyup(e)})
+    })
+    window.addEventListener('resize',()=>{
+        rect = canvas.getBoundingClientRect()
+        canvas.width = rect.width
+        canvas.height = rect.height
+    })
+</script>
+</html>
