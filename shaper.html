@@ -25,7 +25,109 @@
     canvas.width = rect.width
     canvas.height = rect.height
     var ctx = canvas.getContext('2d')
-    class Vector{
+    class ImageShape{
+        constructor(img,cx,cy){
+            this.img = img
+            this.coords = this.getImageBounds(img,cx,cy)
+            if(!img.complete){
+                img.onload = ()=>{
+                    this.coords = this.getImageBounds(img,cx,cy)
+                }
+            }
+            this.shaper = null
+        }
+        getImageBounds(img,cx,cy){
+            let w = img.width/2
+            let h = img.height/2 
+            return [
+                [cx-w,cy-h],
+                [cx+w,cy-h],
+                [cx+w,cy+h],
+                [cx-w,cy+h]
+            ]
+        }
+        contains(p){
+            var isContain = false,
+                xArr = this.coords.map(c=>c[0]),
+                yArr = this.coords.map(c=>c[1]),
+                minX = Math.min(...xArr),
+                minY = Math.min(...yArr),
+                maxX = Math.max(...xArr),
+                maxY = Math.max(...yArr)
+            if (p[0] < minX || p[0] > maxX || p[1] < minY || p[1] > maxY) {
+                return false;
+            }
+            for(var i=0, j=this.coords.length-1; i<this.coords.length; j=i++) {
+                var p1 = this.coords[j],
+                    p2 = this.coords[i]
+                if(
+                    (p2[1] > p[1]) != (p1[1] > p[1]) &&
+                    (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
+                ){
+                    isContain = !isContain
+                }
+            }
+            return isContain
+        }
+        draw(ctx){
+            if(this.shaper){
+                let {x,y,w,h,r} = this.shaper.frame
+                ctx.save()
+                ctx.translate(x,y)
+                ctx.rotate(-r)
+                ctx.drawImage(img,-w/2,-h/2,w,h)
+                ctx.restore()
+            }else{
+                let x = this.coords[0][0]
+                let y = this.coords[0][1]
+                let w = this.coords[2][0]-x
+                let h = this.coords[2][1]-y
+                ctx.drawImage(img,x,y,w,h)
+            }
+        }
+    }
+    class Shape{
+        constructor(coords){
+            this.coords = coords
+            this.shaper = null
+        }
+        contains(p){
+            var isContain = false,
+                xArr = this.coords.map(c=>c[0]),
+                yArr = this.coords.map(c=>c[1]),
+                minX = Math.min(...xArr),
+                minY = Math.min(...yArr),
+                maxX = Math.max(...xArr),
+                maxY = Math.max(...yArr)
+            if (p[0] < minX || p[0] > maxX || p[1] < minY || p[1] > maxY) {
+                return false;
+            }
+            for(var i=0, j=this.coords.length-1; i<this.coords.length; j=i++) {
+                var p1 = this.coords[j],
+                    p2 = this.coords[i]
+                if(
+                    (p2[1] > p[1]) != (p1[1] > p[1]) &&
+                    (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
+                ){
+                    isContain = !isContain
+                }
+            }
+            return isContain
+        }
+        draw(ctx){
+            ctx.beginPath()
+            this.coords.map((c,i)=>{
+                if(i==0){
+                    ctx.moveTo(c[0],c[1])
+                }else{
+                    ctx.lineTo(c[0],c[1])
+                }
+            })
+            ctx.stroke()
+            ctx.closePath()
+        }
+    }
+    class Shaper{
         constructor(coords){
             this.initCoords = []
             this.coords = []
@@ -105,16 +207,6 @@
                 this.coords[i][1] = vToC.y+y
             })
         }
-        reflection(m,coord){
-            var M = [
-                [(1-m*m)/(m*m+1),(2*m*m)/(m*m+1)],
-                [(2*m*m)/(m*m+1),(m*m-1)/(m*m+1)]
-            ]
-            return {
-                x:M[0][0]*coord.x+M[0][1]*coord.y,
-                y:M[1][0]*coord.x+M[1][1]*coord.y,
-            }
-        }
         verticalFlip(){
             this.initCoords.map((coord,i)=>{
                 this.initCoords[i][0] = 2*this.initFrame.x-coord[0]
@@ -158,16 +250,9 @@
                     return true
                 }
             }
-            var client = {x:e.clientX, y:e.clientY}
-            var polygon = [
-                this.anchor['LT'],
-                this.anchor['RT'],
-                this.anchor['RB'],
-                this.anchor['LB']
-            ]
-            if(this.isInPolygon(client,polygon)){
+            if(this.isInPolygon([e.clientX,e.clientY],this.coords)){
                 this.event.type = 'M'
-                this.event.target = client
+                this.event.target = {x:e.clientX,y:e.clientY}
                 return true
             }
         }
@@ -235,11 +320,11 @@
                     if(this.event.verticalFlip){
                         shouldVerticalFlip = 
                             (Math.cos(dr-r)>0&&['RT','R','RB'].includes(this.event.type))||
-                            (Math.cos(dr-r)<0&&['LT','T','LB'].includes(this.event.type))
+                            (Math.cos(dr-r)<0&&['LT','L','LB'].includes(this.event.type))
                     }else{
                         shouldVerticalFlip = 
                             (Math.cos(dr-r)<0&&['RT','R','RB'].includes(this.event.type))||
-                            (Math.cos(dr-r)>0&&['LT','T','LB'].includes(this.event.type))
+                            (Math.cos(dr-r)>0&&['LT','L','LB'].includes(this.event.type))
                     }
                         // (Math.cos(dr-r)>0&&this.event.verticalFlip) ||
                         // (Math.cos(dr-r)<0&&this.event.verticalFlip==false)
@@ -264,19 +349,7 @@
             this.event.shiftKey=false
             this.event.ctrlKey=false
         }
-        drawCoords(){
-            ctx.beginPath()
-            this.coords.map((c,i)=>{
-                if(i==0){
-                    ctx.moveTo(c[0],c[1])
-                }else{
-                    ctx.lineTo(c[0],c[1])
-                }
-            })
-            ctx.stroke()
-            ctx.closePath()
-        }
-        drawFrame(){
+        drawFrame(ctx){
             var anchor = this.anchor
             var coords = Object.values(anchor)
             var lineOrder = ['RO','T','RT','RB','LB','LT','T']
@@ -302,16 +375,21 @@
         }
         isInPolygon(p, polygon) {
             var isInside = false,
-                [minX, minY, maxX, maxY] = this.getBbox(polygon)
-            if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) {
+                xArr = polygon.map(c=>c[0]),
+                yArr = polygon.map(c=>c[1]),
+                minX = Math.min(...xArr),
+                minY = Math.min(...yArr),
+                maxX = Math.max(...xArr),
+                maxY = Math.max(...yArr)
+            if (p[0] < minX || p[0] > maxX || p[1] < minY || p[1] > maxY) {
                 return false;
             }
             for(var i=0, j=polygon.length-1; i<polygon.length; j=i++) {
                 var p1 = polygon[j],
                     p2 = polygon[i]
                 if(
-                    (p2.y > p.y) != (p1.y > p.y) &&
-                    (p.x < (p1.x - p2.x) * (p.y - p2.y) / (p1.y - p2.y) + p2.x)
+                    (p2[1] > p[1]) != (p1[1] > p[1]) &&
+                    (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
                 ){
                     isInside = !isInside
                 }
@@ -319,34 +397,62 @@
             return isInside;
         }
     }
-    var shapes = Array.from(Array(10),()=>new Vector([[150,150],[500,300],[100,200]]))
+    var shapes = Array.from(Array(10),()=>new Shape([[150,150],[500,300],[100,200],[150,150]]))
+    var img = new Image()
+    img.src = '/static/image/crowd.jpg'
+    shapes.unshift(new ImageShape(img,200,200))
+    var shaper = null
     function draw(){
+        window.requestAnimationFrame(draw)
         ctx.clearRect(0,0,canvas.width,canvas.height)
         shapes.map(shape=>{
-            shape.drawFrame()
-            shape.drawCoords()
+            shape.draw(ctx)
         })
-        window.requestAnimationFrame(draw)
+        if(shaper){
+            shaper.drawFrame(ctx)
+        }
     }
     draw()
     window.addEventListener('mousedown',e=>{
-        for(shape of shapes){
-            if(shape.handleMousedown(e)){
+        var point = [e.clientX,e.clientY]
+        for(let i=shapes.length-1;i>=0;i--){
+            let shape = shapes[i]
+            if(shape.contains(point)){
+                // check the shape have shaper
+                if(shape.shaper){
+                    shaper = shape.shaper
+                }else{
+                    shaper = new Shaper(shape.coords)
+                    shape.shaper = shaper
+                }
                 break
+            }
+        }
+        if(shaper){
+            if(!shaper.handleMousedown(e)){
+                shaper = null
             }
         }
     })
     window.addEventListener('mousemove',e=>{
-        shapes.map(shape=>{shape.handleMousemove(e)})
+        if(shaper){
+            shaper.handleMousemove(e)
+        }
     })
     window.addEventListener('mouseup',e=>{
-        shapes.map(shape=>{shape.handleMouseup(e)})
+        if(shaper){
+            shaper.handleMouseup(e)
+        }
     })
     window.addEventListener('keydown',e=>{
-        shapes.map(shape=>{shape.handleKeydown(e)})
+        if(shaper){
+            shaper.handleKeydown(e)
+        }
     })
     window.addEventListener('keyup',e=>{
-        shapes.map(shape=>{shape.handleKeyup(e)})
+        if(shaper){
+            shaper.handleKeyup(e)
+        }
     })
     window.addEventListener('resize',()=>{
         rect = canvas.getBoundingClientRect()

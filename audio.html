@@ -6,7 +6,7 @@
     <title>Audio</title>
 </head>
 <body>
-    <audio id="audio"></audio>
+    <input type="range" id="range" min="0" step="0.1" max="0" value="0">
     <input type="file" onchange="handleFile(event.target.files[0])">
     <div id="drop-field" ondrop="handleDrop(event)" ondragover="event.preventDefault()">drop here</div>
     <canvas id="canvas"></canvas>
@@ -20,8 +20,8 @@
         height: 200px;
     }
     #drop-field{
-        width: 500px;
-        height: 500px;
+        width: 50px;
+        height: 50px;
         border: 1px solid #000;
     }
 </style>
@@ -90,7 +90,8 @@ class Visualizer{
     }
 }
 
-var audio = document.getElementById('audio')
+var audio = new Audio()
+var range = document.getElementById('range')
 function handleDrop(e){
     e.preventDefault()
     var files = []
@@ -104,6 +105,16 @@ function handleDrop(e){
     reader.readAsDataURL(files[0])
     reader.onload = ()=>{
         audio.src = reader.result
+        audio.onloadeddata = ()=>{
+            range.max = audio.duration
+        }
+        audio.ontimeupdate = ()=>{
+            range.value = audio.currentTime
+        }
+        range.oninput = e=>{
+            audio.currentTime = e.target.value
+            audio.playbackRate = 1
+        }
         var visualizer = new Visualizer()
         var mls = visualizer.audioContext.createMediaElementSource(audio)
         mls.connect(visualizer.analyser)
@@ -113,16 +124,18 @@ function handleDrop(e){
     }
 }
 async function handleFile(file){
-    if(file.type.includes('audio')){
+    if(file.type=='audio/mp3'){
+        console.log(file.type)
         var decoder = new Decoder()
         var arrayBuffer = await decoder.readFile(file)
         var audioBuffer = await decoder.decode(arrayBuffer)
-        // decoder.setSource(audioBuffer)
+        console.log(audioBuffer)
+        decoder.setSource(audioBuffer)
+        decoder.bufferSource.connect(decoder.audioContext.destination)
+        decoder.bufferSource.start()
         var data = audioBuffer.getChannelData(0)
-        // console.log(decoder.getPeaks(500,data))
         decoder.waveform(data)
     }
-    
 }
 class Decoder{
     constructor(){
@@ -142,7 +155,7 @@ class Decoder{
         return this.audioContext.decodeAudioData(arrayBuffer)
     }
     setSource(audioBuffer){
-        this.bufferSource.source = audioBuffer
+        this.bufferSource.buffer = audioBuffer
     }
     getPeaks(width, data){
         const step = Math.floor(data.length/width)
@@ -249,12 +262,10 @@ class Encoder{
     constructor(){
 
     }
-    encodeMP3(audioBuffer, smapleRate){
-        // new an encoder: bitRate = 192
-        const encoder = new Mp3LameEncoder(sampleRate, 192)
-        encoder.encode(channels)
-        const blob = encoder.finish()
-        return blob
+    encodeMP3(audioBuffer, smapleRate=44100, kbps=128){
+        let mp3encoder = new lamejs.Mp3Encoder(audioBuffer.numberOfChannels, smapleRate, kbps)
+        let mp3Data = mp3encoder.encodeBuffer(audioBuffer)
+        return new Blob(mp3Data)
     }
     encodeWAV(audioBuffer, smapleRate){
 
@@ -271,10 +282,11 @@ class Encoder{
         return newBuffer
     }
     download(blob){
+        new Blob([arrayBuffer],{type:'audio/mp3'})
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = name
+        link.download = 'download.mp3'
         document.body.appendChild(link)
         link.click()
         link.remove()

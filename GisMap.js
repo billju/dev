@@ -124,7 +124,7 @@ var EasingFunctions = {
 }
 class GisMap{
     constructor(element){
-        this.element = element
+        this.canvas = element
         this.tilePixel = {w:256,h:256}
         // world center must to be x:0, y:0
         // bbox [westLon, minLat, eastLon, maxLat]
@@ -133,7 +133,7 @@ class GisMap{
             w: 2*6378137*Math.PI,
             h: 2*6378137*Math.PI,
         }
-        var rect = element.getBoundingClientRect()
+        var rect = canvas.getBoundingClientRect()
         this.view = {
             bbox: [],
             center: {x: 13437548.485305637, y: 2772337.9239074644},
@@ -149,20 +149,20 @@ class GisMap{
         this.raster = []
         this.overlay = []
         this.tiles = {}
-        element.height = rect.height
-        element.width = rect.width
-        this.ctx = element.getContext('2d')
+        this.canvas.height = rect.height
+        this.canvas.width = rect.width
+        this.ctx = canvas.getContext('2d')
         this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5,dz:0}
         this.moveEvent = {x:0,y:0,active:false,moved:false}
         this.drawEvent = {path:[],active:true}
         this.momentum = {x:0,y:0,t:0}
-        element.onmousedown = e=>{
+        this.canvas.onmousedown = e=>{
             this.moveEvent.x = e.clientX
             this.moveEvent.y = e.clientY
             this.moveEvent.active = true
             e.target.style.cursor = 'grabbing'
         }
-        element.onmousemove = e=>{
+        this.canvas.onmousemove = e=>{
             if(this.moveEvent.active){
                 var x = - e.clientX + this.moveEvent.x
                 var y = e.clientY - this.moveEvent.y
@@ -184,7 +184,7 @@ class GisMap{
                 return acc+Math.sqrt(dx*dx+dy*dy)
             },0)
         }
-        element.onmouseup = e=>{
+        this.canvas.onmouseup = e=>{
             if(this.drawEvent.active&&!this.moveEvent.moved){
                 this.drawEvent.path.push(this.client2coord({x:e.clientX,y:e.clientY})) 
             }
@@ -193,15 +193,15 @@ class GisMap{
             // console.log(this.toLatlng(this.client2coord({x:e.clientX,y:e.clientY})))
             e.target.style.cursor = 'grab'
         }
-        element.ondblclick = e=>{
+        this.canvas.ondblclick = e=>{
             this.drawEvent.path.pop()
             this.drawEvent.active = false
         }
-        element.onmouseleave = e=>{
+        this.canvas.onmouseleave = e=>{
             this.moveEvent.active = false
             e.target.style.cursor = 'grab'
         }
-        element.onwheel = e=>{
+        this.canvas.onwheel = e=>{
             var view = this.view
             var delta = this.zoomEvent.delta
             var frames = this.zoomEvent.frames
@@ -220,9 +220,9 @@ class GisMap{
             }
         }
         window.onresize = ()=>{
-            rect = element.getBoundingClientRect()
-            element.height = rect.height
-            element.width = rect.width
+            rect = this.canvas.getBoundingClientRect()
+            this.canvas.height = rect.height
+            this.canvas.width = rect.width
             this.view.w = rect.width
             this.view.h = rect.height
             this.updateView()
@@ -260,7 +260,7 @@ class GisMap{
                 if(this.zoomEvent.t==0){this.zoomEvent.before = this.zoomEvent.after}
                 this.updateView()
             }
-            this.ctx.clearRect(0,0,this.element.width,this.element.height)
+            this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
             if(Math.abs(this.zoomEvent.dz)>0){
                 this.getXYZ(this.zoomEvent.dz)
             }

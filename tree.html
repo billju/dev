@@ -97,6 +97,7 @@ i{
                 }else{
                     this.collapse()
                 }
+                // this.content.querySelector('input[type=checkbox]').checked = this.expanded
             }
         }
         expand(diff){
@@ -117,7 +118,6 @@ i{
             this.content.querySelector('i').className = 'fas fa-caret-down'
             this.content.querySelector('i').style.transition = '0.3s'
             this.content.querySelector('i').style.transform = 'rotate(0)'
-            
         }
         collapse(){
             this.childWrapper.style.height = 0

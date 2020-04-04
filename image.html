@@ -7,6 +7,9 @@
 </head>
 <body>
     <div id="text-editor" contenteditable="true"></div>
+    <button onclick="document.execCommand('foreColor', false, 'dodgerblue');">font color</button>
+    <button onclick="document.execCommand('fontName', false, '微軟正黑體');">font family</button>
+    <button onclick="document.execCommand('fontSize', false, 20);">font size</button>
     <canvas id="canvas"></canvas>
     <input type="file" id="file" onchange="handleFile(event)">
 </body>
@@ -17,31 +20,94 @@
 </style>
 <script src="js/tfjs.js"></script>
 <script src="js/coco-ssd.js"></script>
+<script src="js/body-pix.js"></script>
 <script>
-// const img = document.getElementById('img')
-// cocoSsd.load().then(model=>{
-//     model.detect(img).then(predictions=>{
-//         console.log(predictions)
-//     })
-// })
+
+
+var textEditor = document.getElementById('text-editor')
+textEditor.onkeydown = e=>{
+    // var range = document.createRange(); ⌘
+    // var selection = window.getSelection()
+    // range = selection.getRangeAt(0)
+    // if(range.commonAncestorContainer.parentNode==textEditor){
+    //     console.log(range.startOffset)
+    //     console.log(range.endOffset)
+    // }
+}
+
+function copyToClipboard(element){
+    var range = document.createRange();
+    range.setStartBefore(element);
+    range.setEndAfter(element);
+    range.selectNode(element);
+    var selection = window.getSelection();
+    selection.addRange(range);
+    document.execCommand('copy')
+    selection.removeAllRanges()
+    alert('copied')
+}
+
 var canvas = document.getElementById('canvas')
 var ctx = canvas.getContext('2d')
 var img = new Image()
-var hint = {x:0,y:0,r:0,fill:'transaprent'}
-canvas.onmousemove = e=>{
-    canvas.style.cursor = 'none'
-    hint.r = 10
-    ctx.drawImage(img,0,0,canvas.width,canvas.height)
-    var [r,g,b,a] = ctx.getImageData(e.clientX,e.clientY,1,1).data
-    hint.x = e.clientX
-    hint.y = e.clientY
-    hint.fill = `rgba(${r},${g},${b},${a})`
+
+async function segment(){
+    img.src = 'static/image/girl.jpg'
+    img.onload = ()=>{
+        resize()
+        ctx.drawImage(img,0,0,canvas.width,canvas.height)
+    }
+    // const net = await cocoSsd.load()
+    // const predictions = net.detect(img)
+    const net = await bodyPix.load({
+        architecture: 'MobileNetV1',
+        outputStride: 16,
+        multiplier: 0.75,
+        quantBytes: 2
+    })
+    const segmentation = await net.segmentMultiPerson(img, {
+        flipHorizontal: false,
+        internalResolution: 'medium',
+        segmentationThreshold: 0.7,
+        maxDetections: 10,
+        scoreThreshold: 0.2,
+        nmsRadius: 20,
+        minKeypointScore: 0.3,
+        refineSteps: 10
+    });
+    var imgData = ctx.getImageData(0,0,canvas.width,canvas.height)
+    var union = []
+    segmentation.map(person=>{
+        person.data.map((bin,i)=>{
+            union[i] = union[i]?union[i]:0
+            union[i] = bin?1:union[i]
+        })
+    })
+    for(var i=0;i<imgData.data.length;i+=4){
+        var [r,g,b,a] = imgData.data.slice(i,i+4)
+        if(union[i/4]==0){
+            imgData.data[i+3] = 0
+        }
+    }
+    ctx.putImageData(imgData,0,0)
+    console.log(segmentation)
 }
-canvas.onmouseleave = e=>{
-    canvas.style.cursor = 'auto'
-    hint.r = 0
-}
-loop()
+
+// var hint = {x:0,y:0,r:0,fill:'transaprent'}
+// canvas.onmousemove = e=>{
+//     canvas.style.cursor = 'none'
+//     hint.r = 10
+//     ctx.drawImage(img,0,0,canvas.width,canvas.height)
+//     var [r,g,b,a] = ctx.getImageData(e.clientX,e.clientY,1,1).data
+//     hint.x = e.clientX
+//     hint.y = e.clientY
+//     hint.fill = `rgba(${r},${g},${b},${a})`
+// }
+// canvas.onmouseleave = e=>{
+//     canvas.style.cursor = 'auto'
+//     hint.r = 0
+// }
+// loop()
 function loop(){
     window.requestAnimationFrame(loop)
     ctx.clearRect(0,0,canvas.width,canvas.height)
@@ -56,22 +122,6 @@ function drawHint(){
     ctx.fill()
     ctx.stroke()
     ctx.closePath()
-}
-var textEditor = document.getElementById('text-editor')
-document.execCommand('foreColor', false, 'dodgerblue');
-document.execCommand('fontName', false, '微軟正黑體');
-document.execCommand('fontSize', false, 20);
-
-function copyToClipboard(element){
-    var range = document.createRange();
-    range.setStartBefore(element);
-    range.setEndAfter(element);
-    range.selectNode(element);
-    var selection = window.getSelection();
-    selection.addRange(range);
-    document.execCommand('copy')
-    selection.removeAllRanges()
-    alert('copied')
 }
 function handleFile(e){
     var reader = new FileReader()
