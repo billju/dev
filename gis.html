@@ -19,7 +19,45 @@
     }
 </style>
 <script src="GisMap.js"></script>
+<script src="ImageShaper.js"></script>
 <script>
-    var gm = new GisMap(document.getElementById('canvas'))
+    var canvas = document.getElementById('canvas')
+    var ctx = canvas.getContext('2d')
+    var gm = new GisMap(canvas)
+    var img = new Image()
+    img.src = 'static/image/crowd.jpg'
+    var imageShape = new ImageShape(img,canvas.width/2,canvas.height/2,gm)
+    canvas.addEventListener('render',e=>{
+        imageShape.updateGisClient()
+        imageShape.draw(ctx)
+    })
+    canvas.addEventListener('mousedown',e=>{
+        if(!imageShape.handleMousedown(e)){
+            imageShape.editing = false
+            gm.handleMousedown(e)
+        }
+    })
+    canvas.addEventListener('mousemove',e=>{
+        if(imageShape.editing){
+            imageShape.handleMousemove(e)
+        }
+        gm.handleMousemove(e)
+    })
+    canvas.addEventListener('mouseup',e=>{
+        imageShape.handleMouseup(e)
+        gm.handleMouseup(e)
+    })
+    window.addEventListener('keydown',e=>{
+        imageShape.handleKeydown(e)
+    })
+    window.addEventListener('keyup',e=>{
+        imageShape.handleKeyup(e)
+    })
+    canvas.addEventListener('wheel',e=>{
+        gm.handleWheel(e)
+    })
+    window.addEventListener('resize',()=>{
+        gm.handleResize()
+    })
 </script>
 </html>

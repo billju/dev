@@ -94,6 +94,16 @@ function getArea(coords){
         return acc+Math.sin(dx*Math.PI/180)*(2+Math.sin(y1*Math.PI/180))+Math.sin(y2*Math.PI/180)
     },0)
 }
+function circleDefinedBy3Points(x1,y1,x2,y2,x3,y3){
+    let A = x1*(y2-y3)-y1*(x2-x3)+x2*y3-x3*y2
+    let B = (x1*x1+y1*y1)*(y3-y2)+(x2*x2+y2*y2)*(y1-y3)+(x3*x3+y3*y3)*(y2-y1)
+    let C = (x1*x1+y1*y1)*(x2-x3)+(x2*x2+y2*y2)*(x3-x1)+(x3*x3+y3*y3)*(x1-x2)
+    let D = (x1*x1+y1*y1)*(x3*y2-x2*y3)+(x2*x2+y2*y2)*(x1*y3-x3*y1)+(x3*x3+y3*y3)*(x2*y1-x1*y2)
+    let x = -B/(2*A)
+    let y = -C/(2*A)
+    let r = Math.sqrt((B*B+C*C-4*A*D)/(4*A*A))
+    return {x,y,r}
+}
 var EasingFunctions = {
     // no easing, no acceleration
     linear: t => t,
@@ -154,87 +164,12 @@ class GisMap{
         this.ctx = canvas.getContext('2d')
         this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5,dz:0}
         this.moveEvent = {x:0,y:0,active:false,moved:false}
-        this.drawEvent = {path:[],active:true}
+        this.drawEvent = {path:[],active:false}
         this.momentum = {x:0,y:0,t:0}
-        this.canvas.onmousedown = e=>{
-            this.moveEvent.x = e.clientX
-            this.moveEvent.y = e.clientY
-            this.moveEvent.active = true
-            e.target.style.cursor = 'grabbing'
-        }
-        this.canvas.onmousemove = e=>{
-            if(this.moveEvent.active){
-                var x = - e.clientX + this.moveEvent.x
-                var y = e.clientY - this.moveEvent.y
-                if(!this.zoomEvent.moved){
-                    var tolerance = Math.sqrt(x*x+y*y)
-                    if(tolerance>2){
-                        this.setView({x,y})
-                        this.moveEvent.moved = true
-                    }
-                }
-                this.moveEvent.x = e.clientX
-                this.moveEvent.y = e.clientY
-                this.momentum = {x,y,t:90}
-            }
-            var lineStringLength = this.drawEvent.path.reduce((acc,cur,i,arr)=>{
-                if(i==0) return acc
-                var dx = arr[i].x-arr[i-1].x
-                var dy = arr[i].y-arr[i-1].y
-                return acc+Math.sqrt(dx*dx+dy*dy)
-            },0)
-        }
-        this.canvas.onmouseup = e=>{
-            if(this.drawEvent.active&&!this.moveEvent.moved){
-                this.drawEvent.path.push(this.client2coord({x:e.clientX,y:e.clientY})) 
-            }
-            this.moveEvent.active = false
-            this.moveEvent.moved = false
-            // console.log(this.toLatlng(this.client2coord({x:e.clientX,y:e.clientY})))
-            e.target.style.cursor = 'grab'
-        }
-        this.canvas.ondblclick = e=>{
-            this.drawEvent.path.pop()
-            this.drawEvent.active = false
-        }
-        this.canvas.onmouseleave = e=>{
-            this.moveEvent.active = false
-            e.target.style.cursor = 'grab'
-        }
-        this.canvas.onwheel = e=>{
-            var view = this.view
-            var delta = this.zoomEvent.delta
-            var frames = this.zoomEvent.frames
-            var newZoom = this.zoomEvent.after - Math.sign(e.deltaY)*delta
-            newZoom = this.minmax(newZoom,view.minZoom,view.maxZoom)
-            var dz = Math.floor(view.zoom)-Math.floor(newZoom)
-            this.zoomEvent = {
-                x: e.clientX,
-                y: e.clientY,
-                before: view.zoom,
-                after: newZoom,
-                t: frames,
-                frames, 
-                delta,
-                dz
-            }
-        }
-        window.onresize = ()=>{
-            rect = this.canvas.getBoundingClientRect()
-            this.canvas.height = rect.height
-            this.canvas.width = rect.width
-            this.view.w = rect.width
-            this.view.h = rect.height
-            this.updateView()
-        }
         this.animationFrame = null
         this.render = ()=>{
-        //     if(this.moveEvent.active||this.momentum.t>0||this.zoomEvent.t>0){
-        //         this.animationFrame = window.requestAnimationFrame(this.render)
-        //     }else{
-        //         window.cancelAnimationFrame(this.animationFrame)
-        //     }
             this.animationFrame = window.requestAnimationFrame(this.render)
+            // update parameters
             if(this.momentum.t>0){
                 var fricion = 0.1
                 var x = this.momentum.x*(1-fricion)
@@ -260,39 +195,121 @@ class GisMap{
                 if(this.zoomEvent.t==0){this.zoomEvent.before = this.zoomEvent.after}
                 this.updateView()
             }
+            // draw tiles
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
             if(Math.abs(this.zoomEvent.dz)>0){
                 this.getXYZ(this.zoomEvent.dz)
             }
             this.getXYZ(0)
-            // draw polygon
-            let path = this.drawEvent.path.map(coord=>this.coord2client(coord))
-            this.ctx.beginPath()
-            this.ctx.lineCap = 'round'
-            this.ctx.lineWidth = 2
-            this.ctx.strokeStyle = 'dodgerblue'
-            path.map((client,i)=>{
-                if(i>0){
-                    this.ctx.lineTo(client.x,client.y)
-                }else{
-                    this.ctx.moveTo(client.x,client.y)
-                }
-            })
-            this.ctx.stroke()
-            this.ctx.closePath()
-            // draw dots
-            path.map((client,i)=>{    
-                this.ctx.beginPath()
-                this.ctx.lineWidth = 2
-                this.ctx.strokeStyle = 'white'
-                this.ctx.fillStyle = 'dodgerblue'
-                this.ctx.arc(client.x,client.y,10,0,2*Math.PI,false)
-                this.ctx.stroke()
-                this.ctx.fill()
-                this.ctx.closePath()
-            })
+            this.renderDraw()
+            this.canvas.dispatchEvent(new CustomEvent('render',{}))
         }
         this.render()
+    }
+    renderDraw(){
+        // draw polygon
+        let path = this.drawEvent.path.map(coord=>this.coord2client(coord))
+        this.ctx.beginPath()
+        this.ctx.lineCap = 'round'
+        this.ctx.lineWidth = 2
+        this.ctx.strokeStyle = 'dodgerblue'
+        path.map((client,i)=>{
+            if(i>0){
+                this.ctx.lineTo(client.x,client.y)
+            }else{
+                this.ctx.moveTo(client.x,client.y)
+            }
+        })
+        this.ctx.stroke()
+        this.ctx.closePath()
+        // draw dots
+        path.map((client,i)=>{    
+            this.ctx.beginPath()
+            this.ctx.lineWidth = 2
+            this.ctx.strokeStyle = 'white'
+            this.ctx.fillStyle = 'dodgerblue'
+            this.ctx.arc(client.x,client.y,10,0,2*Math.PI,false)
+            this.ctx.stroke()
+            this.ctx.fill()
+            this.ctx.closePath()
+        })
+    }
+    handleMousedown(e){
+        this.moveEvent.x = e.clientX
+        this.moveEvent.y = e.clientY
+        this.moveEvent.active = true
+        e.target.style.cursor = 'grabbing'
+    }
+    handleMousemove(e){
+        if(this.moveEvent.active){
+            var x = - e.clientX + this.moveEvent.x
+            var y = e.clientY - this.moveEvent.y
+            if(!this.zoomEvent.moved){
+                var tolerance = Math.sqrt(x*x+y*y)
+                if(tolerance>2){
+                    this.setView({x,y})
+                    this.moveEvent.moved = true
+                }
+            }
+            this.moveEvent.x = e.clientX
+            this.moveEvent.y = e.clientY
+            this.momentum = {x,y,t:90}
+        }
+        var lineStringLength = this.drawEvent.path.reduce((acc,cur,i,arr)=>{
+            if(i==0) return acc
+            var dx = arr[i].x-arr[i-1].x
+            var dy = arr[i].y-arr[i-1].y
+            return acc+Math.sqrt(dx*dx+dy*dy)
+        },0)
+    }
+    handleMouseup(e){
+        if(this.drawEvent.active&&!this.moveEvent.moved){
+            this.drawEvent.path.push(this.client2coord({x:e.clientX,y:e.clientY})) 
+            // let path = this.drawEvent.path
+            // if(path.length>2){
+            //     let i = path.length-1
+            //     let c = circleDefinedBy3Points(path[i-2].x,path[i-2].y,path[i-1].x,path[i-1].y,path[i].x,path[i].y)
+            //     console.log(c)
+            // }
+        }
+        this.moveEvent.active = false
+        this.moveEvent.moved = false
+        // console.log(this.toLatlng(this.client2coord({x:e.clientX,y:e.clientY})))
+        e.target.style.cursor = 'grab'
+    }
+    handleDblclick(e){
+        this.drawEvent.path.pop()
+        this.drawEvent.active = false
+    }
+    handleMouseleave(e){
+        this.moveEvent.active = false
+        e.target.style.cursor = 'grab'
+    }
+    handleWheel(e){
+        var view = this.view
+        var delta = this.zoomEvent.delta
+        var frames = this.zoomEvent.frames
+        var newZoom = this.zoomEvent.after - Math.sign(e.deltaY)*delta
+        newZoom = this.minmax(newZoom,view.minZoom,view.maxZoom)
+        var dz = Math.floor(view.zoom)-Math.floor(newZoom)
+        this.zoomEvent = {
+            x: e.clientX,
+            y: e.clientY,
+            before: view.zoom,
+            after: newZoom,
+            t: frames,
+            frames, 
+            delta,
+            dz
+        }
+    }
+    handleResize(){
+        var rect = this.canvas.getBoundingClientRect()
+        this.canvas.height = rect.height
+        this.canvas.width = rect.width
+        this.view.w = rect.width
+        this.view.h = rect.height
+        this.updateView()
     }
     updateView(){
         var world = this.world,
@@ -383,7 +400,6 @@ class GisMap{
             // this.ctx.fillText(tile.x+','+tile.y+','+tile.z, ax, ay)
             // this.ctx.strokeRect(ax,ay,tp.w*t,tp.h*t)
         })
-                
         // console.log(minX+'~'+maxX+', '+minY+'~'+maxY)
         this.ctx.stroke()
     }
