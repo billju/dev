@@ -182,8 +182,8 @@ class GisMap{
             }
             if(this.zoomEvent.t>0){
                 var t = (this.zoomEvent.frames-this.zoomEvent.t)/this.zoomEvent.frames
+                // ease function = { easeOutQuad: t => t*(2-t) }
                 var dt = (2-2*t)/this.zoomEvent.frames
-                // ease function t = t<.5 ? 2*t*t : -1+(4-2*t)*t 
                 this.zoomEvent.t--
                 var dz = (this.zoomEvent.after-this.zoomEvent.before)*dt
                 var coord = this.client2coord({x:this.zoomEvent.x, y:this.zoomEvent.y})

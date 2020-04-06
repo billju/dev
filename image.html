@@ -51,12 +51,15 @@ var canvas = document.getElementById('canvas')
 var ctx = canvas.getContext('2d')
 var img = new Image()
 
-async function segment(){
+function testTfjs(){
     img.src = 'static/image/girl.jpg'
     img.onload = ()=>{
         resize()
         ctx.drawImage(img,0,0,canvas.width,canvas.height)
+        segment()
     }
+}
+async function segment(){
     // const net = await cocoSsd.load()
     // const predictions = net.detect(img)
     const net = await bodyPix.load({

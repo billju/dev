@@ -3,20 +3,22 @@ class ImageShape{
         this.img = img
         this.gismap = gismap
         this.gisCoords = null
-        //
+        // edit
         this.editing = false
         this.editable = true
-        //
+        // style
+        this.opacity = 1
+        // frame
+        this.bbox = []
         this.initCoords = []
         this.coords = this.getImageBounds(img,cx,cy)
-        this.bbox = []
         this.initFrame = {x:cx,y:cy,w:img.width,h:img.height,r:0}
         this.frame = {}
         this.anchor = {}
-        this.controllerRadius = 10
+        this.bufferRadius = 10
         this.event = {
             type:null,
-            target:{x:0,y:0},
+            point:{x:0,y:0},
             radian:0, 
             shiftKey:false,
             ctrlKey:false,
@@ -27,14 +29,14 @@ class ImageShape{
     }
     initiate(){
         this.initCoords = this.coords.map(c=>c.slice())
-        this.bbox = this.getBbox(this.coords)
-        // this.initFrame = {
-        //     x: (this.bbox[0]+this.bbox[2])/2,
-        //     y: (this.bbox[1]+this.bbox[3])/2,
-        //     w: this.bbox[2]-this.bbox[0],
-        //     h: this.bbox[3]-this.bbox[1],
-        //     r: 0//radian
-        // }
+        this.updateBbox()
+        this.initFrame = {
+            x: (this.bbox[0]+this.bbox[2])/2,
+            y: (this.bbox[1]+this.bbox[3])/2,
+            w: this.bbox[2]-this.bbox[0],
+            h: this.bbox[3]-this.bbox[1],
+            r: 0//radian
+        }
         this.frame = Object.assign({},this.initFrame)
         this.updateAnchor()
         if(this.gismap){
@@ -42,9 +44,9 @@ class ImageShape{
         }
     }
     checkImageOnload(){
-        if(!img.complete){
-            img.onload = ()=>{
-                this.coords = this.getImageBounds(img,this.frame.x,this.frame.y)
+        if(!this.img.complete){
+            this.img.onload = ()=>{
+                this.coords = this.getImageBounds(this.img,this.frame.x,this.frame.y)
                 this.initiate()
             }
         }
@@ -54,6 +56,7 @@ class ImageShape{
             var c = this.gismap.coord2client(coord)
             return [c.x,c.y]
         })
+        this.updateBbox()
         let Wdx =  this.coords[0][0]-this.coords[1][0]
         let Wdy =  this.coords[0][1]-this.coords[1][1]
         let Hdx =  this.coords[1][0]-this.coords[2][0]
@@ -83,19 +86,14 @@ class ImageShape{
         ]
     }
     contains(p){
-        var isContain = false,
-            xArr = this.coords.map(c=>c[0]),
-            yArr = this.coords.map(c=>c[1]),
-            minX = Math.min(...xArr),
-            minY = Math.min(...yArr),
-            maxX = Math.max(...xArr),
-            maxY = Math.max(...yArr)
+        var isContain = false
+        var [minX, minY, maxX, maxY] = this.bbox
         if (p[0] < minX || p[0] > maxX || p[1] < minY || p[1] > maxY) {
             return false;
         }
         for(var i=0, j=this.coords.length-1; i<this.coords.length; j=i++) {
-            var p1 = this.coords[j],
-                p2 = this.coords[i]
+            var p1 = this.coords[j]
+            var p2 = this.coords[i]
             if(
                 (p2[1] > p[1]) != (p1[1] > p[1]) &&
                 (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
@@ -110,6 +108,8 @@ class ImageShape{
         ctx.save()
         ctx.translate(x,y)
         ctx.rotate(-r)
+        ctx.scale(this.event.verticalFlip?-1:1,1)
+        ctx.globalAlpha = this.opacity
         ctx.drawImage(img,-w/2,-h/2,w,h)
         ctx.restore()
         if(this.editing){
@@ -123,31 +123,29 @@ class ImageShape{
             y: vector.x*Math.sin(radian)+vector.y*Math.cos(radian)
         }
     }
-    add(v1,v2){
-        return {x:v1.x+v2.x,y:v1.y+v2.y}
-    }
-    getBbox(coords){
-        var xArr = coords.map(c=>c[0]),
-            yArr = coords.map(c=>c[1])
-        return [
+    updateBbox(){
+        var xArr = this.coords.map(c=>c[0])
+        var yArr = this.coords.map(c=>c[1])
+        this.bbox =  [
             Math.min(...xArr),
             Math.min(...yArr),
             Math.max(...xArr),
-            Math.max(...yArr),
+            Math.max(...yArr)
         ]
     }
     updateAnchor(){
         var {x,y,w,h,r} = this.frame
+        var add = (v1,v2)=>({x:v1.x+v2.x,y:v1.y+v2.y})
         this.anchor = {
-            RO: this.add({x,y},this.rotate({x:0,y:-h/2-30},r)),
-            LT: this.add({x,y},this.rotate({x:-w/2,y:-h/2},r)),
-            T: this.add({x,y},this.rotate({x:0,y:-h/2},r)),
-            RT: this.add({x,y},this.rotate({x:w/2,y:-h/2},r)),
-            R: this.add({x,y},this.rotate({x:w/2,y:0},r)),
-            RB: this.add({x,y},this.rotate({x:w/2,y:h/2},r)),
-            B: this.add({x,y},this.rotate({x:0,y:h/2},r)),
-            LB: this.add({x,y},this.rotate({x:-w/2,y:h/2},r)),
-            L: this.add({x,y},this.rotate({x:-w/2,y:0},r)),
+            RO: add({x,y},this.rotate({x:0,y:-h/2-30},r)),
+            LT: add({x,y},this.rotate({x:-w/2,y:-h/2},r)),
+            T: add({x,y},this.rotate({x:0,y:-h/2},r)),
+            RT: add({x,y},this.rotate({x:w/2,y:-h/2},r)),
+            R: add({x,y},this.rotate({x:w/2,y:0},r)),
+            RB: add({x,y},this.rotate({x:w/2,y:h/2},r)),
+            B: add({x,y},this.rotate({x:0,y:h/2},r)),
+            LB: add({x,y},this.rotate({x:-w/2,y:h/2},r)),
+            L: add({x,y},this.rotate({x:-w/2,y:0},r)),
         }   
     }
     updateCoords(){
@@ -182,31 +180,31 @@ class ImageShape{
                 var dx = e.clientX-this.anchor[key].x
                 var dy = this.anchor[key].y-e.clientY
                 var dis = Math.sqrt(dx*dx+dy*dy)
-                if(dis<this.controllerRadius){
+                if(dis<this.bufferRadius){
                     switch(key){
                         case 'LT':
                             this.event.sign = {x:-1,y:1}
                             this.event.radian = Math.atan2(h,-w)
-                            this.event.target = this.anchor['RB'];break;
+                            this.event.point = this.anchor['RB'];break;
                         case 'T':
-                            this.event.target = this.anchor['B'];break;
+                            this.event.point = this.anchor['B'];break;
                         case 'RT':
                             this.event.radian = Math.atan2(-h,-w)
-                            this.event.target = this.anchor['LB'];break;
+                            this.event.point = this.anchor['LB'];break;
                         case 'R':
-                            this.event.target = this.anchor['L'];break;
+                            this.event.point = this.anchor['L'];break;
                         case 'RB':
                             this.event.radian = Math.atan2(-h,w)
-                            this.event.target = this.anchor['LT'];break;
+                            this.event.point = this.anchor['LT'];break;
                         case 'B':
-                            this.event.target = this.anchor['T'];break;
+                            this.event.point = this.anchor['T'];break;
                         case 'LB':
                             this.event.radian = Math.atan2(h,w)
-                            this.event.target = this.anchor['RT'];break;
+                            this.event.point = this.anchor['RT'];break;
                         case 'L':
-                            this.event.target = this.anchor['R'];break;
+                            this.event.point = this.anchor['R'];break;
                         case 'RO':
-                            this.event.target = {x,y};break;
+                            this.event.point = {x,y};break;
                         default: break;
                     }
                     this.event.type = key
@@ -217,7 +215,7 @@ class ImageShape{
         if(this.contains([e.clientX,e.clientY],this.coords)){
             this.editing = true
             this.event.type = 'M'
-            this.event.target = {x:e.clientX,y:e.clientY}
+            this.event.point = {x:e.clientX,y:e.clientY}
             return true
         }
     }
@@ -231,8 +229,8 @@ class ImageShape{
                 dr = Math.atan2(dy,dx)
                 dis = 2*Math.sqrt(dx*dx+dy*dy)
             }else{
-                dx = e.clientX-this.event.target.x
-                dy = this.event.target.y-e.clientY
+                dx = e.clientX-this.event.point.x
+                dy = this.event.point.y-e.clientY
                 dr = Math.atan2(dy,dx)
                 dis = Math.sqrt(dx*dx+dy*dy)
             }
@@ -245,10 +243,10 @@ class ImageShape{
                     this.frame.r = dr-Math.PI/2
                 }
             }else if(this.event.type=='M'){
-                this.frame.x+= e.clientX-this.event.target.x
-                this.frame.y+= e.clientY-this.event.target.y
-                this.event.target.x = e.clientX
-                this.event.target.y = e.clientY
+                this.frame.x+= e.clientX-this.event.point.x
+                this.frame.y+= e.clientY-this.event.point.y
+                this.event.point.x = e.clientX
+                this.event.point.y = e.clientY
             }else{
                 var pw = dis*Math.cos(dr-r)
                 var ph = dis*Math.sin(dr-r)
@@ -272,8 +270,8 @@ class ImageShape{
                     vToC = this.rotate({x:0,y:-ph/2},r)
                 }
                 if(!this.event.ctrlKey){
-                    this.frame.x = this.event.target.x+vToC.x
-                    this.frame.y = this.event.target.y+vToC.y
+                    this.frame.x = this.event.point.x+vToC.x
+                    this.frame.y = this.event.point.y+vToC.y
                 }
                 var shouldHorizontalFlip = 
                     (Math.sin(dr-r)>0&&['RB','B','LB'].includes(this.event.type)) ||
@@ -298,7 +296,7 @@ class ImageShape{
             }
             this.updateAnchor()
             this.updateCoords()
-            this.bbox = this.getBbox(this.coords)
+            this.updateBbox()
         }
     }
     handleMouseup(e){

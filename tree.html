@@ -29,7 +29,7 @@ i{
 }
 </style>
 <script>
-    class Task{
+    class Treeview{
         constructor(root){
             this.level = -1
             this.parent = null
@@ -72,17 +72,17 @@ i{
                 this.childWrapper = document.createElement('div')
                 this.container.appendChild(this.childWrapper)
             }
-            var newTask = new Task()
-            newTask.level = this.level+1
-            newTask.parent = this
-            newTask.content = content||newTask.createContent()
-            newTask.container.appendChild(newTask.content)
-            this.children.push(newTask)
-            this.childWrapper.appendChild(newTask.container)
+            var newTreeview = new Treeview()
+            newTreeview.level = this.level+1
+            newTreeview.parent = this
+            newTreeview.content = content||newTreeview.createContent()
+            newTreeview.container.appendChild(newTreeview.content)
+            this.children.push(newTreeview)
+            this.childWrapper.appendChild(newTreeview.container)
             if(this.parent){
-                this.expand(newTask.container.clientHeight)
+                this.expand(newTreeview.container.clientHeight)
             }
-            return newTask
+            return newTreeview
         }
         remove(){
             if(this.parent){
@@ -141,7 +141,7 @@ i{
             return result
         }
     }
-    var root = new Task(document.getElementById('treeview'))
+    var root = new Treeview(document.getElementById('treeview'))
     root.appendChild().appendChild()
     root.appendChild().appendChild()
 
@@ -161,28 +161,5 @@ i{
         document.body.appendChild(div)
         return div
     }
-
-function xml_string_to_json(xmlstr) {
-    let parser = new DOMParser();
-    let srcDOM = parser.parseFromString(xmlstr, "application/xml");
-    function xml2json(srcDOM) {
-        let children = [...srcDOM.children];
-        if (!children.length) { return srcDOM.innerHTML } 
-        let jsonResult = {};
-        for (let child of children) {
-            let childIsArray = children.filter(eachChild => eachChild.nodeName === child.nodeName).length > 1;
-            if (childIsArray) {
-                if (jsonResult[child.nodeName] === undefined) {
-                    jsonResult[child.nodeName] = [xml2json(child)];
-                } else {
-                    jsonResult[child.nodeName].push(xml2json(child));
-                }
-            } else {
-                jsonResult[child.nodeName] = xml2json(child);
-            }
-        }
-        return jsonResult;
-    }
-};
 </script>
 </html>

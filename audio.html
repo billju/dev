@@ -31,6 +31,9 @@ class Visualizer{
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
         this.analyser = this.audioContext.createAnalyser()
     }
+    audiotrack(){
+
+    }
     oscilloscope(){
         var canvas = document.getElementById('canvas')
         var ctx = canvas.getContext('2d')
@@ -89,7 +92,16 @@ class Visualizer{
         }
     }
 }
-
+class AudioPlayer{
+    constructor(){
+        this.audio = new Audio()
+    }
+    rewind(offset){
+        var t = this.audio.currentTime+offset
+        var duration = this.audio.duration
+        this.audio.currentTime = t<0?0:t>duration?duration:t
+    }
+}
 var audio = new Audio()
 var range = document.getElementById('range')
 function handleDrop(e){
