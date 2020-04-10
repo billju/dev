@@ -29,7 +29,7 @@ function renderMathsExpression (expr) {
     try {
       html = katex.renderToString(expr)
     } catch (e) {
-      console.err(e)
+      // console.error(e)
     }
     if (displayStyle && html) {
       html = html.replace(/class="katex"/g, 'class="katex katex-block" style="display: block;"')
