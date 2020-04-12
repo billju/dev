@@ -16,6 +16,7 @@ class ImageShape{
         this.frame = {}
         this.anchor = {}
         this.bufferRadius = 10
+        this.isVerticalFlipped = false
         this.event = {
             type:null,
             point:{x:0,y:0},
@@ -108,7 +109,7 @@ class ImageShape{
         ctx.save()
         ctx.translate(x,y)
         ctx.rotate(-r)
-        ctx.scale(this.event.verticalFlip?-1:1,1)
+        ctx.scale(this.isVerticalFlipped?-1:1,1)
         ctx.globalAlpha = this.opacity
         ctx.drawImage(img,-w/2,-h/2,w,h)
         ctx.restore()
@@ -171,6 +172,7 @@ class ImageShape{
         this.initCoords.map((coord,i)=>{
             this.initCoords[i][0] = 2*this.initFrame.x-coord[0]
         })
+        this.isVerticalFlipped = !this.isVerticalFlipped
     }
     handleMousedown(e){
         var {x,y,w,h,r} = this.frame
@@ -279,17 +281,11 @@ class ImageShape{
                 if(shouldHorizontalFlip){
                     this.frame.r+= Math.PI
                 }
-                var shouldVerticalFlip = false
-                if(this.event.verticalFlip){
-                    shouldVerticalFlip = 
-                        (Math.cos(dr-r)>0&&['RT','R','RB'].includes(this.event.type))||
-                        (Math.cos(dr-r)<0&&['LT','L','LB'].includes(this.event.type))
-                }else{
-                    shouldVerticalFlip = 
-                        (Math.cos(dr-r)<0&&['RT','R','RB'].includes(this.event.type))||
-                        (Math.cos(dr-r)>0&&['LT','L','LB'].includes(this.event.type))
-                }
-                if(shouldVerticalFlip||shouldHorizontalFlip){
+                var sign = this.event.verticalFlip?1:-1
+                var shouldVerticalFlip = 
+                    (Math.cos(dr-r)*sign>0&&['RT','R','RB'].includes(this.event.type))||
+                    (Math.cos(dr-r)*sign<0&&['LT','L','LB'].includes(this.event.type))
+                if(shouldVerticalFlip){
                     this.event.verticalFlip = !this.event.verticalFlip
                     this.verticalFlip()
                 }

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regression</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <label for="rate">playback rate</label>
+    <input id="rate" type="range" min="1" max="100" step="1" value="1">
+    <button onclick="restart()">restart</button>
+</body>
+<style>
+    html,body{
+        margin: 0;
+    }
+</style>
+<script>
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d')
+    canvas.width = canvas.style.width = 500
+    canvas.height = canvas.style.height = 500
+    class Vec{
+        constructor(arr){
+            this.v = arr
+            if(arr) this.length = arr.length
+        }
+        add(y){
+            let arr = y instanceof Vec?this.v.map((x,i)=>x+y.v[i]):this.v.map(x=>x+y)
+            return new Vec(arr)
+        }
+        sub(y){
+            let arr = y instanceof Vec?this.v.map((x,i)=>x-y.v[i]):this.v.map(x=>x-y)
+            return new Vec(arr)
+        }
+        mul(y){
+            let arr = y instanceof Vec?this.v.map((x,i)=>x*y.v[i]):this.v.map(x=>x*y)
+            return new Vec(arr)
+        }
+        div(y){
+            let arr = y instanceof Vec?this.v.map((x,i)=>x/y.v[i]):this.v.map(x=>x/y)
+            return new Vec(arr)
+        }
+        pow(y){
+            return new Vec(this.v.map(x=>Math.pow(x,y)))
+        }
+        sum(){
+            return this.v.reduce((acc,cur)=>acc+cur,0)
+        }
+        mean(){
+            return this.sum()/this.length
+        }
+        zero(size){
+            return new Vec(Array.from(Array(size),()=>0))
+        }
+        random(size){
+            return new Vec(Array.from(Array(size),()=>Math.random()))
+        }
+        range(min,max,step=1){
+            let length = Math.floor((max-min)/step)
+            return new Vec(Array.from(Array(length).keys(),i=>min+i*step))
+        }
+        norm(size){ //return a number between -1 and 1
+            function boxMuller(){
+                var u=0,v=0
+                while(u===0) u = Math.random()
+                while(v===0) v = Math.random()
+                var num = Math.sqrt(-2.0*Math.log(u))*Math.cos(2.0*Math.PI*v)
+                num/= Math.PI
+                if(num>1||num<-1) return boxMuller()
+                return num
+            }
+            return new Vec(Array.from(Array(size),()=>boxMuller()))
+        }
+    }
+    class Regressor{
+        constructor(){
+            this.lr = 1e-7
+            this.f = {
+                'linear': x=>x.mul(this.w).add(this.b),
+                'square': x=>x,
+                'cube': x=>x,
+                'quad': x=>x,
+            }
+        }
+        fit(x,y){
+            this.x = x
+            this.yHat = y
+            this.w = Math.random()
+            this.b = Math.random()
+        }
+        predict(x){
+            return x.mul(this.w).add(this.b)
+        }
+        gradientDecent(){
+            let y = this.predict(this.x)
+            let diff = this.yHat.sub(y)
+            let loss = diff.pow(2).mean()
+            let dldw = diff.mul(-2).mul(this.x).sum()
+            let dldb = diff.mul(-2).sum()
+            this.w-= dldw*this.lr
+            this.b-= dldb*this.lr*1000
+            return {loss, dldw, dldb}
+        }
+    }
+    var data = {length:100}
+    data.x = new Vec().random(data.length).mul(500)
+    data.b = new Vec().random(data.length).mul(150).sub(25)
+    data.y = new Vec().norm(data.length).add(1).mul(250)//data.x.mul(Math.random()*2).pow(0.7).add(data.b).add(100)
+    var reg = new Regressor()
+    reg.fit(data.x,data.y)
+    var rate = 1, iteration = 0
+    document.getElementById('rate').oninput = e=>{
+        rate = e.target.value
+    }
+    function restart(){
+        iteration = 0
+        data = {length:100}
+        data.x = new Vec().random(data.length).mul(500)
+        data.b = new Vec().random(data.length).mul(50).sub(25)
+        data.y = data.x.mul(Math.random()*2).add(data.b).add(100)
+        reg.fit(data.x,data.y)
+    }
+    function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height)
+        data.x.v.map((x,i)=>{
+            let y = data.y.v[i]
+            ctx.beginPath()
+            ctx.arc(x,canvas.height-y,2,0,Math.PI*2,false)
+            ctx.fill()
+            ctx.closePath()
+        })
+        let testX = new Vec().range(1,500)
+        let testY = reg.predict(testX)
+        ctx.beginPath()
+        testX.v.map((x,i)=>{
+            if(i==0){
+                ctx.moveTo(x,canvas.height-testY.v[i])
+            }else{
+                ctx.lineTo(x,canvas.height-testY.v[i])
+            }
+        })
+        ctx.stroke()
+        ctx.closePath()
+        for(let r=0;r<rate;r++){
+            var gd = reg.gradientDecent()
+            iteration++
+        }
+        ctx.fillText(gd.loss,10,10)
+        ctx.fillText(iteration,10,20)
+        window.requestAnimationFrame(draw)
+        // setTimeout(draw,1000)
+    }
+    draw()
+</script>
+</html>

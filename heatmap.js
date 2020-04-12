@@ -1,4 +1,4 @@
-class HeatCanvas{
+class Heatmap{
     constructor(canvas){
         this.canvas = canvas
         this.counter = {}
@@ -44,14 +44,28 @@ class HeatCanvas{
         rgba[3] = a * 255;
         return rgba;
     }
+    bresenham(cx,cy,r){
+        let x=r,y=0,d=1-r
+        let pixels = []
+        while(x>=y){
+            y++
+            if(d<0){
+                d = d+2*y+1
+            }else{
+                x--
+                d = d+2*(y-x)+1
+            }
+            pixels.push([cx+x,cy+y])
+        }
+        return pixels
+    }
     draw(step,pow){
         var counter = {}
         var ctx = this.canvas.getContext('2d')
-        var maxValue = Math.max(...Object.value(this.counter))||0
         ctx.clearRect(0,0,this.canvas.width, this.canvas.height)
         for(let i in this.counter){
             let value = this.counter[i]
-            let radius = Math.fllor(Math.pow(value/step,1/pow))
+            let radius = Math.floor(Math.pow(value/step,1/pow))
             let x = Math.floor(i%this.canvas.width)
             let y = Math.floor(i/this.canvas.width)
             // calculate point x.y 
@@ -76,6 +90,7 @@ class HeatCanvas{
             }
         }
         var imageData = ctx.createImageData(this.canvas.width, this.canvas.height)
+        var maxValue = Math.max(...Object.values(counter))||0
         for (var i=0; i<imageData.data.length; i+=4){
             let normValue = counter[i]/maxValue
             let rgba = isNaN(normValue)?[0,0,0,255]:this.hsla2rgba(this.value2hsla(normValue))
