@@ -224,10 +224,7 @@ class GisMap{
             }
             // draw tiles
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
-            if(Math.abs(this.zoomEvent.dz)>0){
-                this.getXYZ(this.zoomEvent.dz)
-            }
-            this.getXYZ(0)
+            this.renderTiles()
             this.renderDraw()
             this.canvas.dispatchEvent(new CustomEvent('render',{}))
         }
@@ -380,55 +377,98 @@ class GisMap{
     minmax(input,min,max){
         return input<min?min:input>max?max:input
     }
-    getXYZ(dz){
-        dz = dz||0
-        var view = this.view,
-            squ = Math.pow(2,(view.zoom+dz)>>0),
-            world = this.world,
-            minX = Math.floor( (view.bbox[0]-world.bbox[0])*squ/world.w ),
-            minY = Math.floor( -(view.bbox[3]-world.bbox[3])*squ/world.h ),
-            maxX = Math.ceil( (view.bbox[2]-world.bbox[0])*squ/world.w ),
-            maxY = Math.ceil( -(view.bbox[1]-world.bbox[3])*squ/world.h ),
-            tp = this.tilePixel,
-            z = (view.zoom+dz)>>0,
-            origin = {
-                x: (world.bbox[0]-view.bbox[0])/world.w*tp.w*Math.pow(2,view.zoom),
-                y: -(world.bbox[3]-view.bbox[3])/world.h*tp.h*Math.pow(2,view.zoom)
-            }
-            minX = this.minmax(minX,0,squ-1)
-            maxX = this.minmax(maxX,0,squ-1)
-            minY = this.minmax(minY,0,squ-1)
-            maxY = this.minmax(maxY,0,squ-1)
-        var url = 'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}'    
-        var tiles = [], cx = (maxX+minX)/2, cy=(maxY+minY)/2
-        for(var x=minX;x<=maxX;x++){
-            for(var y=minY;y<=maxY;y++){
-                tiles.push({x,y,z})
-            }
+    renderGrids(dz){
+        const tp = this.tilePixel, world = this.world, view = this.view
+        const origin = {
+            x: (world.bbox[0]-view.bbox[0])/world.w*tp.w*Math.pow(2,view.zoom),
+            y: -(world.bbox[3]-view.bbox[3])/world.h*tp.h*Math.pow(2,view.zoom)
         }
+        this.getXYZ(view.zoom+dz).tiles.map(tile=>{
+            let scale = Math.pow(2,view.zoom-tile.z)
+            let W = tp.w*scale
+            let H = tp.h*scale
+            let X = origin.x+tile.x*W
+            let Y = origin.y+tile.y*H
+            this.ctx.lineWidth = 1
+            this.ctx.strokeRect(X,Y,W,H)
+            this.ctx.stroke()
+        })
+    }
+    renderTiles(url){
+        url = url||'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}'
+        // url = url||'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        const tp = this.tilePixel, world = this.world, view = this.view
+        const origin = {
+            x: (world.bbox[0]-view.bbox[0])/world.w*tp.w*Math.pow(2,view.zoom),
+            y: -(world.bbox[3]-view.bbox[3])/world.h*tp.h*Math.pow(2,view.zoom)
+        }
+        var z = Math.floor(view.zoom)
+        var {tiles, minX, minY, maxX, maxY} = this.getXYZ(z)
+        // load tiles
         if(!(z in this.tiles)){
             this.tiles[z] = {}
         }
-        tiles.sort((a,b)=>{
-            var da = Math.abs(a.x-cx)+Math.abs(a.y-cy)
-            var db = Math.abs(b.x-cx)+Math.abs(b.y-cy)
-            return da-db
-        }).map(tile=>{
-            var t = Math.pow(2,view.zoom%1-dz)
-            var ax = origin.x+tile.x*tp.w*t
-            var ay = origin.y+tile.y*tp.h*t
-            var src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
+        tiles.map(tile=>{
+            let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
             if(!(src in this.tiles[tile.z])){
                 var img = new Image()
                 img.src = src
                 this.tiles[tile.z][src] = img
             }
-            this.ctx.drawImage(this.tiles[tile.z][src],ax,ay,tp.w*t,tp.h*t)
-            // this.ctx.fillText(tile.x+','+tile.y+','+tile.z, ax, ay)
-            // this.ctx.strokeRect(ax,ay,tp.w*t,tp.h*t)
         })
-        // console.log(minX+'~'+maxX+', '+minY+'~'+maxY)
-        this.ctx.stroke()
+        // find loaded images
+        var tilesNotLoaded = tiles
+        var tilesLoaded = []
+        while(tilesNotLoaded.length&&z>=view.minZoom){
+            tilesNotLoaded = tilesNotLoaded.filter(tile=>{
+                if(!this.tiles[tile.z]) return false
+                let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
+                if(!this.tiles[tile.z][src]) return false
+                let isComplete = this.tiles[tile.z][src].complete
+                if(isComplete){tilesLoaded.unshift(tile)}
+                return !isComplete
+            })
+            let unique = {}
+            for(let tile of tilesNotLoaded){
+                tile.x = Math.ceil(tile.x/2)
+                tile.y = Math.ceil(tile.y/2)
+                tile.z--
+                unique[tile.x+'-'+tile.y+'-'+tile.z] = tile
+            }
+            tilesNotLoaded = Object.values(unique)
+            z--
+        }
+        tilesLoaded.map(tile=>{
+            var scale = Math.pow(2,view.zoom-tile.z)
+            let W = tp.w*scale
+            let H = tp.h*scale
+            let X = origin.x+tile.x*W
+            let Y = origin.y+tile.y*H
+            let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
+            let img = this.tiles[tile.z][src]
+            this.ctx.drawImage(img,X,Y,W,H)
+        })
+    }
+    getXYZ(z){
+        z = Math.floor(z||this.view.zoom)
+        var view = this.view,
+            squ = Math.pow(2,z),
+            world = this.world,
+            minX = Math.floor( (view.bbox[0]-world.bbox[0])*squ/world.w ),
+            minY = Math.floor( -(view.bbox[3]-world.bbox[3])*squ/world.h ),
+            maxX = Math.ceil( (view.bbox[2]-world.bbox[0])*squ/world.w ),
+            maxY = Math.ceil( -(view.bbox[1]-world.bbox[3])*squ/world.h ),
+            tiles = []
+        minX = this.minmax(minX,0,squ-1)
+        maxX = this.minmax(maxX,0,squ-1)
+        minY = this.minmax(minY,0,squ-1)
+        maxY = this.minmax(maxY,0,squ-1)
+        for(var x=minX;x<=maxX;x++){
+            for(var y=minY;y<=maxY;y++){
+                tiles.push({x,y,z})
+            }
+        }
+        return {tiles, minX, minY, maxX, maxY}
     }
     toCoord(latlng) {
         var d = Math.PI / 180,

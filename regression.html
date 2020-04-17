@@ -21,29 +21,30 @@
     const ctx = canvas.getContext('2d')
     canvas.width = canvas.style.width = 500
     canvas.height = canvas.style.height = 500
-    class Vec{
+    class Matrix{
         constructor(arr){
             this.v = arr
             if(arr) this.length = arr.length
         }
+        valueOf(){return this.v}
         add(y){
-            let arr = y instanceof Vec?this.v.map((x,i)=>x+y.v[i]):this.v.map(x=>x+y)
-            return new Vec(arr)
+            let arr = y instanceof Matrix?this.v.map((x,i)=>x+y.v[i]):this.v.map(x=>x+y)
+            return new Matrix(arr)
         }
         sub(y){
-            let arr = y instanceof Vec?this.v.map((x,i)=>x-y.v[i]):this.v.map(x=>x-y)
-            return new Vec(arr)
+            let arr = y instanceof Matrix?this.v.map((x,i)=>x-y.v[i]):this.v.map(x=>x-y)
+            return new Matrix(arr)
         }
         mul(y){
-            let arr = y instanceof Vec?this.v.map((x,i)=>x*y.v[i]):this.v.map(x=>x*y)
-            return new Vec(arr)
+            let arr = y instanceof Matrix?this.v.map((x,i)=>x*y.v[i]):this.v.map(x=>x*y)
+            return new Matrix(arr)
         }
         div(y){
-            let arr = y instanceof Vec?this.v.map((x,i)=>x/y.v[i]):this.v.map(x=>x/y)
-            return new Vec(arr)
+            let arr = y instanceof Matrix?this.v.map((x,i)=>x/y.v[i]):this.v.map(x=>x/y)
+            return new Matrix(arr)
         }
         pow(y){
-            return new Vec(this.v.map(x=>Math.pow(x,y)))
+            return new Matrix(this.v.map(x=>Math.pow(x,y)))
         }
         sum(){
             return this.v.reduce((acc,cur)=>acc+cur,0)
@@ -52,14 +53,14 @@
             return this.sum()/this.length
         }
         zero(size){
-            return new Vec(Array.from(Array(size),()=>0))
+            return new Matrix(Array.from(Array(size),()=>0))
         }
         random(size){
-            return new Vec(Array.from(Array(size),()=>Math.random()))
+            return new Matrix(Array.from(Array(size),()=>Math.random()))
         }
         range(min,max,step=1){
             let length = Math.floor((max-min)/step)
-            return new Vec(Array.from(Array(length).keys(),i=>min+i*step))
+            return new Matrix(Array.from(Array(length).keys(),i=>min+i*step))
         }
         norm(size){ //return a number between -1 and 1
             function boxMuller(){
@@ -71,58 +72,109 @@
                 if(num>1||num<-1) return boxMuller()
                 return num
             }
-            return new Vec(Array.from(Array(size),()=>boxMuller()))
+            return new Matrix(Array.from(Array(size),()=>boxMuller()))
         }
     }
     class Regressor{
-        constructor(){
-            this.lr = 1e-7
-            this.f = {
-                'linear': x=>x.mul(this.w).add(this.b),
-                'square': x=>x,
-                'cube': x=>x,
+        constructor(kernal='linear'){
+            function norm(){ //return a number between -1 and 1
+                var u=0,v=0
+                while(u===0) u = Math.random()
+                while(v===0) v = Math.random()
+                var num = Math.sqrt(-2.0*Math.log(u))*Math.cos(2.0*Math.PI*v)
+                num/= Math.PI
+                if(num>1||num<-1) return boxMuller()
+                return num
+            }
+            
+            const model = {
+                'linear': {
+                    w1: norm(), b: norm(),
+                    gradients: {
+                        w1: diff=>diff.mul(-2).mul(this.x).sum(),
+                        b: diff=>diff.mul(-2).sum()
+                    },
+                    learningRate: {
+                        w1: 1e-9,
+                        b: 1e-5,
+                    },
+                    f: x=>x.mul(this.w1).add(this.b)
+                },
+                'square': {
+                    w1: norm(), w2: norm(), b: norm(),
+                    gradients: {
+                        w1: diff=>diff.mul(-2).mul(this.x).sum(),
+                        w2: diff=>diff.mul(-2).mul(this.x.pow(2)).sum(),
+                        b: diff=>diff.mul(-2).sum()
+                    },
+                    learningRate: {
+                        w1: 1e-9,
+                        w2: 1e-13,
+                        b: 1e-5
+                    },
+                    f: x=>x.mul(this.w1).add(x.pow(2).mul(this.w2)).add(this.b)
+                },
+                'cube': {
+                    w1: norm(), w2: norm(), w3: norm()*1e-5, b: norm(),
+                    gradients: {
+                        w1: diff=>diff.mul(-2).mul(this.x).sum(),
+                        w2: diff=>diff.mul(-2).mul(this.x.pow(2)).sum(),
+                        w3: diff=>diff.mul(-2).mul(this.x.pow(3)).sum(),
+                        b: diff=>diff.mul(-2).sum()
+                    },
+                    learningRate: {
+                        w1: 1e-9,
+                        w2: 1e-13,
+                        w3: 1e-18,
+                        b: 1e-5
+                    },
+                    f: x=>x.mul(this.w1)
+                        .add(x.pow(2).mul(this.w2))
+                        .add(x.pow(3).mul(this.w3))
+                        .add(this.b)
+                },
                 'quad': x=>x,
             }
+            Object.assign(this,model[kernal]) 
         }
         fit(x,y){
             this.x = x
             this.yHat = y
-            this.w = Math.random()
-            this.b = Math.random()
         }
         predict(x){
-            return x.mul(this.w).add(this.b)
+            return this.f(x)
+        }
+        regularzer(){
+            let lambda = 0.1
+            return lambda*this.w*this.w
         }
         gradientDecent(){
             let y = this.predict(this.x)
-            let diff = this.yHat.sub(y)
+            let diff = this.yHat.sub(y)//.add(this.regularizer())
             let loss = diff.pow(2).mean()
-            let dldw = diff.mul(-2).mul(this.x).sum()
-            let dldb = diff.mul(-2).sum()
-            this.w-= dldw*this.lr
-            this.b-= dldb*this.lr*1000
-            return {loss, dldw, dldb}
+            let params = {}
+            for(let param in this.gradients){
+                let gradient = this.gradients[param](diff)
+                this[param]-= gradient*this.learningRate[param]
+                params['dld'+param] = gradient
+                params[param] = this.param
+            }
+            return {loss, ...params}
         }
     }
-    var data = {length:100}
-    data.x = new Vec().random(data.length).mul(500)
-    data.b = new Vec().random(data.length).mul(150).sub(25)
-    data.y = new Vec().norm(data.length).add(1).mul(250)//data.x.mul(Math.random()*2).pow(0.7).add(data.b).add(100)
-    var reg = new Regressor()
-    reg.fit(data.x,data.y)
+    var data = {length:250, imgData:{}}
+    var reg = new Regressor('cube')
+    restart()
     var rate = 1, iteration = 0
     document.getElementById('rate').oninput = e=>{
         rate = e.target.value
     }
     function restart(){
         iteration = 0
-        data = {length:100}
-        data.x = new Vec().random(data.length).mul(500)
-        data.b = new Vec().random(data.length).mul(50).sub(25)
+        data.x = new Matrix().random(data.length).mul(500)
+        data.b = new Matrix().random(data.length).mul(50).sub(25)
         data.y = data.x.mul(Math.random()*2).add(data.b).add(100)
-        reg.fit(data.x,data.y)
-    }
-    function draw(){
+        // create image data
         ctx.clearRect(0,0,canvas.width,canvas.height)
         data.x.v.map((x,i)=>{
             let y = data.y.v[i]
@@ -131,7 +183,15 @@
             ctx.fill()
             ctx.closePath()
         })
-        let testX = new Vec().range(1,500)
+        data.imgData = ctx.getImageData(0,0,canvas.width,canvas.height)
+        // fit shape
+        reg.fit(data.x,data.y)
+    }
+    function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height)
+        ctx.putImageData(data.imgData,0,0)
+        
+        let testX = new Matrix().range(1,500)
         let testY = reg.predict(testX)
         ctx.beginPath()
         testX.v.map((x,i)=>{
