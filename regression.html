@@ -163,7 +163,7 @@
         }
     }
     var data = {length:250, imgData:{}}
-    var reg = new Regressor('cube')
+    var reg = new Regressor('square')
     restart()
     var rate = 1, iteration = 0
     document.getElementById('rate').oninput = e=>{
@@ -172,8 +172,8 @@
     function restart(){
         iteration = 0
         data.x = new Matrix().random(data.length).mul(500)
-        data.b = new Matrix().random(data.length).mul(50).sub(25)
-        data.y = data.x.mul(Math.random()*2).add(data.b).add(100)
+        // data.b = new Matrix().random(data.length).mul(50).sub(25)
+        data.y = new Matrix().random(data.length).mul(250*Math.random()).add(250)//data.x.mul(Math.random()*2).add(data.b).add(100)
         // create image data
         ctx.clearRect(0,0,canvas.width,canvas.height)
         data.x.v.map((x,i)=>{
@@ -209,6 +209,7 @@
         }
         ctx.fillText(gd.loss,10,10)
         ctx.fillText(iteration,10,20)
+        ctx.fillText('y='+reg.w1.toFixed(3)+' x +'+reg.b.toFixed(3),10,30)
         window.requestAnimationFrame(draw)
         // setTimeout(draw,1000)
     }

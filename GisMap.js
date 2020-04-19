@@ -419,7 +419,8 @@ class GisMap{
         // find loaded images
         var tilesNotLoaded = tiles
         var tilesLoaded = []
-        while(tilesNotLoaded.length&&z>=view.minZoom){
+        var sign = Math.sign(this.zoomEvent.dz)
+        while(tilesNotLoaded.length&&z>=view.minZoom&&z<=view.maxZoom){
             tilesNotLoaded = tilesNotLoaded.filter(tile=>{
                 if(!this.tiles[tile.z]) return false
                 let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
@@ -430,14 +431,15 @@ class GisMap{
             })
             let unique = {}
             for(let tile of tilesNotLoaded){
-                tile.x = Math.ceil(tile.x/2)
-                tile.y = Math.ceil(tile.y/2)
+                tile.x = Math.ceil(tile.x*Math.pow(2,sign))
+                tile.y = Math.ceil(tile.y*Math.pow(2,sign))
                 tile.z--
                 unique[tile.x+'-'+tile.y+'-'+tile.z] = tile
             }
             tilesNotLoaded = Object.values(unique)
-            z--
+            z+= sign
         }
+        console.log(sign)
         tilesLoaded.map(tile=>{
             var scale = Math.pow(2,view.zoom-tile.z)
             let W = tp.w*scale

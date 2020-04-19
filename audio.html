@@ -10,6 +10,7 @@
     <div id="drop-field" ondrop="handleDrop(event)" ondragover="event.preventDefault()">drop here</div>
     <canvas id="waveform"></canvas>
     <canvas id="canvas"></canvas>
+    <button onclick="player.play()">play</button>
     <div id="audio-control" style="width: 500px;height: 10px;background: #000;"></div>
 </body>
 <style>
@@ -99,7 +100,7 @@ class Visualizer{
         const audio = this.player.audio
         const getPeaks = this.getPeaks
         const peaks = [], peakWidth = 4, peakFPS = 20
-        var peakScrollRate = 1
+        var peakScrollRate = 10
         loop()
         function loop(){
             window.requestAnimationFrame(loop)
@@ -324,11 +325,6 @@ async function handleFile(file){
 class Encoder{
     constructor(){
 
-    }
-    encodeMP3(audioBuffer, smapleRate=44100, kbps=128){
-        let mp3encoder = new lamejs.Mp3Encoder(audioBuffer.numberOfChannels, smapleRate, kbps)
-        let mp3Data = mp3encoder.encodeBuffer(audioBuffer)
-        return new Blob(mp3Data)
     }
     encodeWAV(audioBuffer, smapleRate){
         const samples = interleave(audioBuffer)

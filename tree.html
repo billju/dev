@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TreeView</title>
     <link rel="stylesheet" href="css/fontawesome.css">
+    <link rel="stylesheet" href="css/bootstrap.css">
     <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"> -->
 </head>
 <body>
+    <textarea name="request" id="request-url"></textarea>
+    <button class="btn btn-primary" onclick="handleRequest()">send</button>
     <div id="treeview"></div>
 </body>
 <style>
@@ -29,6 +32,25 @@ i{
 }
 </style>
 <script>
+    function handleRequest(){
+        let url = document.getElementById('request-url').value
+        // fetch(url,{}).then(res=>res.json()).then(text=>{})
+        const xhr = new XMLHttpRequest()
+        xhr.open('GET',url)
+        xhr.setRequestHeader('user-agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64)')
+        xhr.send()
+        xhr.onload = ()=>{
+            xhr.responseText
+        }
+        // const formData = new FormData()
+        // formData.append('filename',file)
+        // xhr.open('POST','upload').send(formData)
+        // xhr.upload.onprogress = e=>{
+        //     if(e.lengthComputable){
+        //         e.loaded / e.total
+        //     }
+        // }
+    }
     class Treeview{
         constructor(root){
             this.level = -1
