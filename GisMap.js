@@ -189,7 +189,7 @@ class GisMap{
         this.canvas.height = rect.height
         this.canvas.width = rect.width
         this.ctx = canvas.getContext('2d')
-        this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5,dz:0}
+        this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5}
         this.moveEvent = {x:0,y:0,active:false,moved:false}
         this.drawEvent = {path:[],active:false}
         this.momentum = {x:0,y:0,t:0}
@@ -315,7 +315,6 @@ class GisMap{
         var frames = this.zoomEvent.frames
         var newZoom = this.zoomEvent.after - Math.sign(e.deltaY)*delta
         newZoom = this.minmax(newZoom,view.minZoom,view.maxZoom)
-        var dz = Math.floor(view.zoom)-Math.floor(newZoom)
         this.zoomEvent = {
             x: e.clientX,
             y: e.clientY,
@@ -323,8 +322,7 @@ class GisMap{
             after: newZoom,
             t: frames,
             frames, 
-            delta,
-            dz
+            delta
         }
     }
     handleResize(){
@@ -413,33 +411,34 @@ class GisMap{
             if(!(src in this.tiles[tile.z])){
                 var img = new Image()
                 img.src = src
+                
                 this.tiles[tile.z][src] = img
             }
         })
         // find loaded images
         var tilesNotLoaded = tiles
         var tilesLoaded = []
-        var sign = Math.sign(this.zoomEvent.dz)
+        var zStep = 1
         while(tilesNotLoaded.length&&z>=view.minZoom&&z<=view.maxZoom){
-            tilesNotLoaded = tilesNotLoaded.filter(tile=>{
-                if(!this.tiles[tile.z]) return false
-                let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
-                if(!this.tiles[tile.z][src]) return false
-                let isComplete = this.tiles[tile.z][src].complete
-                if(isComplete){tilesLoaded.unshift(tile)}
-                return !isComplete
-            })
             let unique = {}
-            for(let tile of tilesNotLoaded){
-                tile.x = Math.ceil(tile.x*Math.pow(2,sign))
-                tile.y = Math.ceil(tile.y*Math.pow(2,sign))
-                tile.z--
-                unique[tile.x+'-'+tile.y+'-'+tile.z] = tile
-            }
+            tilesNotLoaded = tilesNotLoaded.filter(tile=>{
+                let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
+                let loaded = this.tiles[z]?this.tiles[z][src]?this.tiles[z][src].complete:false:false
+                if(loaded){
+                    tilesLoaded.unshift(tile)
+                    return false
+                }else{
+                    tile.x = Math.floor(tile.x/Math.pow(2,zStep))
+                    tile.y = Math.floor(tile.y/Math.pow(2,zStep))
+                    tile.z-= zStep
+                    src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
+                    unique[src] = tile
+                    return true
+                }
+            })
             tilesNotLoaded = Object.values(unique)
-            z+= sign
+            z-= zStep
         }
-        console.log(sign)
         tilesLoaded.map(tile=>{
             var scale = Math.pow(2,view.zoom-tile.z)
             let W = tp.w*scale
@@ -449,6 +448,10 @@ class GisMap{
             let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
             let img = this.tiles[tile.z][src]
             this.ctx.drawImage(img,X,Y,W,H)
+        })
+        tilesLoaded.map((t,i)=>{
+            let text = t.x+'-'+t.y+'-'+t.z
+            this.ctx.fillText(text,10,10*i)
         })
     }
     getXYZ(z){

@@ -46,6 +46,16 @@ function copyToClipboard(element){
     selection.removeAllRanges()
     alert('copied')
 }
+function getSelectedNode()
+{
+    if (document.selection){
+        return document.selection.createRange().parentElement();
+    }else{
+        var selection = window.getSelection();
+        if (selection.rangeCount > 0)
+            return selection.getRangeAt(0).startContainer.parentNode;
+    }
+}
 
 var canvas = document.getElementById('canvas')
 var ctx = canvas.getContext('2d')

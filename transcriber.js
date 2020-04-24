@@ -1,37 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio</title>
-</head>
-<body>
-    <input type="file" onchange="handleFile(event.target.files[0])">
-    <div id="drop-field" ondrop="handleDrop(event)" ondragover="event.preventDefault()">drop here</div>
-    <canvas id="waveform"></canvas>
-    <canvas id="canvas"></canvas>
-    <button onclick="player.play()">play</button>
-    <div id="audio-control" style="width: 500px;height: 10px;background: #000;"></div>
-</body>
-<style>
-    html,body{
-        margin: 0;
-    }
-    #waveform{
-        width: 100%;
-        height: 50px;
-    }
-    #canvas{
-        width: 500px;
-        height: 200px;
-    }
-    #drop-field{
-        width: 50px;
-        height: 50px;
-        border: 1px solid #000;
-    }
-</style>
-<script>
 class Visualizer{
     constructor(player){
         this.player = player
@@ -42,43 +8,38 @@ class Visualizer{
     getFormatTime(time, format="hh:mm:ss"){
         const cT = time||this.player.audio.currentTime
         const ss = ('0'+~~(cT%60)).substr(-2)
-        const mm = ('0'+~~(cT/60)).substr(-2)
-        const hh = ('0'+~~(cT/3600)).substr(-2)
+        const mm = ('0'+~~(cT/60%60)).substr(-2)
+        const hh = ('0'+~~(cT/3600%24)).substr(-2)
         return format.replace('hh',hh).replace('mm',mm).replace('ss',ss)
     }
-    createController(container){
-        const bar = document.createElement('div')
-        // const getFormatTime = this.getFormatTime
-        container.innerHTML = ''
-        container.appendChild(bar)
+    createController(container,barElement,textElement){
         const audio = this.player.audio
-        bar.style.height = '100%'
-        bar.style.background = '#eee'
-        this.player.audio.addEventListener('time-update', ()=>{
-            if(!bar.active){
-                bar.style.width = container.clientWidth*audio.currentTime/audio.duration+'px'
-                bar.innerText = this.getFormatTime()
+        this.player.audio.addEventListener('timeupdate', ()=>{
+            if(!barElement.active){
+                barElement.style.width = container.clientWidth*audio.currentTime/audio.duration+'px'
+                if(textElement) textElement.textContent = this.getFormatTime()
             }
         })
         container.onmousedown = e=>{
-            bar.active = true
+            barElement.active = true
         }
-        container.onmousemove = e=>{
-            if(bar.active){
+        window.addEventListener('mousemove', e=>{
+            if(barElement.active){
                 let pct = (e.clientX-container.offsetLeft)/container.clientWidth
-                bar.style.width = pct*container.clientWidth+'px'
-                bar.innerText = this.getFormatTime(pct*audio.duration)
+                pct = pct>1?1:pct<0?0:pct
+                barElement.style.width = pct*container.clientWidth+'px'
+                if(textElement) textElement.textContent = this.getFormatTime(pct*audio.duration)
             }
-        }
+        })
         function handleEnd(e){
-            if(bar.active){
+            if(barElement.active){
                 let pct = (e.clientX-container.offsetLeft)/container.clientWidth
                 audio.currentTime = pct*audio.duration
-                bar.active = false
+                barElement.active = false
             }
         }
-        container.onmouseup = handleEnd
-        container.onmouseleave = handleEnd
+        window.addEventListener('mouseup', handleEnd)
+        window.addEventListener('mouseleave', handleEnd)
     }
     getPeaks(width, data){
         let step = Math.floor(data.length/width)
@@ -93,6 +54,11 @@ class Visualizer{
     }
     dynamicWaveform(canvas){
         const ctx = canvas.getContext('2d')
+        window.addEventListener('resize',e=>{
+            canvas.width = canvas.clientWidth
+            canvas.height = canvas.clientHeight    
+        })
+        canvas.style.userSelect = 'none'
         canvas.width = canvas.clientWidth
         canvas.height = canvas.clientHeight
         const analyser = this.analyser
@@ -101,14 +67,45 @@ class Visualizer{
         const getPeaks = this.getPeaks
         const peaks = [], peakWidth = 4, peakFPS = 20
         var peakScrollRate = 10
+        const mouseEvent = {active:false,x:0,paused:false}
+        canvas.onmousedown = e=>{
+            mouseEvent.active = true
+            mouseEvent.x = e.clientX
+            if(!audio.paused){
+                audio.pause()
+                mouseEvent.paused = true
+            }
+        }
+        window.addEventListener('mousemove', e=>{
+            if(mouseEvent.active){
+                let dx = e.clientX-mouseEvent.x
+                mouseEvent.x = e.clientX
+                audio.currentTime = audio.currentTime-dx/peakScrollRate/peakFPS
+            }
+        })
+        const handleEnd = e=>{
+            mouseEvent.active=false
+            if(mouseEvent.paused){
+                audio.play()
+                mouseEvent.paused=false
+            }
+        }
+        window.addEventListener('mouseup', handleEnd)
+        window.addEventListener('mouseleave', handleEnd)
+        canvas.onwheel = e=>{
+            peakScrollRate-= Math.sign(e.deltaY)
+            peakScrollRate = peakScrollRate>20?20:peakScrollRate<1?1:peakScrollRate
+        }
         loop()
         function loop(){
             window.requestAnimationFrame(loop)
             analyser.getByteTimeDomainData(data)
             let timeIndex = Math.floor(audio.currentTime*peakFPS)*peakWidth
-            getPeaks(Math.ceil(peakWidth*audio.playbackRate), data).map((peak,i)=>{
-                peaks[timeIndex+i] = peak
-            })
+            if(!mouseEvent.active){
+                getPeaks(Math.ceil(peakWidth*audio.playbackRate), data).map((peak,i)=>{
+                    if(peaks[timeIndex+i]==undefined) peaks[timeIndex+i] = peak
+                })
+            }
             ctx.clearRect(0,0,canvas.width,canvas.height)
             ctx.beginPath()
             let moved = false
@@ -259,7 +256,6 @@ class Visualizer{
 class AudioPlayer{
     constructor(){
         this.audio = new Audio()
-        this.audio.ontimeupdate = e=>{e.target.dispatchEvent(new CustomEvent('time-update'))}
         this.aCtx = new (window.AudioContext || window.webkitAudioContext)()
         this.source = this.aCtx.createMediaElementSource(this.audio)
         this.audioBuffer = null
@@ -298,125 +294,56 @@ class AudioPlayer{
         })
     }
 }
-function handleDrop(e){
-    e.preventDefault()
-    var files = []
-    for(let i=0;i<e.dataTransfer.items.length;i++){
-        let item = e.dataTransfer.items[i]
-        if(item.kind=='file'){
-            files.push(item.getAsFile())
-        }
+var player
+function playPause(){
+    if(player.paused){
+        player.play()
+        document.getElementById('playPause').className = 'fa fa-pause'
+    }else{
+        player.pause()
+        document.getElementById('playPause').className = 'fa fa-play'
     }
 }
-var player
+
+function handleDrop(e){
+    e.preventDefault()
+    const files = [...e.dataTransfer.items].filter(item=>item.kind=='file').map(item=>item.getAsFile())
+    handleFile(files[0])
+}
 async function handleFile(file){
     if(file.type.includes('audio')){
         player = new AudioPlayer()
-        var audioBuffer = await player.readAsArrayBuffer(file)
-        // await player.readAsAudioElementSrc(file)
+        // var audioBuffer = await player.readAsArrayBuffer(file)
+        // var channelData = audioBuffer.getChannelData(0)
         var visualizer = new Visualizer(player)
-        var channelData = audioBuffer.getChannelData(0)
-        visualizer.waveformEditor(document.getElementById('canvas'), channelData)
+        // visualizer.waveformEditor(document.getElementById('canvas'), channelData)
+        await player.readAsAudioElementSrc(file)
         visualizer.dynamicWaveform(document.getElementById('waveform'))
-        visualizer.createController(document.getElementById('audio-control'))
-    }
-}
-
-class Encoder{
-    constructor(){
-
-    }
-    encodeWAV(audioBuffer, smapleRate){
-        const samples = interleave(audioBuffer)
-        const buffer = new ArrayBuffer(44 + samples.length * 2)
-        const view = new DataView(buffer)
-
-        /* RIFF identifier */
-        writeString(view, 0, 'RIFF')
-        /* RIFF chunk length */
-        view.setUint32(4, 36 + samples.length * 2, true)
-        /* RIFF type */
-        writeString(view, 8, 'WAVE')
-        /* format chunk identifier */
-        writeString(view, 12, 'fmt ')
-        /* format chunk length */
-        view.setUint32(16, 16, true)
-        /* sample format (raw) */
-        view.setUint16(20, 1, true)
-        /* channel count */
-        view.setUint16(22, numChannels, true)
-        /* sample rate */
-        view.setUint32(24, sampleRate, true)
-        /* byte rate (sample rate * block align) */
-        view.setUint32(28, sampleRate * 4, true)
-        /* block align (channel count * bytes per sample) */
-        view.setUint16(32, numChannels * 2, true)
-        /* bits per sample */
-        view.setUint16(34, 16, true)
-        /* data chunk identifier */
-        writeString(view, 36, 'data')
-        /* data chunk length */
-        view.setUint32(40, samples.length * 2, true)
-
-        floatTo16BitPCM(view, 44, samples)
-        return view
-
-        function interleave(audioBuffer=AudioBuffer) {
-            if (audioBuffer.numberOfChannels === 1) {
-                return audioBuffer.getChannelData(0)
-            } else {
-                const L = audioBuffer.getChannelData(0)
-                const R = audioBuffer.getChannelData(1)
-                let len = L.length+R.length, i = 0, j = 0
-                const result = new Float32Array(len)
-                while (i<len) {
-                    result[i++] = inputL[j]
-                    result[i++] = inputR[j]
-                    j++
-                }
-                return result
-            }
-        }
-        function floatTo16BitPCM (view=DataView, offset=Number, input=Float32Array) {
-            for (let i = 0; i < input.length; i++, offset += 2) {
-                let s = input[i]
-                if (s < 0) {
-                    if (s < -1) s = -1
-                    s *= 0x8000
-                } else {
-                    if (s > 1) s = 1
-                    s *= 0x7FFF
-                }
-                view.setInt16(offset, s, true)
-            }
-        }
-        function writeString (view=DataView, offset=Number, string=String) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i))
-            }
-        }
-    }
-    sliceAudioBuffer(audioBuffer,start=0,end=audioBuffer.length){
-        const newBuffer = audioCtx.createBuffer(
-            audioBuffer.numberOfChannels,
-            end - start,
-            audioBuffer.sampleRate
+        visualizer.createController(
+            document.getElementById('audio-control-container'),
+            document.getElementById('audio-control-bar'),
+            document.getElementById('audio-control-text')
         )
-        for(let i=0;i<audioBuffer.numberOfChannels;i++){
-            newBuffer.copyToChannel(audioBuffer.getChannelData(i).slice(start,end))
-        }
-        return newBuffer
-    }
-    download(blob){
-        new Blob([arrayBuffer],{type:'audio/mp3'})
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = 'download.mp3'
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
     }
 }
-</script>
-</html>
+window.addEventListener('keyup',e=>{
+    if(e.code=='AltLeft'){
+        e.preventDefault()
+        player.rewind(-5)
+    }else if(e.code=='AltRight'){
+        e.preventDefault()
+        player.rewind(5)
+    }
+})
+
+var editor = CodeMirror.fromTextArea(document.getElementById('text-editor'),{
+    lineNumbers: true
+})
+{/* <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
+<script src="js/marked.js"></script>
+<script src="js/katex.js"></script>
+<script src="js/marked-katex.js"></script>
+var markdown = document.getElementById('markdown')
+editor.on('change',e=>{
+    markdown.innerHTML = marked(e.getDoc().getValue())
+})  */}

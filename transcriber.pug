@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title Audio
+        link(rel="stylesheet" href="css/fontawesome.css")
+        link(rel="stylesheet" href="css/bootstrap.css")
+        link(rel="stylesheet" href="css/codemirror.css")
+        link(rel="stylesheet" href="css/transcriber.css")
+    body
+        .panel.d-flex.align-items-center.bg-dark
+            .logo
+            span.px-2.text-light
+                i#playPause.fa.fa-play(onclick="playPause()")
+            span.px-2.text-light
+                i.fa.fa-backward(onclick="player.rewind(-5)")
+            span.px-2.text-light
+                i.fa.fa-forward(onclick="player.rewind(5)")
+            span.px-2.text-light
+                i.fa.fa-ruler-horizontal
+            .bg-dark.px-1.py-1(style="width:100%;height:100%;flex:1;user-select:none")
+                #audio-control-container
+                    #audio-control-bar
+                    #audio-control-text
+            span.px-2.text-light
+                i.fa.fa-cog
+            span.px-2.text-light
+                i.fa.fa-ellipsis-v
+        canvas#waveform
+        .container.shadow-sm
+            input#file(type="file" style="display:none;" onchange="handleFile(event.target.files[0])")
+            #drop-field(ondrop="handleDrop(event" ondragover="event.preventDefault()"
+                onclick="document.getElementById('file').click()") drop here
+            div(contenteditable="true")
+            textarea#text-editor
+
+        script(src="js/codemirror.js")
+        script(src="transcriber.js")
