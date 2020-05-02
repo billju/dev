@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div data-0="transform:translateY(100px)" data-123="transform:translateY(500px)">bang</div>
+    <div class="num">1</div>
+    <h1>b</h1><h1>b</h1><h1>b</h1><h1>b</h1><h1>b</h1><h1>b</h1><h1>b</h1><h1>b</h1><h1>b</h1><h1>b</h1>
+</body>
+<style>
+    *{
+        font-family: monospace;
+        font-size: 2em;
+        text-align: right;
+    }
+</style>
+<script>
+    function skr(node=document.body){
+        let datas = Object.entries(node.dataset)
+        let rect = node.getBoundingClientRect()
+        let keyPoints = []
+        for(let data of datas){
+            let [key,value] = data
+            let y = undefined
+            if(key=='center')
+                y = Math.round((rect.bottom-rect.top)/2)
+            if(key=='top'||key=='bottom')
+                y = rect[key]
+            let numeric = key.match(/^(\d+)$/)
+            if(numeric)
+                y = parseInt(numeric[1])
+            if(y!=undefined)
+                keyPoints.push({y, cssText:node.dataset[key]})
+        }
+        if(datas.length){
+            keyPoints.sort((a,b)=>a.y-b.y)
+            function getMatchArray(string,regexp){
+                return Array.from(string.matchAll(regexp),x=>x[0])
+            }
+            function handleScroll(){
+                let cssText = keyPoints[keyPoints.length-1].cssText
+                for(let i=1;i<keyPoints.length;i++){
+                    if(keyPoints[i].y>window.scrollY){
+                        let prev = keyPoints[i-1]
+                        let next = keyPoints[i]
+                        let ratio = (window.scrollY-prev.y)/(next.y-prev.y)
+                        cssText = cssText.replace(/\d+/g, '{}')
+                        let prevs = getMatchArray(prev.cssText, /(\d+)/g)
+                        let nexts = getMatchArray(next.cssText, /(\d+)/g)
+                        prevs.map((a,i)=>{
+                            a = parseInt(a)
+                            let b = parseInt(nexts[i])
+                            let value = Math.round( a*(1-ratio)+b*ratio )
+                            cssText = cssText.replace('{}',value)
+                        })
+                        break
+                    }
+                }
+                node.style.cssText = cssText
+            }
+            window.addEventListener('scroll',handleScroll)
+            handleScroll()
+        }
+        for(let child of node.children){
+            skr(child)   
+        }
+    }
+    skr()
+    class Counter{
+        constructor(el){
+            this.el = el
+            this.denominator = 50
+            this.paused = true
+        }
+        countTo(num,step=23,interval=40){
+            if(this.paused){
+                this.denominator=step
+                this.paused = false
+            }
+            this.el.innerText = parseInt(num*(this.denominator-step)/this.denominator)
+            if(step==0){
+                this.paused=true
+            }else{    
+                setTimeout(()=>{this.countTo(num,step-1,interval)},interval)
+            }
+        }
+    }
+    new Counter(document.querySelector('.num')).countTo(3396)
+    var pe = [], prevDiff = 0
+    window.onpointerdown = e=>{
+        pe.push(e)
+        if(pe.length==2){
+            let dx = pe[0].clientX-pe[1].clientX
+            let dy = pe[0].clientY-pe[1].clientY
+            prevDiff = Math.sqrt(dx*dx+dy*dy)
+        }
+    }
+    window.onpointermove = e=>{
+        if(pe.length==2){
+            let dx = pe[0].clientX-pe[1].clientX
+            let dy = pe[0].clientY-pe[1].clientY
+            let diff = Math.sqrt(dx*dx+dy*dy)
+            console.log(diff/prevDiff)
+        }
+    }
+    const handlePointerup = e=>{
+        pe = []
+    }
+    window.onpointerup = handlePointerup
+    window.onpointercancel = handlePointerup
+    window.onpointerout = handlePointerup
+    window.onpointerleave = handlePointerup
+</script>
+</html>

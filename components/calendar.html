@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar</title>
+</head>
+<body>
+    <div id="calendar"></div>
+</body>
+<style>
+    html,body{
+        margin: 0;
+    }
+    #calendar{
+        height: 300px;
+        overflow-y: scroll;
+    }
+    .rect{
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+    }
+    .border{
+        box-shadow: 0 1px 0 0 #000 inset;
+    }
+    .text-transparent{
+        color: transparent;
+    }
+    .divider{
+        width: 210px;
+        padding-top: 30px;
+    }
+</style>
+<script>
+function getDates(date=new Date()){
+    let daysInMonth = new Date(date.getFullYear(),date.getMonth(),0).getDate()
+    let firstDayInMonth = new Date(date.getFullYear(),date.getMonth(),1)
+    let prev = new Date(firstDayInMonth.getTime()-1*24*60*60*1000)
+    let next = new Date(firstDayInMonth.getTime()+(daysInMonth+1)*24*60*60*1000)
+    let offset = -firstDayInMonth.getDay()
+    let idx = 0, dates = [], tmp = []
+    while(true){
+        let offsetMs = (idx+offset)*24*60*60*1000
+        tmp.push(new Date(firstDayInMonth.getTime()+offsetMs))
+        if(idx%7==6){
+            dates.push(tmp)
+            tmp = []
+            if(idx+offset>daysInMonth) return {dates,prev,next}
+        }
+        idx++
+    }
+}
+let calendar = document.getElementById('calendar')
+function createCalendar(dates,month){
+    for(let week of dates){
+        let weekDiv = document.createElement('div')
+        for(let date of week){
+            let rect = document.createElement('div')
+            rect.textContent = date.getDate()
+            if(date.getMonth()==month){
+                rect.className = 'rect border'
+            }else{
+                rect.className = 'rect text-transparent'
+            }
+            weekDiv.appendChild(rect)
+        }
+        calendar.appendChild(weekDiv)
+    }
+}
+let curDate = new Date()
+for(let i=0;i<10;i++){
+    let {dates,prev,next} = getDates(curDate)
+    let month = curDate.getMonth()
+    createCalendar(dates,month)
+    let divider = document.createElement('div')
+    divider.className = 'divider'
+    calendar.appendChild(divider)
+    curDate = next
+}
+</script>
+</html>

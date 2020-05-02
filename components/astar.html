@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A*</title>
+</head>
+<body>
+    <!-- <div id="grid-container"></div> -->
+    <svg xmlns="http://www.w3.org/2000/svg" id="grid-container"></svg>
+</body>
+<style>
+    html,body{
+        margin: 0;
+    }
+    #grid-container{
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+        user-select: none;
+    }
+    .rect{
+        position: absolute;
+        background: #fff;
+        border: 1px solid #000;
+        transform-origin: center;
+        transition: transform 0.1s;
+        z-index: 50;
+    }
+    rect{
+        transition: transform 0.1s;
+    }
+</style>
+<script>
+const size = 30
+var grid = document.getElementById('grid-container')
+var gridRect = grid.getBoundingClientRect()
+grid.setAttribute('viewBox',`0 0 ${gridRect.width} ${gridRect.height}`)
+var xs = Math.ceil(gridRect.width/size)
+var ys = Math.ceil(gridRect.height/size) 
+grid.addEventListener('mousedown',e=>{
+    grid.mousedown = true
+    grid.mouseIndex = -1
+    handleGrid(e)
+})
+function handleGrid(e){
+    if(grid.mousedown){
+        let dx = Math.floor((e.clientX-grid.clientLeft)/size)
+        let dy = Math.floor((e.clientY-grid.clientTop)/size)
+        let idx = dx*ys+dy
+        let scale = 1.1, coef = size*(scale-1), pad = 5
+        if(grid.children[idx]&&grid.mouseIndex!=idx){
+            grid.children[idx].dataSelected = !grid.children[idx].dataSelected
+            grid.children[idx].style.fill = grid.children[idx].dataSelected?'grey':'#fff'
+            // grid.children[idx].style.background = grid.children[idx].dataSelected?'grey':'#fff'
+            // grid.children[idx].style.zIndex = 666
+            grid.children[idx].style.transform = `matrix(${scale},0,0,${scale},${-dx*coef-pad},${-dy*coef-pad})`
+            setTimeout(()=>{
+                // grid.children[idx].style.zIndex = 50
+                grid.children[idx].style.transform = 'matrix(1,0,0,1,0,0)'
+            },200)
+            grid.mouseIndex = idx
+        }
+    }
+}
+grid.addEventListener('mousemove',handleGrid)
+grid.addEventListener('mouseup',e=>{grid.mousedown=false})
+grid.addEventListener('mouseleave',e=>{grid.mousedown=false})
+function createRects(){
+    for(let i=0;i<xs;i++){
+        for(let j=0;j<ys;j++){
+            // let rect = document.createElement('div')
+            // rect.className = 'rect'
+            // Object.assign(rect.style,{
+            //     left: i*30+'px',
+            //     top: j*30+'px',
+            //     width: size+'px',
+            //     height: size+'px',
+            // })
+            let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
+            rect.dataSelected = false
+            rect.setAttribute('x',i*30)
+            rect.setAttribute('y',j*30)
+            rect.setAttribute('width',size)
+            rect.setAttribute('height',size)
+            rect.setAttribute('stroke','black')
+            rect.setAttribute('fill','white')
+            grid.appendChild(rect)
+        }
+    }
+}
+createRects()
+class Node{
+    constructor(parent,position){
+        this.parent = parent
+        this.position = position
+        this.g = 0
+        this.h = 0
+        this.f = 0
+    }
+}
+const distanceFunction = {
+    Manhattan: (p1,p2)=>Math.abs(p1[0]-p2[0])+Math.abs(p1[1]-p2[1]),
+    Euclidean: (p1,p2)=>Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2),
+    Octile: ()=>{},
+    Chebyshev: ()=>Math.max(Math.abs(p1[0]-p2[0]),Math.abs(p1[1]-p2[1]))
+}
+function AStar(maze, start, end){
+    let startNode = new Node(null, start)
+    let endNode = new Node(null, end)
+    let unvisited = [startNode]
+    let visited = []
+    const isEqual = (p1,p2)=>p1.position[0]==p2.position[0]&&p1.position[1]==p2.position[1]
+    while(unvisited.length){
+        // extract the node which has the smallest f in unvisited
+        unvisited.sort((a,b)=>a.f-b.f)
+        let curNode = unvisited.shift()
+        visited.push(curNode)
+        // if shortest path is found!
+        if(isEqual(curNode, endNode)){
+            let path = []
+            let node = curNode
+            while(node){
+                path.push(node)
+                node = node.parent
+            }
+            return path.reverse()
+        }
+        // test moving conditions
+        let children = []
+        for(let dir of [[0,1],[0,-1],[1,0],[-1,0]]){
+            let nodePos = [curNode.position[0]+dir[0],curNode.position[1]+dir[1]]
+            if(nodePos[0]>maze.length-1 || nodePos[0]<0)
+                continue
+            if(nodePos[1]>maze[0].length-1 || nodePos[1]<0)
+                continue
+            if(maze[nodePos[0]][nodePos[1]]!=0)
+                continue
+            children.push(new Node(curNode, nodePos))    
+        }
+        // update node f value
+        for(let child of children){
+            for(let node of visited){
+                if(isEqual(child,node))
+                    continue
+            }
+            child.g = curNode.g + 1
+            child.h = distanceFunction.Euclidean(child.position,endNode.position)
+            child.f = child.g + child.h
+            for(let node of unvisited){
+                if(isEqual(child,node)&&child.g>node.g)
+                    continue
+            }
+            unvisited.push(child)
+        }
+    }
+}
+var maze = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
+console.log(AStar(maze, [0,0], [7,6]))
+</script>
+</html>
