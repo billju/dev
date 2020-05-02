@@ -293,6 +293,23 @@ class AudioPlayer{
             }
         })
     }
+    createCompressor(){
+        this.compressor = this.aCtx.createDynamicsCompressor()
+        this.compressor.threshold.setValueAtTime(-50, this.aCtx.currentTime)
+        this.compressor.knee.setValueAtTime(-50, this.aCtx.currentTime)
+        this.compressor.ratio.setValueAtTime(-50, this.aCtx.currentTime)
+        this.compressor.attach.setValueAtTime(-50, this.aCtx.currentTime)
+        this.compressor.release.setValueAtTime(-50, this.aCtx.currentTime)
+        this.source.disconnect(this.gain)
+        this.source.connect(this.compressor)
+        this.compressor.connect(this.gain)
+    }
+    createBiquadFilter(){
+        this.filter = this.aCtx.createBiquadFilter()
+        this.aCtx.createWaveShaper()
+        this.aCtx.createConvolver()
+
+    }
 }
 var player
 function playPause(){

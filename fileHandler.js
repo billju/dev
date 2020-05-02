@@ -70,3 +70,22 @@ function beautifiedJsonHtml(){
     //     color: lightblue;
     // }
 }
+function handleRequest(){
+    let url = document.getElementById('request-url').value
+    // fetch(url,{}).then(res=>res.json()).then(text=>{})
+    const xhr = new XMLHttpRequest()
+    xhr.open('GET',url)
+    xhr.setRequestHeader('user-agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64)')
+    xhr.send()
+    xhr.onload = ()=>{
+        xhr.responseText
+    }
+    // const formData = new FormData()
+    // formData.append('filename',file)
+    // xhr.open('POST','upload').send(formData)
+    // xhr.upload.onprogress = e=>{
+    //     if(e.lengthComputable){
+    //         e.loaded / e.total
+    //     }
+    // }
+}

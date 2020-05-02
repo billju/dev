@@ -6,37 +6,79 @@
     <title>Calendar</title>
 </head>
 <body>
-    <div id="calendar"></div>
+    <div id="calendar">
+        <div id="calendar-scroll">
+            <div class="divder">
+                <div class="text-month">5月</div>
+            </div>
+            <div class="monthDiv">
+                <div class="weekDiv">
+                    <div class="dayDiv">{{day}}</div>
+                </div>
+            </div>
+        </div>
+        <div id="calendar-hint">2020年5月</div>
+    </div>
 </body>
 <style>
+    *{
+        font-family: 微軟正黑體;
+    }
     html,body{
         margin: 0;
     }
     #calendar{
-        height: 300px;
+        position: relative;
+        width: 100%;
+        max-width: 480px;
+        height: 800px;
+    }
+    #calendar-scroll{
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        overflow-x: hidden;
         overflow-y: scroll;
     }
-    .rect{
-        display: inline-block;
-        width: 30px;
+    #calendar-scroll::-webkit-scrollbar{
+        display: none;
+    }
+    #calendar-hint{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        background: linear-gradient(180deg,rgba(255,255,255,1),rgba(255,255,255,0.5));
+    }
+    .text-month{
+        width: 50px;
         height: 30px;
-        line-height: 30px;
+        padding-left: 5px;
+        position: absolute;
+        color: crimson;
+    }
+    .dayDiv{
+        display: inline-block;
+        width: calc(100%/7);
+        height: 50px;
+        line-height: 50px;
         text-align: center;
     }
     .border{
-        box-shadow: 0 1px 0 0 #000 inset;
+        box-shadow: 0 1px 0 0 grey inset;
     }
     .text-transparent{
         color: transparent;
     }
     .divider{
         width: 210px;
-        padding-top: 30px;
+        height: 30px;
     }
 </style>
 <script>
 function getDates(date=new Date()){
-    let daysInMonth = new Date(date.getFullYear(),date.getMonth(),0).getDate()
+    let daysInMonth = new Date(date.getFullYear(),date.getMonth()+1,0).getDate()
     let firstDayInMonth = new Date(date.getFullYear(),date.getMonth(),1)
     let prev = new Date(firstDayInMonth.getTime()-1*24*60*60*1000)
     let next = new Date(firstDayInMonth.getTime()+(daysInMonth+1)*24*60*60*1000)
@@ -48,37 +90,58 @@ function getDates(date=new Date()){
         if(idx%7==6){
             dates.push(tmp)
             tmp = []
-            if(idx+offset>daysInMonth) return {dates,prev,next}
+            if(idx+offset>=daysInMonth) return {dates,prev,next,firstDayInMonth}
         }
         idx++
     }
 }
-let calendar = document.getElementById('calendar')
-function createCalendar(dates,month){
+let calendar = document.getElementById('calendar-scroll')
+function createMonth(dates,month){
+    let monthDiv = document.createElement('div')
     for(let week of dates){
-        let weekDiv = document.createElement('div')
+        let weekDiv = document.createElement('div')    
         for(let date of week){
-            let rect = document.createElement('div')
-            rect.textContent = date.getDate()
+            let dayDiv = document.createElement('div')
+            dayDiv.textContent = date.getDate()
             if(date.getMonth()==month){
-                rect.className = 'rect border'
+                dayDiv.className = 'dayDiv border'
             }else{
-                rect.className = 'rect text-transparent'
+                dayDiv.className = 'dayDiv text-transparent'
             }
-            weekDiv.appendChild(rect)
+            weekDiv.appendChild(dayDiv)
         }
-        calendar.appendChild(weekDiv)
+        monthDiv.appendChild(weekDiv)
     }
+    calendar.appendChild(monthDiv)
 }
+
 let curDate = new Date()
-for(let i=0;i<10;i++){
-    let {dates,prev,next} = getDates(curDate)
+let months = []
+for(let i=0;i<100;i++){
+    let {dates,prev,next,firstDayInMonth} = getDates(curDate)
     let month = curDate.getMonth()
-    createCalendar(dates,month)
     let divider = document.createElement('div')
     divider.className = 'divider'
     calendar.appendChild(divider)
+    let monthLabel = document.createElement('div')
+    monthLabel.className = 'text-month'
+    monthLabel.textContent = month+1+'月'
+    divider.appendChild(monthLabel)
+    months.push({
+        offsetTop: divider.offsetTop-calendar.offsetTop,
+        date: firstDayInMonth
+    })
+    createMonth(dates,month)
     curDate = next
 }
+calendar.addEventListener('scroll',e=>{
+    for(let month of months){
+        if(calendar.scrollTop-200<month.offsetTop){
+            document.getElementById('calendar-hint').textContent = 
+            `${month.date.getFullYear()} 年 ${month.date.getMonth()+1} 月`
+            break
+        }
+    }
+})
 </script>
 </html>
