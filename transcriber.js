@@ -65,7 +65,7 @@ class Visualizer{
         const data = new Uint8Array(this.analyser.frequencyBinCount)
         const audio = this.player.audio
         const getPeaks = this.getPeaks
-        const peaks = [], peakWidth = 4, peakFPS = 20
+        const peaks = [], peakWidth = 10, peakFPS = 20
         var peakScrollRate = 10
         const mouseEvent = {active:false,x:0,paused:false}
         canvas.onmousedown = e=>{
@@ -308,7 +308,6 @@ class AudioPlayer{
         this.filter = this.aCtx.createBiquadFilter()
         this.aCtx.createWaveShaper()
         this.aCtx.createConvolver()
-
     }
 }
 var player

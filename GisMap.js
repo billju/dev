@@ -105,31 +105,26 @@ function circleDefinedBy3Points(x1,y1,x2,y2,x3,y3){
     return {x,y,r}
 }
 function drawSmoothPath(ctx, points, rate=0.2){
-    let cp = [] //control point
-    for(let i=0;i<points.length-2;i++){
-        cp.push([
-            Math.round((points[i+2][0]-points[i][0])*rate),
-            Math.round((points[i+2][1]-points[i][1])*rate)
-        ])
-    }
     const add = (p1,p2)=>( [p1[0]+p2[0], p1[1]+p2[1]] )
     const subtract = (p1,p2)=>( [p1[0]-p2[0], p1[1]-p2[1]] )
     const curveTo = (p1,p2,p3)=>{ctx.bezierCurveTo(p1[0],p1[1],p2[0],p2[1],p3[0],p3[1])}
-    ctx.beginPath()
+    let cp = [] //control point
+    for(let i=0;i<points.length-2;i++){
+        let p = subtract(points[i+2],points[i])
+        cp.push([Math.round(p[0]*rate), Math.round(p[1]*rate)])
+    }
     points.map((p,i,ps)=>{
         switch(i){
             case 0:
-                ctx.moveTo(p[0],p[1]); break;
+                ctx.lineTo(p[0],p[1]); break;
             case 1:
                 curveTo(ps[0], subtract(p,cp[i-1]), p); break;
             case ps.length-1:
-                curveTo(add(ps[i-1],cp[i-2]), add(ps[i-1],cp[i-2]), p); break;
+                curveTo(add(ps[i-1],cp[i-2]), p, p); break;
             default:
-                curveTo(add(ps[i-1],cp[i-2]), subtract(ps[i-1],cp[i-2]), p); break;
+                curveTo(add(ps[i-1],cp[i-2]), subtract(p,cp[i-1]), p); break;
         }
     })
-    ctx.stroke()
-    ctx.closePath()
 }
 var EasingFunctions = {
     // no easing, no acceleration

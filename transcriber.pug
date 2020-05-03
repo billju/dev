@@ -17,8 +17,11 @@ html(lang="en")
                 i.fa.fa-backward(onclick="player.rewind(-5)")
             span.px-2.text-light
                 i.fa.fa-forward(onclick="player.rewind(5)")
-            span.px-2.text-light
+            span.px-2.text-light.position-relative
                 i.fa.fa-ruler-horizontal
+                .position-absolute
+                    label(for="playback-rate") 播放速度
+                    input#playback-rate.custom-range(type="range")
             .bg-dark.px-1.py-1(style="width:100%;height:100%;flex:1;user-select:none")
                 #audio-control-container
                     #audio-control-bar
