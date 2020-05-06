@@ -6,10 +6,6 @@
     <title>Image</title>
 </head>
 <body>
-    <div id="text-editor" contenteditable="true"></div>
-    <button onclick="document.execCommand('foreColor', false, 'dodgerblue');">font color</button>
-    <button onclick="document.execCommand('fontName', false, '微軟正黑體');">font family</button>
-    <button onclick="document.execCommand('fontSize', false, 20);">font size</button>
     <canvas id="canvas"></canvas>
     <input type="file" id="file" onchange="handleFile(event)">
 </body>
@@ -23,18 +19,6 @@
 <script src="js/body-pix.js"></script>
 <script>
 
-
-var textEditor = document.getElementById('text-editor')
-textEditor.onkeydown = e=>{
-    // var range = document.createRange(); ⌘
-    // var selection = window.getSelection()
-    // range = selection.getRangeAt(0)
-    // if(range.commonAncestorContainer.parentNode==textEditor){
-    //     console.log(range.startOffset)
-    //     console.log(range.endOffset)
-    // }
-}
-
 function copyToClipboard(element){
     var range = document.createRange();
     range.setStartBefore(element);
@@ -46,8 +30,7 @@ function copyToClipboard(element){
     selection.removeAllRanges()
     alert('copied')
 }
-function getSelectedNode()
-{
+function getSelectedNode(){
     if (document.selection){
         return document.selection.createRange().parentElement();
     }else{
@@ -69,6 +52,7 @@ function testTfjs(){
         segment()
     }
 }
+testTfjs()
 async function segment(){
     // const net = await cocoSsd.load()
     // const predictions = net.detect(img)

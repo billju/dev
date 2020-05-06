@@ -5,11 +5,10 @@ class Visualizer{
         player.source.connect(this.analyser)
         this.analyser.connect(player.gain)
     }
-    getFormatTime(time, format="hh:mm:ss"){
-        const cT = time||this.player.audio.currentTime
-        const ss = ('0'+~~(cT%60)).substr(-2)
-        const mm = ('0'+~~(cT/60%60)).substr(-2)
-        const hh = ('0'+~~(cT/3600%24)).substr(-2)
+    getFormatTime(seconds, format="hh:mm:ss"){
+        const ss = ('0'+~~(seconds%60)).substr(-2)
+        const mm = ('0'+~~(seconds/60%60)).substr(-2)
+        const hh = ('0'+~~(seconds/3600%24)).substr(-2)
         return format.replace('hh',hh).replace('mm',mm).replace('ss',ss)
     }
     createController(container,barElement,textElement){
@@ -17,7 +16,7 @@ class Visualizer{
         this.player.audio.addEventListener('timeupdate', ()=>{
             if(!barElement.active){
                 barElement.style.width = container.clientWidth*audio.currentTime/audio.duration+'px'
-                if(textElement) textElement.textContent = this.getFormatTime()
+                if(textElement) textElement.textContent = this.getFormatTime(this.player.currentTime)
             }
         })
         container.onmousedown = e=>{
@@ -65,8 +64,9 @@ class Visualizer{
         const data = new Uint8Array(this.analyser.frequencyBinCount)
         const audio = this.player.audio
         const getPeaks = this.getPeaks
+        const getFormatTime = this.getFormatTime
         const peaks = [], peakWidth = 10, peakFPS = 20
-        var peakScrollRate = 10
+        var peakScrollRate = 1
         const mouseEvent = {active:false,x:0,paused:false}
         canvas.onmousedown = e=>{
             mouseEvent.active = true
@@ -106,7 +106,8 @@ class Visualizer{
                     if(peaks[timeIndex+i]==undefined) peaks[timeIndex+i] = peak
                 })
             }
-            ctx.clearRect(0,0,canvas.width,canvas.height)
+            ctx.fillStyle = '#607d8b'
+            ctx.fillRect(0,0,canvas.width,canvas.height)
             ctx.beginPath()
             let moved = false
             for(let x=0;x<=canvas.width;x++){
@@ -124,6 +125,30 @@ class Visualizer{
                 }else{
                     moved = false
                 }
+            }
+            ctx.strokeStyle = 'white'
+            ctx.stroke()
+            ctx.closePath()
+            ctx.beginPath()
+            ctx.font = "12px arial"
+            let timestamps = [], interval = Math.max(Math.ceil(5/peakScrollRate),1)
+            for(let x=-20;x<=canvas.width+20;x++){
+                let i = timeIndex+Math.floor((x-canvas.width+1)*peakWidth/peakScrollRate)
+                let seconds = i/peakWidth/peakFPS
+                if(seconds%interval==0&&i>=0){
+                    timestamps.push({seconds,x})
+                }
+            }
+            ctx.fillStyle = 'white'
+            for(let ts of timestamps){
+                let format = ts.seconds<3600?'mm:ss':'hh:mm:ss'
+                let text = getFormatTime(ts.seconds,format)
+                let textWidth = ctx.measureText(text).width
+                ctx.fillText(text,ts.x-textWidth/2,canvas.height-5)
+                ctx.moveTo(ts.x,0)
+                ctx.lineTo(ts.x,5)
+                ctx.moveTo(ts.x,canvas.height-5)
+                ctx.lineTo(ts.x,canvas.height)
             }
             ctx.stroke()
             ctx.closePath()
@@ -310,7 +335,8 @@ class AudioPlayer{
         this.aCtx.createConvolver()
     }
 }
-var player
+const player = new AudioPlayer()
+const visualizer = new Visualizer(player)
 function playPause(){
     if(player.paused){
         player.play()
@@ -328,10 +354,10 @@ function handleDrop(e){
 }
 async function handleFile(file){
     if(file.type.includes('audio')){
-        player = new AudioPlayer()
+        document.getElementById('panel').style.opacity = 1
+        document.getElementById('drop-field').style.display = 'none'
         // var audioBuffer = await player.readAsArrayBuffer(file)
-        // var channelData = audioBuffer.getChannelData(0)
-        var visualizer = new Visualizer(player)
+        // var channelData = audioBuffer.getChannelData(0)   
         // visualizer.waveformEditor(document.getElementById('canvas'), channelData)
         await player.readAsAudioElementSrc(file)
         visualizer.dynamicWaveform(document.getElementById('waveform'))
@@ -342,24 +368,136 @@ async function handleFile(file){
         )
     }
 }
-window.addEventListener('keyup',e=>{
-    if(e.code=='AltLeft'){
+var rewindEvent = {active:false, second:0, timeInterval:0}
+window.addEventListener('keydown',e=>{
+    if((e.code=='AltLeft'||e.code=='AltRight')&&rewindEvent.active==false){
         e.preventDefault()
-        player.rewind(-5)
-    }else if(e.code=='AltRight'){
-        e.preventDefault()
-        player.rewind(5)
+        rewindEvent.active = true
+        rewindEvent.second = e.code=='AltLeft'?-0.5:0.5
+        window.clearInterval(rewindEvent.timeInterval)
+        rewindEvent.timeInterval = window.setInterval(()=>{
+            player.rewind(rewindEvent.second)
+        },50)
     }
 })
-
-var editor = CodeMirror.fromTextArea(document.getElementById('text-editor'),{
-    lineNumbers: true
+window.addEventListener('keyup',e=>{
+    if(e.code=='AltLeft'||e.code=='AltRight'){
+        e.preventDefault()
+        rewindEvent.active = false
+        window.clearInterval(rewindEvent.timeInterval)
+    }
 })
-{/* <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
-<script src="js/marked.js"></script>
-<script src="js/katex.js"></script>
-<script src="js/marked-katex.js"></script>
-var markdown = document.getElementById('markdown')
-editor.on('change',e=>{
-    markdown.innerHTML = marked(e.getDoc().getValue())
-})  */}
+var newTimeIndex = -1, newTimeValue = 0
+const editor = document.getElementById('text-editor')
+const lineNumbers = document.getElementById('line-numbers')
+const observer = new MutationObserver(updateEditor)
+observer.observe(editor,{
+    attributes: false,
+    childList: true,
+    subtree: false
+})
+window.addEventListener('resize',()=>{
+    resizeLineNumbers()
+})
+function resizeLineNumbers(){
+    for(let i=0;i<editor.childNodes.length;i++){
+        let div = lineNumbers.childNodes[i]
+        div.style.height = editor.childNodes[i].clientHeight+'px'
+    }
+}
+function updateEditor(){
+    lineNumbers.innerHTML = ''
+    for(let i=0;i<editor.childNodes.length;i++){
+        let div = document.createElement('div')
+        let time = editor.childNodes[i].dataset.time
+        if(i==0){
+            time = 0
+            editor.childNodes[i].dataset.time = 0
+        }else if(i==newTimeIndex){
+            time = newTimeValue
+            editor.childNodes[i].dataset.time = newTimeValue
+        }
+        div.innerText = visualizer.getFormatTime(time)
+        div.style.height = editor.childNodes[i].clientHeight+'px'
+        div.onclick = ()=>{
+            player.currentTime = time
+        }
+        lineNumbers.appendChild(div)
+    }
+}
+editor.addEventListener('keydown',e=>{
+    if(e.ctrlKey&&e.code=='KeyJ'){        
+        e.preventDefault()
+        let span = document.createElement('a')
+        span.textContent = 'bang'
+        span.setAttribute('contenteditable',false)
+        span.style.color = 'pink'
+        span.onclick = ()=>alert('bang')
+    }
+    if(e.ctrlKey&&e.code=='keyB'){
+        document.execCommand('bold')
+    }
+    if(e.ctrlKey&&e.code=='keyU'){
+        document.execCommand('underline')
+    }
+    if(e.ctrlKey&&e.code=='keyI'){
+        document.execCommand('italic')
+    }
+    if(e.code=="Escape"){
+        playPause()
+    }
+    if(e.code=='Enter'){
+        let {row,col} = getCursor()
+        let timestamp = player.currentTime
+        newTimeIndex = row+1
+        newTimeValue = timestamp
+    }
+    if(e.code=='Backspace'){
+        if(editor.childNodes.length<=2&&editor.firstChild.textContent==''){
+            e.preventDefault()
+        }
+    }
+    console.log(e)
+})
+function getCursor(){
+    let sel = document.getSelection()
+    let anchorNode = sel.anchorNode.parentNode==editor?
+        sel.anchorNode:sel.anchorNode.parentNode
+    let row = 0
+    while((anchorNode=anchorNode.previousSibling)!=null){row++}
+    let col = sel.focusOffset
+    return {row,col}
+}
+function insertContent(element){
+    let sel = document.getSelection()
+    let anchorNode = sel.anchorNode
+    if(anchorNode==editor){
+        anchorNode.appendChild(element)
+    }else if(anchorNode.innerHTML=='<br>'){
+        anchorNode.insertBefore(element,anchorNode.firstChild)
+    }else{
+        let prevText = anchorNode.textContent.slice(0,sel.focusOffset)
+        anchorNode.textContent = anchorNode.textContent.slice(sel.focusOffset)
+        let textNode = document.createTextNode(prevText)
+        anchorNode.parentNode.insertBefore(element,anchorNode)
+        anchorNode.parentNode.insertBefore(textNode,element)
+    }
+}
+
+// var editor = CodeMirror.fromTextArea(document.querySelector('textarea'),{
+//     lineNumbers: true,
+//     lineWrapping: true,
+// })
+// editor.options.onKeyEvent = (cm,e)=>{
+//     if(e.code=='Enter'){
+//         cm.newline()
+//     }
+// }
+// <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css" integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq" crossorigin="anonymous">
+// <script src="js/marked.js"></script>
+// <script src="js/katex.js"></script>
+// <script src="js/marked-katex.js"></script>
+// var markdown = document.getElementById('markdown')
+// editor.on('change',e=>{
+//     markdown.innerHTML = marked(e.getDoc().getValue())
+// })
