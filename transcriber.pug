@@ -3,36 +3,35 @@ html(lang="en")
     head
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        title Audio
+        title VizTranscriber
         link(rel="stylesheet" href="css/fontawesome.css")
         link(rel="stylesheet" href="css/bootstrap.css")
         link(rel="stylesheet" href="css/transcriber.css")
     body
-        .d-flex.flex-column
         input#file(type="file" style="display:none;" onchange="handleFile(event.target.files[0])")
         #drop-field(ondrop="handleDrop(event)" ondragover="event.preventDefault()"
             onclick="document.getElementById('file').click()")
             i.fa.fa-upload(style="font-size: 30px")
-            span 選取音檔
+            span 選擇音檔或影片
         #panel(style="opacity:0").d-flex.align-items-center.bg-dark
             .logo
             span.px-2.text-light
-                i#playPause.fa.fa-play(onclick="playPause()")
+                i#toggle-play.fa.fa-play(onclick="player.togglePlay()")
             span.px-2.text-light
                 i.fa.fa-backward(onclick="player.rewind(-5)")
             span.px-2.text-light
                 i.fa.fa-forward(onclick="player.rewind(5)")
             span.px-2.text-light.position-relative.show-only-hover
                 i.fa.fa-ruler-horizontal
-                .position-absolute.btn-group(style="left:-100px")
-                    span.btn.btn-outline-secondary 0.25x
-                    span.btn.btn-outline-secondary 0.50x
-                    span.btn.btn-outline-secondary 0.75x
-                    span.btn.btn-outline-secondary 1.00x
-                    span.btn.btn-outline-secondary 1.25x
-                    span.btn.btn-outline-secondary 1.50x
-                    span.btn.btn-outline-secondary 1.75x
-                    span.btn.btn-outline-secondary 2.00x
+                #playback-btns.position-absolute.btn-group(style="width:520px;left:-100px")
+                    span.btn.btn-secondary(onclick="setPlaybackRate(0)") 0.25x
+                    span.btn.btn-secondary(onclick="setPlaybackRate(1)") 0.50x
+                    span.btn.btn-secondary(onclick="setPlaybackRate(2)") 0.75x
+                    span.btn.btn-secondary.active(onclick="setPlaybackRate(3)") 1.00x
+                    span.btn.btn-secondary(onclick="setPlaybackRate(4)") 1.25x
+                    span.btn.btn-secondary(onclick="setPlaybackRate(5)") 1.50x
+                    span.btn.btn-secondary(onclick="setPlaybackRate(6)") 1.75x
+                    span.btn.btn-secondary(onclick="setPlaybackRate(7)") 2.00x
             .bg-dark.px-1.py-1(style="width:100%;height:100%;flex:1;user-select:none")
                 #audio-control-container
                     #audio-control-bar
@@ -42,10 +41,18 @@ html(lang="en")
             span.px-2.text-light
                 i.fa.fa-ellipsis-v
         canvas#waveform(style="display:none")
+        video#video(style="position:fixed;cursor:move;max-height:300px;left:10px;top:100px;display:none")
+        ul#shortcuts.list-group(style="position:fixed;cursor:move;max-height:300px;left:10px;top:500px")
+            li.list-group-item.list-group-item-info 快捷鍵
+            li.list-group-item(contenteditable="") ctrl+1
+            li.list-group-item(contenteditable="") ctrl+2
+            li.list-group-item(contenteditable="") ctrl+3
+            li.list-group-item(contenteditable="") ctrl+4
+            li.list-group-item(contenteditable="") ctrl+5
         .pb-3(style="height:calc(100% - 90px);overflow-y:scroll")
             .container.px-3.py-3.shadow-sm.bg-white.d-flex
                 #line-numbers
                     div 00:00:00
-                pre#text-editor(contenteditable="true" style="min-height:500px")
+                pre#text-editor(contenteditable="" style="min-height:500px")
                     div(data-time="0") leftAlt倒帶 rightAlt快轉
         script(src="transcriber.js")

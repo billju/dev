@@ -15,10 +15,10 @@ class Visualizer{
         return format.replace('hh',hh).replace('mm',mm).replace('ss',ss)
     }
     createController(container,barElement,textElement){
-        const audio = this.player.audio
-        this.player.audio.addEventListener('timeupdate', ()=>{
+        const media = this.player.media
+        media.addEventListener('timeupdate', ()=>{
             if(!barElement.active){
-                barElement.style.width = container.clientWidth*audio.currentTime/audio.duration+'px'
+                barElement.style.width = container.clientWidth*media.currentTime/media.duration+'px'
                 if(textElement) textElement.textContent = this.getFormatTime(this.player.currentTime)
             }
         })
@@ -30,13 +30,13 @@ class Visualizer{
                 let pct = (e.clientX-container.offsetLeft)/container.clientWidth
                 pct = pct>1?1:pct<0?0:pct
                 barElement.style.width = pct*container.clientWidth+'px'
-                if(textElement) textElement.textContent = this.getFormatTime(pct*audio.duration)
+                if(textElement) textElement.textContent = this.getFormatTime(pct*media.duration)
             }
         })
         function handleEnd(e){
             if(barElement.active){
                 let pct = (e.clientX-container.offsetLeft)/container.clientWidth
-                audio.currentTime = pct*audio.duration
+                media.currentTime = pct*media.duration
                 barElement.active = false
             }
         }
@@ -65,7 +65,7 @@ class Visualizer{
         canvas.height = canvas.clientHeight
         const analyser = this.analyser
         const data = new Uint8Array(this.analyser.frequencyBinCount)
-        const audio = this.player.audio
+        const media = this.player.media
         const getPeaks = this.getPeaks
         const getFormatTime = this.getFormatTime
         const peaks = [], peakWidth = 10, peakFPS = 20
@@ -74,8 +74,8 @@ class Visualizer{
         canvas.onmousedown = e=>{
             mouseEvent.active = true
             mouseEvent.x = e.clientX
-            if(!audio.paused){
-                audio.pause()
+            if(!media.paused){
+                media.pause()
                 mouseEvent.paused = true
             }
         }
@@ -83,13 +83,13 @@ class Visualizer{
             if(mouseEvent.active){
                 let dx = e.clientX-mouseEvent.x
                 mouseEvent.x = e.clientX
-                audio.currentTime = audio.currentTime-dx/peakScrollRate/peakFPS
+                media.currentTime = media.currentTime-dx/peakScrollRate/peakFPS
             }
         })
         const handleEnd = e=>{
             mouseEvent.active=false
             if(mouseEvent.paused){
-                audio.play()
+                media.play()
                 mouseEvent.paused=false
             }
         }
@@ -103,9 +103,9 @@ class Visualizer{
         function loop(){
             window.requestAnimationFrame(loop)
             analyser.getByteTimeDomainData(data)
-            let timeIndex = Math.floor(audio.currentTime*peakFPS)*peakWidth
+            let timeIndex = Math.floor(media.currentTime*peakFPS)*peakWidth
             if(!mouseEvent.active){
-                getPeaks(Math.ceil(peakWidth*audio.playbackRate), data).map((peak,i)=>{
+                getPeaks(Math.ceil(peakWidth*media.playbackRate), data).map((peak,i)=>{
                     if(peaks[timeIndex+i]==undefined) peaks[timeIndex+i] = peak
                 })
             }
@@ -227,93 +227,52 @@ class Visualizer{
             bound.active = false
         })
     }
-    oscilloscope(canvas){
-        const ctx = canvas.getContext('2d')
-        this.analyser.fftSize = 2048
-        const data = new Uint8Array(this.analyser.frequencyBinCount);
-        loop()
-        function loop(){
-            window.requestAnimationFrame(loop);
-            this.analyser.getByteTimeDomainData(data)
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.lineWidth = 2
-            ctx.strokeStyle = 'white'
-            ctx.beginPath()
-            for(var i=0;i<this.analyser.frequencyBinCount;i++){
-                var x = i / this.analyser.frequencyBinCount * canvas.width
-                var y = data[i] / 256 * canvas.height
-                if(i==0){
-                    ctx.moveTo(x,y)
-                }else{
-                    ctx.lineTo(x,y)
-                }
-            }
-            ctx.lineTo(canvas.width,canvas.height/2)
-            ctx.stroke()
-            ctx.closePath()
-        }
-    }
-    spectrogram(canvas) { // by Jake Albaugh
-        const ctx = canvas.getContext('2d')
-        const data = new Uint8Array(this.analyser.frequencyBinCount);
-        const h = canvas.height / data.length;
-        const x = canvas.width - 1;
-        ctx.fillStyle = 'hsl(280, 100%, 10%)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        loop();
-        function loop() {
-            window.requestAnimationFrame(loop);
-            let imgData = ctx.getImageData(1, 0, canvas.width - 1, canvas.height);
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.putImageData(imgData, 0, 0);
-            this.analyser.getByteFrequencyData(data);
-            for (let i = 0; i < data.length; i++) {
-                let rat = data[i] / 255;
-                let hue = Math.round((rat * 120) + 280 % 360);
-                let sat = '100%';
-                let lit = 10 + (70 * rat) + '%';
-                ctx.beginPath();
-                ctx.strokeStyle = `hsl(${hue}, ${sat}, ${lit})`;
-                ctx.moveTo(x, canvas.height - (i * h));
-                ctx.lineTo(x, canvas.height - (i * h + h));
-                ctx.stroke();
-            }
-        }
-    }
 }
-class AudioPlayer{
+class MediaPlayer{
     constructor(){
-        this.audio = new Audio()
+        this.media = new Audio()
+    }
+    setMediaElement(element){
+        this.media = element
     }
     createAudioContext(){
         this.aCtx = new (window.AudioContext || window.webkitAudioContext)()
-        this.source = this.aCtx.createMediaElementSource(this.audio)
+        this.source = this.aCtx.createMediaElementSource(this.media)
         this.audioBuffer = null
         this.gain = this.aCtx.createGain()
         this.gain.connect(this.aCtx.destination)
     }
-    play(){this.audio.play()}
-    pause(){this.audio.pause()}
-    get paused(){return this.audio.paused}
-    set playbackRate(v){this.audio.playbackRate=v}
-    get playbackRate(){return this.audio.playbackRate}
-    set currentTime(v){this.audio.currentTime=v}
-    get currentTime(){return this.audio.currentTime}
-    rewind(offset){
-        var t = this.audio.currentTime+offset
-        var duration = this.audio.duration
-        this.audio.currentTime = t<0?0:t>duration?duration:t
+    play(){this.media.play()}
+    pause(){this.media.pause()}
+    get paused(){return this.media.paused}
+    set playbackRate(v){this.media.playbackRate=v}
+    get playbackRate(){return this.media.playbackRate}
+    set currentTime(v){this.media.currentTime=v}
+    get currentTime(){return this.media.currentTime}
+    togglePlay(){
+        if(player.paused){
+            player.play()
+            document.getElementById('toggle-play').className = 'fa fa-pause'
+        }else{
+            player.pause()
+            document.getElementById('toggle-play').className = 'fa fa-play'
+        }
     }
-    readAsAudioElementSrc(file){
-        this.audio.src = URL.createObjectURL(file)
+    rewind(offset){
+        var t = this.media.currentTime+offset
+        var duration = this.media.duration
+        this.media.currentTime = t<0?0:t>duration?duration:t
+    }
+    readAsMediaElementSrc(file){
+        this.media.src = URL.createObjectURL(file)
         return new Promise((resolve,reject)=>{
-            this.audio.onloadeddata = resolve
+            this.media.onloadeddata = resolve
         })
     }
     readAsArrayBuffer(file){
         const reader = new FileReader()
         reader.readAsArrayBuffer(file)
-        this.audio.src = URL.createObjectURL(file)
+        this.media.src = URL.createObjectURL(file)
         return new Promise((resolve,reject)=>{
             reader.onload = ()=>{
                 this.aCtx.decodeAudioData(reader.result).then(audioBuffer=>{
@@ -340,25 +299,44 @@ class AudioPlayer{
         this.aCtx.createConvolver()
     }
 }
-const player = new AudioPlayer()
+const player = new MediaPlayer()
 const visualizer = new Visualizer()
-function playPause(){
-    if(player.paused){
-        player.play()
-        document.getElementById('playPause').className = 'fa fa-pause'
-    }else{
-        player.pause()
-        document.getElementById('playPause').className = 'fa fa-play'
-    }
-}
-
 function handleDrop(e){
     e.preventDefault()
     const files = [...e.dataTransfer.items].filter(item=>item.kind=='file').map(item=>item.getAsFile())
     handleFile(files[0])
 }
+function makeElementMovable(element){
+    element.addEventListener('mousedown', e=>{
+        element.dataset.dragging = true
+        element.dataset.x = e.clientX
+        element.dataset.y = e.clientY
+    })
+    window.addEventListener('mousemove', e=>{
+        if(element.dataset.dragging=='true'){
+            let dx = e.clientX-element.dataset.x
+            let dy = e.clientY-element.dataset.y
+            element.style.left = element.offsetLeft+dx+'px'
+            element.style.top = element.offsetTop+dy+'px'  
+            element.dataset.x = e.clientX
+            element.dataset.y = e.clientY
+        }
+    })
+    window.addEventListener('mouseup', e=>{
+        element.dataset.dragging = false
+    })
+    window.addEventListener('mouseleave', e=>{
+        element.dataset.dragging = false
+    })
+}
 async function handleFile(file){
-    if(file.type.includes('audio')){
+    if(file.type.includes('video')||file.type.includes('audio')){
+        if(file.type.includes('video')){
+            let video = document.getElementById('video')
+            video.style.display = 'block'
+            makeElementMovable(video)
+            player.setMediaElement(video)
+        }
         player.createAudioContext()
         visualizer.connect(player)
         document.getElementById('panel').style.opacity = 1
@@ -367,7 +345,7 @@ async function handleFile(file){
         // var audioBuffer = await player.readAsArrayBuffer(file)
         // var channelData = audioBuffer.getChannelData(0)   
         // visualizer.waveformEditor(document.getElementById('canvas'), channelData)
-        await player.readAsAudioElementSrc(file)
+        await player.readAsMediaElementSrc(file)
         visualizer.dynamicWaveform(document.getElementById('waveform'))
         visualizer.createController(
             document.getElementById('audio-control-container'),
@@ -376,23 +354,46 @@ async function handleFile(file){
         )
     }
 }
-var rewindEvent = {active:false, second:0, timeInterval:0}
+const rewindEvent = {active:false, second:0, interval:0}
+const playbackRateBtns = document.getElementById('playback-btns')
+const playbackRateList = [0.25,0.5,0.75,1,1.25,1.5,1.75,2]
+function setPlaybackRate(idx){
+    for(let child of playbackRateBtns.children)
+        child.classList.remove('active')
+    idx = idx<0?0:idx>playbackRateList.length-1?playbackRateList.length-1:idx
+    player.playbackRate = playbackRateList[idx]
+    playbackRateBtns.children[idx].classList.add('active')
+}
+
 window.addEventListener('keydown',e=>{
-    if((e.code=='AltLeft'||e.code=='AltRight')&&rewindEvent.active==false){
+    if((e.code=='AltLeft'||e.code=='AltRight')&&rewindEvent.active==false&&!e.ctrlKey){
         e.preventDefault()
         rewindEvent.active = true
         rewindEvent.second = e.code=='AltLeft'?-0.5:0.5
-        window.clearInterval(rewindEvent.timeInterval)
-        rewindEvent.timeInterval = window.setInterval(()=>{
+        window.clearInterval(rewindEvent.interval)
+        rewindEvent.interval = window.setInterval(()=>{
             player.rewind(rewindEvent.second)
         },50)
+    }
+    if(e.code=='F3'){
+        e.preventDefault()
+        let idx = playbackRateList.indexOf(player.playbackRate)
+        setPlaybackRate(idx-1)
+    }
+    if(e.code=='F4'){
+        e.preventDefault()
+        let idx = playbackRateList.indexOf(player.playbackRate)
+        setPlaybackRate(idx+1)
+    }
+    if(e.code=="Escape"){
+        player.togglePlay()
     }
 })
 window.addEventListener('keyup',e=>{
     if(e.code=='AltLeft'||e.code=='AltRight'){
         e.preventDefault()
         rewindEvent.active = false
-        window.clearInterval(rewindEvent.timeInterval)
+        window.clearInterval(rewindEvent.interval)
     }
 })
 var newTimeIndex = -1, newTimeValue = 0
@@ -433,6 +434,8 @@ function updateEditor(){
         lineNumbers.appendChild(div)
     }
 }
+const shortcuts = document.getElementById('shortcuts')
+makeElementMovable(shortcuts)
 editor.addEventListener('keydown',e=>{
     if(e.ctrlKey&&e.code=='KeyJ'){        
         e.preventDefault()
@@ -451,11 +454,8 @@ editor.addEventListener('keydown',e=>{
     if(e.ctrlKey&&e.code=='keyI'){
         document.execCommand('italic')
     }
-    if(e.code=="Escape"){
-        playPause()
-    }
     if(e.code=='Enter'){
-        let {row,col} = getCursor()
+        let {row,col} = getCursor(editor)
         let timestamp = player.currentTime
         newTimeIndex = row+1
         newTimeValue = timestamp
@@ -465,16 +465,33 @@ editor.addEventListener('keydown',e=>{
             e.preventDefault()
         }
     }
+    for(let i=1;i<6;i++){
+        if(e.ctrlKey&&e.code==`Digit${i}`){
+            e.preventDefault()
+            let text = shortcuts.children[i].textContent
+            let textNode = document.createTextNode(text)
+            insertContent(textNode)
+        }
+    }
+    
     // console.log(e)
 })
-function getCursor(){
+function getCursor(parentNode){
     let sel = document.getSelection()
-    let anchorNode = sel.anchorNode.parentNode==editor?
+    let anchorNode = sel.anchorNode.parentNode==parentNode?
         sel.anchorNode:sel.anchorNode.parentNode
     let row = 0
     while((anchorNode=anchorNode.previousSibling)!=null){row++}
     let col = sel.focusOffset
     return {row,col}
+}
+function setCursor(element, focusOffset){
+    let range = document.createRange();
+    let sel = window.getSelection();
+    range.setStart(element, focusOffset);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
 }
 function insertContent(element){
     let sel = document.getSelection()
@@ -482,7 +499,9 @@ function insertContent(element){
     if(anchorNode==editor){
         anchorNode.appendChild(element)
     }else if(anchorNode.innerHTML=='<br>'){
-        anchorNode.insertBefore(element,anchorNode.firstChild)
+        anchorNode.firstChild.remove()
+        anchorNode.appendChild(element)
+        setCursor(element,element.textContent.length)
     }else{
         let prevText = anchorNode.textContent.slice(0,sel.focusOffset)
         anchorNode.textContent = anchorNode.textContent.slice(sel.focusOffset)
@@ -491,7 +510,16 @@ function insertContent(element){
         anchorNode.parentNode.insertBefore(textNode,element)
     }
 }
-
+function autoSave(){
+    const lastFile = localStorage.getItem('vizTranscriber')
+    if(lastFile){
+        editor.innerHTML = lastFile
+    }
+    setInterval(()=>{
+        localStorage.setItem('vizTranscriber',editor.innerHTML)
+    },3000)   
+}
+autoSave()
 // var editor = CodeMirror.fromTextArea(document.querySelector('textarea'),{
 //     lineNumbers: true,
 //     lineWrapping: true,
