@@ -1,5 +1,8 @@
 class Visualizer{
-    constructor(player){
+    constructor(){
+        
+    }
+    connect(player){
         this.player = player
         this.analyser = player.aCtx.createAnalyser()
         player.source.connect(this.analyser)
@@ -281,6 +284,8 @@ class Visualizer{
 class AudioPlayer{
     constructor(){
         this.audio = new Audio()
+    }
+    createAudioContext(){
         this.aCtx = new (window.AudioContext || window.webkitAudioContext)()
         this.source = this.aCtx.createMediaElementSource(this.audio)
         this.audioBuffer = null
@@ -336,7 +341,7 @@ class AudioPlayer{
     }
 }
 const player = new AudioPlayer()
-const visualizer = new Visualizer(player)
+const visualizer = new Visualizer()
 function playPause(){
     if(player.paused){
         player.play()
@@ -354,7 +359,10 @@ function handleDrop(e){
 }
 async function handleFile(file){
     if(file.type.includes('audio')){
+        player.createAudioContext()
+        visualizer.connect(player)
         document.getElementById('panel').style.opacity = 1
+        document.getElementById('waveform').style.display = 'block'
         document.getElementById('drop-field').style.display = 'none'
         // var audioBuffer = await player.readAsArrayBuffer(file)
         // var channelData = audioBuffer.getChannelData(0)   
@@ -401,7 +409,7 @@ window.addEventListener('resize',()=>{
 })
 function resizeLineNumbers(){
     for(let i=0;i<editor.childNodes.length;i++){
-        let div = lineNumbers.childNodes[i]
+        let div = lineNumbers.children[i]
         div.style.height = editor.childNodes[i].clientHeight+'px'
     }
 }
@@ -453,11 +461,11 @@ editor.addEventListener('keydown',e=>{
         newTimeValue = timestamp
     }
     if(e.code=='Backspace'){
-        if(editor.childNodes.length<=2&&editor.firstChild.textContent==''){
+        if(editor.childNodes.length<=1&&editor.firstChild.textContent==''){
             e.preventDefault()
         }
     }
-    console.log(e)
+    // console.log(e)
 })
 function getCursor(){
     let sel = document.getSelection()

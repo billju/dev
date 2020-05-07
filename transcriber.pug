@@ -10,7 +10,7 @@ html(lang="en")
     body
         .d-flex.flex-column
         input#file(type="file" style="display:none;" onchange="handleFile(event.target.files[0])")
-        #drop-field(ondrop="handleDrop(event" ondragover="event.preventDefault()"
+        #drop-field(ondrop="handleDrop(event)" ondragover="event.preventDefault()"
             onclick="document.getElementById('file').click()")
             i.fa.fa-upload(style="font-size: 30px")
             span 選取音檔
@@ -41,7 +41,7 @@ html(lang="en")
                 i.fa.fa-cog
             span.px-2.text-light
                 i.fa.fa-ellipsis-v
-        canvas#waveform
+        canvas#waveform(style="display:none")
         .pb-3(style="height:calc(100% - 90px);overflow-y:scroll")
             .container.px-3.py-3.shadow-sm.bg-white.d-flex
                 #line-numbers
