@@ -75,7 +75,7 @@ function handleRequest(){
     // fetch(url,{}).then(res=>res.json()).then(text=>{})
     const xhr = new XMLHttpRequest()
     xhr.open('GET',url)
-    xhr.setRequestHeader('user-agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64)')
+    // xhr.setRequestHeader('user-agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64)')
     xhr.send()
     xhr.onload = ()=>{
         xhr.responseText
@@ -88,4 +88,10 @@ function handleRequest(){
     //         e.loaded / e.total
     //     }
     // }
+}
+function downloadTxt(text,filename='downlaod.txt'){
+    let a = document.createElement('a')
+    a.href = "data:text/plain;charset=UTF-8," + encodeURIComponent(text)
+    a.download = filename
+    a.click()
 }

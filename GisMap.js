@@ -178,7 +178,19 @@ class GisMap{
         }   
         this.updateView()
         this.vector = []
-        this.raster = []
+        this.raster = [
+            {url:'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OSM',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}',name:'通用',opacity:1,active:true},
+            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP01/default/EPSG:3857/{z}/{y}/{x}',name:'灰階',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/EPSG:3857/{z}/{y}/{x}',name:'航照',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/EMAPX99/default/EPSG:3857/{z}/{y}/{x}',name:'通用向量',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/LUIMAP/default/EPSG:3857/{z}/{y}/{x}',name:'國土利用',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/LAND_OPENDATA/default/EPSG:3857/{z}/{y}/{x}',name:'公有土地',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/SCHOOL/default/EPSG:3857/{z}/{y}/{x}',name:'學校',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/Village/default/EPSG:3857/{z}/{y}/{x}',name:'村里界',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/TOWN/default/EPSG:3857/{z}/{y}/{x}',name:'鄉市鎮界',opacity:1,active:false},
+            {url:'https://wmts.nlsc.gov.tw/wmts/CITY/default/EPSG:3857/{z}/{y}/{x}',name:'縣市界',opacity:1,active:false},
+        ]
         this.overlay = []
         this.tiles = {}
         this.canvas.height = rect.height
@@ -219,7 +231,12 @@ class GisMap{
             }
             // draw tiles
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
-            this.renderTiles()
+            this.renderGrids()
+            for(let raster of this.raster){
+                if(!raster.active) continue
+                this.ctx.globalAlpha = raster.opacity
+                this.renderTiles(raster.url)
+            }            
             this.renderDraw()
             this.canvas.dispatchEvent(new CustomEvent('render',{}))
         }
@@ -387,9 +404,8 @@ class GisMap{
             this.ctx.stroke()
         })
     }
-    renderTiles(url){
-        url = url||'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}'
-        // url = url||'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    renderTiles(url='https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}'){
+        // 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'
         const tp = this.tilePixel, world = this.world, view = this.view
         const origin = {
             x: (world.bbox[0]-view.bbox[0])/world.w*tp.w*Math.pow(2,view.zoom),
