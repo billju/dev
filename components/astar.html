@@ -51,7 +51,10 @@ function handleGrid(e){
         let idx = dx*ys+dy
         let scale = 1.1, coef = size*(scale-1), pad = 5
         if(grid.children[idx]&&grid.mouseIndex!=idx){
-            grid.children[idx].dataSelected = !grid.children[idx].dataSelected
+            if(grid.action===undefined)
+                grid.action = !grid.children[idx].dataSelected
+            if(grid.children[idx].dataSelected!==grid.action)
+                grid.children[idx].dataSelected = grid.action
             grid.children[idx].style.fill = grid.children[idx].dataSelected?'grey':'#fff'
             // grid.children[idx].style.background = grid.children[idx].dataSelected?'grey':'#fff'
             // grid.children[idx].style.zIndex = 666
@@ -65,8 +68,14 @@ function handleGrid(e){
     }
 }
 grid.addEventListener('mousemove',handleGrid)
-grid.addEventListener('mouseup',e=>{grid.mousedown=false})
-grid.addEventListener('mouseleave',e=>{grid.mousedown=false})
+grid.addEventListener('mouseup',e=>{
+    grid.mousedown = false
+    grid.action = undefined
+})
+grid.addEventListener('mouseleave',e=>{
+    grid.mousedown = false
+    grid.action = undefined
+})
 function createRects(){
     for(let i=0;i<xs;i++){
         for(let j=0;j<ys;j++){
