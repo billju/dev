@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calendar</title>
+    <link rel="stylesheet" href="/css/bootstrap.css">
 </head>
 <body>
+    <div id="calendar-chart" class="d-flex"></div>
     <div id="calendar">
         <div id="calendar-scroll">
             <div class="divder">
@@ -30,8 +32,9 @@
     #calendar{
         position: relative;
         width: 100%;
-        max-width: 480px;
+        max-width: 360px;
         height: 800px;
+        /* display: none; */
     }
     #calendar-scroll{
         width: 100%;
@@ -59,14 +62,13 @@
         color: crimson;
     }
     .dayDiv{
-        display: inline-block;
-        width: calc(100%/7);
+        flex: 1;
         height: 50px;
         line-height: 50px;
         text-align: center;
     }
-    .border{
-        box-shadow: 0 1px 0 0 grey inset;
+    .border-top{
+        border-top: 1px solid grey;
     }
     .text-transparent{
         color: transparent;
@@ -99,12 +101,13 @@ let calendar = document.getElementById('calendar-scroll')
 function createMonth(dates,month){
     let monthDiv = document.createElement('div')
     for(let week of dates){
-        let weekDiv = document.createElement('div')    
+        let weekDiv = document.createElement('div')
+        weekDiv.className = 'd-flex'
         for(let date of week){
             let dayDiv = document.createElement('div')
             dayDiv.textContent = date.getDate()
             if(date.getMonth()==month){
-                dayDiv.className = 'dayDiv border'
+                dayDiv.className = 'dayDiv border-top'
             }else{
                 dayDiv.className = 'dayDiv text-transparent'
             }
@@ -117,7 +120,7 @@ function createMonth(dates,month){
 
 let curDate = new Date()
 let months = []
-for(let i=0;i<100;i++){
+for(let i=0;i<20;i++){
     let {dates,prev,next,firstDayInMonth} = getDates(curDate)
     let month = curDate.getMonth()
     let divider = document.createElement('div')
@@ -126,6 +129,7 @@ for(let i=0;i<100;i++){
     let monthLabel = document.createElement('div')
     monthLabel.className = 'text-month'
     monthLabel.textContent = month+1+'月'
+    monthLabel.style.marginLeft = `calc(100% * ${firstDayInMonth.getDay()} / ${7})`
     divider.appendChild(monthLabel)
     months.push({
         offsetTop: divider.offsetTop-calendar.offsetTop,
@@ -143,5 +147,68 @@ calendar.addEventListener('scroll',e=>{
         }
     }
 })
+class CalendarChart{
+    constructor(element,year=new Date().getFullYear()){
+        this.element = element
+        this.render(year)
+    }
+    getDatesOfYear(year){
+        let date = new Date(year,0,1)
+        let weeks = []
+        let tmp = Array.from(Array(date.getDay()))
+        while(date.getFullYear()==year){
+            tmp.push(date)
+            if(date.getDay()==6){
+                weeks.push(tmp)
+                tmp = []
+            }
+            date = new Date(date.getTime()+24*60*60*1000)
+        }
+        if(tmp.length)
+            weeks.push(Array.from(Array(7),(_,i)=>tmp[i]))
+        return weeks
+    }
+    render(year){
+        let weekdayLeft = 7, lastDateOfYear = new Date(year,11,31)
+        for(let week of this.getDatesOfYear(year)){
+            let weekDiv = document.createElement('div')    
+            weekDiv.className = 'd-flex flex-column'
+            week.map((date,di,dates)=>{
+                let dayDiv = document.createElement('div')
+                dayDiv.style.flex = 1
+                dayDiv.style.width = '20px'
+                dayDiv.style.fontSize = '10px'
+                if(date){
+                    let day = date.getDate()
+                    dayDiv.textContent = day
+                    dayDiv.className = 'text-center'
+                    if(day==1){
+                        weekdayLeft = 7
+                    }
+                    if(di==0||day==1){
+                        dayDiv.classList.add('border-top')
+                        dayDiv.classList.add('border-dark')
+                    }
+                    if(di==week.length-1||(lastDateOfYear<=date&&date<=lastDateOfYear)){
+                        dayDiv.classList.add('border-bottom')
+                        dayDiv.classList.add('border-dark')
+                    }
+                    if(weekdayLeft>0){
+                        weekdayLeft--
+                        dayDiv.classList.add('border-left')
+                        dayDiv.classList.add('border-dark')
+                    }
+                    if(lastDateOfYear-date<7*24*60*60*1000){
+                        dayDiv.classList.add('border-right')
+                        dayDiv.classList.add('border-dark')
+                    }
+                }
+                weekDiv.appendChild(dayDiv)
+            })
+            this.element.appendChild(weekDiv)
+        }
+    }
+}
+let calendarChart = new CalendarChart(document.getElementById('calendar-chart'),2020)
 </script>
 </html>

@@ -12,7 +12,8 @@ class Visualizer{
         const ss = ('0'+~~(seconds%60)).substr(-2)
         const mm = ('0'+~~(seconds/60%60)).substr(-2)
         const hh = ('0'+~~(seconds/3600%24)).substr(-2)
-        return format.replace('hh',hh).replace('mm',mm).replace('ss',ss)
+        const mis = (seconds%1).toFixed(3).substr(2)
+        return format.replace('hh',hh).replace('mm',mm).replace('ss',ss).replace('mis',mis)
     }
     createController(container,barElement,textElement){
         const media = this.player.media
@@ -244,6 +245,7 @@ class MediaPlayer{
     }
     play(){this.media.play()}
     pause(){this.media.pause()}
+    get duration(){return this.media.duration}
     get paused(){return this.media.paused}
     set playbackRate(v){this.media.playbackRate=v}
     get playbackRate(){return this.media.playbackRate}
@@ -520,6 +522,45 @@ function autoSave(){
     },3000)   
 }
 autoSave()
+function importSrt(srt){
+    let fromSec = 0
+    srt.split('\n').map((line,i)=>{
+        if(i%4==1){
+            fromSec = line.split(' --> ')[0].replace(',','')
+            fromSec = parseFloat(fromSec)
+        }
+        if(i%4==2){
+            let div = document.createElement('div')
+            div.dataset.time = fromSec
+            div.textContent = line
+            editor.appendChild(div)
+        }
+    })
+}
+function exportSrt(){
+    function getFormatTime(floatStr,format='hh:mm:ss,mis'){
+        let seconds = parseFloat(floatStr)
+        const ss = ('0'+~~(seconds%60)).substr(-2)
+        const mm = ('0'+~~(seconds/60%60)).substr(-2)
+        const hh = ('0'+~~(seconds/3600%24)).substr(-2)
+        const mis = (seconds%1).toFixed(3).substr(2)
+        return format.replace('hh',hh).replace('mm',mm).replace('ss',ss).replace('mis',mis)
+    }
+    let lines = [...editor.children].map(el=>{
+        return {time: getFormatTime(el.dataset.time), text:el.textContent}
+    }).sort((a,b)=>a.time-b.time)
+    let srt = ''
+    for(let i=0;i<lines.length-1;i++){
+        srt+=`${i+1}\n${lines[i].time} --> ${lines[i+1].time}\n${lines[i].text}\n\n`
+    }
+    let duration = getFormatTime(player.duration)
+    srt+=`${lines.length}\n${lines[lines.length-1].time} --> ${duration}\n${lines[lines.length-1].text}`
+    // let a = document.createElement('a')
+    // a.href = "data:text/plain;charset=UTF-8," + encodeURIComponent(srt)
+    // a.download = 'vizTranscriber.srt'
+    // a.click()
+    return srt
+}
 // var editor = CodeMirror.fromTextArea(document.querySelector('textarea'),{
 //     lineNumbers: true,
 //     lineWrapping: true,

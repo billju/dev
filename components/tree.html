@@ -6,12 +6,21 @@
     <title>TreeView</title>
     <link rel="stylesheet" href="../css/fontawesome.css">
     <link rel="stylesheet" href="../css/bootstrap.css">
-    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons"> -->
 </head>
 <body>
     <textarea name="request" id="request-url"></textarea>
     <button class="btn btn-primary" onclick="handleRequest()">send</button>
     <div id="treeview"></div>
+    <div class="row">
+        <ul id="go" class="list-group col-6">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span class="badge badge-pill">3分</span>
+            </li>
+        </ul>
+        <ul id="back" class="list-group col-6">
+            
+        </ul>
+    </div>
     <input id="slider1" type="range" min="0" max="30" value="20">
     <input id="slider2" type="range" min="9" max="30" value="10" step="0.5">
     <canvas id="fractal-tree"></canvas>
@@ -35,53 +44,75 @@ i{
 }
 </style>
 <script>
+    var route = 9
+    var reqURL = `https://ptx.transportdata.tw/MOTC/v2/Bus/EstimatedTimeOfArrival/City/Taichung/${route}?$select=PlateNumb,StopName,EstimateTime&$filter=NextBusTime ne null and RouteID eq '${route}'&$orderby=Direction,StopSequence&$format=JSON`
+    document.getElementById('request-url').value = reqURL
     function handleRequest(){
         let url = document.getElementById('request-url').value
-        // fetch(url,{}).then(res=>res.json()).then(text=>{})
-        const xhr = new XMLHttpRequest()
-        xhr.open('GET',url)
-        xhr.setRequestHeader('user-agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64)')
-        xhr.send()
-        xhr.onload = ()=>{
-            xhr.responseText
-        }
-        // const formData = new FormData()
-        // formData.append('filename',file)
-        // xhr.open('POST','upload').send(formData)
-        // xhr.upload.onprogress = e=>{
-        //     if(e.lengthComputable){
-        //         e.loaded / e.total
-        //     }
-        // }
+        fetch(url,{}).then(res=>res.json()).then(json=>{
+            let go = document.getElementById('go')
+            let back = document.getElementById('back')
+            json.map(row=>{
+                let li = document.createElement('li')
+                let text = row.StopName.Zh_tw+' '+row.PlateNumb+' '
+                let date = new Date(row.NextBusTime)
+                let formateTime = ('0'+date.getHours()).substr(-2)+':'+('0'+date.getMinutes()).substr(-2)
+                let formateEst = row.EstimateTime>60?Math.floor(row.EstimateTime/60):row.EstimateTime
+                text+= row.EstimateTime?formateEst+'分':formateTime
+                li.textContent = text
+                if(row.direction==0){
+                    go.appendChild(li)
+                }else{
+                    back.appendChild(li)
+                }
+                let child = root.appendChild('object')
+                for(let key in row){
+                    child.appendChild(key+':'+row[key])
+                }
+            })
+        })
     }
+    
     class Treeview{
-        constructor(root){
-            this.level = -1
-            this.parent = null
-            this.container = document.createElement('div')
-            this.content = null            
-            this.childWrapper = null
+        constructor(parent){
+            this.level = parent.level==undefined?0:parent.level+1
+            this.parent = parent
+            if(parent.mask){
+                this.mask = parent.childMask
+            }else{ // if parent is root
+                this.mask = document.createElement('div')
+                this.mask.className = 'tree-mask'
+                this.mask.style.overflow = 'hidden'
+                this.mask.style.transition = '0.3s'
+                parent.appendChild(this.mask)
+                this.parent.childMask = this.mask
+            }
+            this.content = this.createContent()
+            this.mask.appendChild(this.content)
+            // this.content.style.height = this.content.clientHeight+'px'
+            this.childMask = document.createElement('div')
+            this.childMask.className = 'tree-mask'
+            this.childMask.style.overflow = 'hidden'
+            this.childMask.style.transition = 'height 0.3s'
+            this.childMask.style.height = 0
+            this.mask.appendChild(this.childMask)
             this.children = []
             this.expanded = true
-            if(root){
-                root.appendChild(this.container)   
-            }else{
-                this.container.className = 'tree-container'
-            }
         }
         createContent(){
             var div = document.createElement('div')
             div.className = 'tree-content'
-            var i = document.createElement('i')
-            i.className = 'fas'
-            var span = document.createElement('span')
-            span.innerText = this.level
-            var checkbox = document.createElement('input')
-            checkbox.type = 'checkbox'
-            div.appendChild(i)
-            div.appendChild(checkbox)
-            div.appendChild(span)
-            i.onclick = e=>{
+            this.caret = document.createElement('i')
+            this.caret.className = 'fas fa-caret-down'
+            this.caret.style.opacity = 0
+            this.caret.style.transition = 'transform 0.3s'
+            this.span = document.createElement('span')
+            this.checkbox = document.createElement('input')
+            this.checkbox.type = 'checkbox'
+            div.appendChild(this.caret)
+            div.appendChild(this.checkbox)
+            div.appendChild(this.span)
+            this.caret.onclick = e=>{
                 e.stopPropagation()
                 this.toggle()
             }
@@ -93,69 +124,46 @@ i{
             return div
         }
         appendChild(content){
-            if(!this.childWrapper){
-                this.childWrapper = document.createElement('div')
-                this.container.appendChild(this.childWrapper)
-            }
-            var newTreeview = new Treeview()
-            newTreeview.level = this.level+1
-            newTreeview.parent = this
-            newTreeview.content = content||newTreeview.createContent()
-            newTreeview.container.appendChild(newTreeview.content)
+            this.caret.style.opacity = '1'
+            let newTreeview = new Treeview(this)
+            newTreeview.span.textContent = content
             this.children.push(newTreeview)
-            this.childWrapper.appendChild(newTreeview.container)
-            if(this.parent){
-                this.expand(newTreeview.container.clientHeight)
-            }
+            let diff = newTreeview.content.clientHeight
+            newTreeview.syncParentHeight(diff)
             return newTreeview
         }
         remove(){
-            if(this.parent){
+            if(this.parent.childMask)
                 this.parent.children = this.parent.children.filter(x=>x!=this)
-            }
+            this.mask.remove()
         }
         toggle(){
-            if(this.childWrapper){
+            if(this.childMask){
                 this.expanded = !this.expanded
                 if(this.expanded){
                     this.expand()
                 }else{
                     this.collapse()
                 }
-                // this.content.querySelector('input[type=checkbox]').checked = this.expanded
             }
         }
-        expand(diff){
-            var height = this.children.reduce((acc,cur)=>acc+cur.container.clientHeight,0)
-            diff = diff||(height - this.childWrapper.clientHeight)
-            var parent = this.parent
-            while(parent){
-                parent.childWrapper.style.height = parent.childWrapper.clientHeight+diff+'px'
-                if(parent.content)
-                    parent.content.querySelector('span').innerText = parent.childWrapper.style.height
+        syncParentHeight(diff){
+            let parent = this
+            while(parent.mask){
+                parent.mask.style.height = parent.mask.clientHeight+diff+'px'
                 parent = parent.parent
             }
-            this.childWrapper.style.height = height+'px'
-            this.childWrapper.style.overflow = 'hidden'
-            this.childWrapper.style.transition = '0.3s'
-            this.content.querySelector('span').innerText = this.childWrapper.style.height
-            //
-            this.content.querySelector('i').className = 'fas fa-caret-down'
-            this.content.querySelector('i').style.transition = '0.3s'
+        }
+        expand(){
+            var diff = this.children.reduce((acc,cur)=>acc+cur.content.clientHeight+cur.childMask.clientHeight,0)
+            this.childMask.style.height = diff+'px'
+            this.syncParentHeight(diff)
             this.content.querySelector('i').style.transform = 'rotate(0)'
         }
         collapse(){
-            this.childWrapper.style.height = 0
-            var diff = -this.childWrapper.clientHeight
-            var parent = this.parent
-            while(parent){
-                parent.childWrapper.style.height = parent.childWrapper.clientHeight+diff+'px'
-                if(parent.content)
-                    parent.content.querySelector('span').innerText = parent.childWrapper.style.height
-                parent = parent.parent
-            }
-            this.content.querySelector('span').innerText = this.childWrapper.style.height
-            //
+            var diff = -this.childMask.clientHeight
+            this.syncParentHeight(diff)
+            this.childMask.style.height = 0
             this.content.querySelector('i').style.transform = 'rotate(-90deg)'
         }
         flatten(){
@@ -167,8 +175,7 @@ i{
         }
     }
     var root = new Treeview(document.getElementById('treeview'))
-    root.appendChild().appendChild()
-    root.appendChild().appendChild()
+    root.appendChild()//.appendChild().appendChild()
 
     function createContextMenu(coord){
         let div = document.createElement('div')
