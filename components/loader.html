@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loader</title>
+</head>
+<body>
+    <div id="loader" style="position: relative;"></div>
+</body>
+<style>
+@keyframes scale{
+    0%, 100%{
+        transform: scale(0.2);
+    }
+    50%{
+        transform: scale(1);
+    }
+}
+</style>
+<script>
+function createDots(element){
+    let len = 20, delay = 0.1, radius= 100
+    for(let i=0;i<len;i++){
+        let circle = document.createElement('div')
+        Object.assign(circle.style,{
+            position: 'fixed',
+            left: radius*(1+Math.cos(i*Math.PI*2/len))+'px',
+            top: radius*(1+Math.sin(i*Math.PI*2/len))+'px',
+            width: '20px',
+            height: '20px',
+            background: 'grey',
+            borderRadius: '50%',
+            transitionOrigin: 'center',
+            animationName: 'scale',
+            animationDuration: `${delay*len}s`,
+            animationDelay: `${delay*i}s`,
+            animationTimingFunction: 'ease',
+            animationIterationCount: 'infinite'
+        })
+        element.appendChild(circle)
+    }
+}
+createDots(document.getElementById('loader'))
+</script>
+</html>

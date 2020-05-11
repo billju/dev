@@ -515,6 +515,11 @@
     function randomizeDataset(){
         iteration = 0
         dataset.random(50)
+        if(Math.min(...dataset.y.v)<0){
+            chart.update({beginAtZero:false})
+        }else{
+            chart.update({beginAtZero:true})
+        }
         reg.fit(dataset.x,dataset.y)
     }
     canvas.onmousedown = e=>{

@@ -316,10 +316,24 @@ function makeElementMovable(element){
     })
     window.addEventListener('mousemove', e=>{
         if(element.dataset.dragging=='true'){
-            let dx = e.clientX-element.dataset.x
-            let dy = e.clientY-element.dataset.y
-            element.style.left = element.offsetLeft+dx+'px'
-            element.style.top = element.offsetTop+dy+'px'  
+            let left = element.offsetLeft+e.clientX-element.dataset.x
+            let top = element.offsetTop+e.clientY-element.dataset.y
+            if(left+element.clientWidth/2>window.innerWidth/2){
+                let right = window.innerWidth-left-element.clientWidth
+                element.style.left = ''
+                element.style.right = right+'px'
+            }else{
+                element.style.right = ''
+                element.style.left = left+'px'
+            }
+            if(top+element.clientHeight/2>window.innerHeight/2){
+                let bottom = window.innerHeight-top-element.clientHeight
+                element.style.top = ''
+                element.style.bottom = bottom+'px'
+            }else{
+                element.style.bottom = ''
+                element.style.top = top+'px'
+            }
             element.dataset.x = e.clientX
             element.dataset.y = e.clientY
         }
@@ -522,20 +536,35 @@ function autoSave(){
     },3000)   
 }
 autoSave()
-function importSrt(srt){
-    let fromSec = 0
-    srt.split('\n').map((line,i)=>{
-        if(i%4==1){
-            fromSec = line.split(' --> ')[0].replace(',','')
-            fromSec = parseFloat(fromSec)
+function importSrt(){
+    function parseSrt(srt){
+        let fromSec = 0
+        srt.split('\n').map((line,i)=>{
+            if(i%4==1){
+                fromSec = line.split(' --> ')[0].replace(',','')
+                fromSec = parseFloat(fromSec)
+            }
+            if(i%4==2){
+                let div = document.createElement('div')
+                div.dataset.time = fromSec
+                div.textContent = line
+                editor.appendChild(div)
+            }
+        })
+    }
+    let fileInput = document.getElementById('file')
+    fileInput.setAttribute('accept','.srt')
+    fileInput.onchange = e=>{
+        const file = e.target.files[0]
+        if(file){
+            const reader = new FileReader()
+            reader.onload = ()=>{
+                parseSrt(reader.result)
+            }
+            reader.readAsText(file)
         }
-        if(i%4==2){
-            let div = document.createElement('div')
-            div.dataset.time = fromSec
-            div.textContent = line
-            editor.appendChild(div)
-        }
-    })
+    }
+    fileInput.click()
 }
 function exportSrt(){
     function getFormatTime(floatStr,format='hh:mm:ss,mis'){
@@ -555,10 +584,10 @@ function exportSrt(){
     }
     let duration = getFormatTime(player.duration)
     srt+=`${lines.length}\n${lines[lines.length-1].time} --> ${duration}\n${lines[lines.length-1].text}`
-    // let a = document.createElement('a')
-    // a.href = "data:text/plain;charset=UTF-8," + encodeURIComponent(srt)
-    // a.download = 'vizTranscriber.srt'
-    // a.click()
+    let a = document.createElement('a')
+    a.href = "data:text/plain;charset=UTF-8," + encodeURIComponent(srt)
+    a.download = 'vizTranscriber.srt'
+    a.click()
     return srt
 }
 // var editor = CodeMirror.fromTextArea(document.querySelector('textarea'),{

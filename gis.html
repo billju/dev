@@ -4,9 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GIS</title>
+    <link rel="stylesheet" href="/css/bootstrap.css">
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <div class="position-fixed" style="right:0;top:0;">
+        <div class="d-flex align-items-stretch">
+            <span class="mr-2">OSM</span>
+            <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="customSwitch1">
+                <label class="custom-control-label" for="customSwitch1"></label>
+            </div>
+            <div class="input-text">
+                <input type="range" class="custom-range">
+            </div>
+        </div>
+    </div>
 </body>
 <style>
     html, body{

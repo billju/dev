@@ -52,10 +52,10 @@ html,body{
     color: white;
     cursor: pointer;
 }
-.show-only-hover div{
+.show-only-hover div, .show-only-hover ul{
     display: none;
 }
-.show-only-hover:hover div{
+.show-only-hover:hover div, .show-only-hover:hover ul{
     display: block;
 }
 #text-editor{

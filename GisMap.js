@@ -172,7 +172,7 @@ class GisMap{
             latlng: {lat: 24.15525395533066, lng: 120.7115518544718},
             w: rect.width,
             h: rect.height,
-            zoom: 12,
+            zoom: 9,
             minZoom: 0,
             maxZoom: 20,
         }   
@@ -196,7 +196,7 @@ class GisMap{
         this.canvas.height = rect.height
         this.canvas.width = rect.width
         this.ctx = canvas.getContext('2d')
-        this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5}
+        this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5,zStep:1}
         this.moveEvent = {x:0,y:0,active:false,moved:false}
         this.drawEvent = {path:[],active:false}
         this.momentum = {x:0,y:0,t:0}
@@ -236,7 +236,7 @@ class GisMap{
                 if(!raster.active) continue
                 this.ctx.globalAlpha = raster.opacity
                 this.renderTiles(raster.url)
-            }            
+            }
             this.renderDraw()
             this.canvas.dispatchEvent(new CustomEvent('render',{}))
         }
@@ -334,7 +334,8 @@ class GisMap{
             after: newZoom,
             t: frames,
             frames, 
-            delta
+            delta,
+            zStep: newZoom<view.zoom?-1:1,
         }
     }
     handleResize(){
@@ -422,33 +423,40 @@ class GisMap{
             if(!(src in this.tiles[tile.z])){
                 var img = new Image()
                 img.src = src
-                
                 this.tiles[tile.z][src] = img
             }
         })
         // find loaded images
         var tilesNotLoaded = tiles
         var tilesLoaded = []
-        var zStep = 1
+        var zStep = this.zoomEvent.zStep
         while(tilesNotLoaded.length&&z>=view.minZoom&&z<=view.maxZoom){
             let unique = {}
-            tilesNotLoaded = tilesNotLoaded.filter(tile=>{
+            for(let tile of tilesNotLoaded){
                 let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
                 let loaded = this.tiles[z]?this.tiles[z][src]?this.tiles[z][src].complete:false:false
                 if(loaded){
                     tilesLoaded.unshift(tile)
-                    return false
-                }else{
-                    tile.x = Math.floor(tile.x/Math.pow(2,zStep))
-                    tile.y = Math.floor(tile.y/Math.pow(2,zStep))
-                    tile.z-= zStep
+                }else if(zStep==1){
+                    tile.x = Math.floor(tile.x/2)
+                    tile.y = Math.floor(tile.y/2)
+                    tile.z-= 1
                     src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
                     unique[src] = tile
-                    return true
+                }else if(zStep==-1){
+                    for(let i=0;i<4;i++){
+                        let newTile = Object.assign({},tile)
+                        newTile.x = newTile.x*2+i%2
+                        newTile.y = newTile.y*2+Math.floor(i/2)
+                        newTile.z+= 1
+                        src = url.replace('{x}',newTile.x).replace('{y}',newTile.y).replace('{z}',newTile.z)
+                        unique[src] = newTile
+                    }
                 }
-            })
+            }
             tilesNotLoaded = Object.values(unique)
             z-= zStep
+            if(z-view.zoom>=2) break //prevent from exponential explotion
         }
         tilesLoaded.map(tile=>{
             var scale = Math.pow(2,view.zoom-tile.z)

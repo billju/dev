@@ -8,7 +8,7 @@ html(lang="en")
         link(rel="stylesheet" href="css/bootstrap.css")
         link(rel="stylesheet" href="css/transcriber.css")
     body
-        input#file(type="file" style="display:none;" onchange="handleFile(event.target.files[0])")
+        input#file(type="file" style="display:none;" onchange="handleFile(event.target.files[0])" accept="audio/*,video/*")
         #drop-field(ondrop="handleDrop(event)" ondragover="event.preventDefault()"
             onclick="document.getElementById('file').click()")
             i.fa.fa-upload(style="font-size: 30px")
@@ -38,11 +38,14 @@ html(lang="en")
                     #audio-control-text
             span.px-2.text-light
                 i.fa.fa-cog
-            span.px-2.text-light
-                i.fa.fa-ellipsis-v
+            span.px-2.position-relative.show-only-hover(style="cursor:pointer")
+                i.fa.fa-ellipsis-v.text-light
+                ul.list-group.list-group-flush.position-absolute(style="right:0;min-width:200px")
+                    li.list-group-item.list-group-item-action(onclick="importSrt()") import .srt
+                    li.list-group-item.list-group-item-action(onclick="exportSrt()") export .srt
         canvas#waveform(style="display:none")
         video#video(style="position:fixed;cursor:move;max-height:300px;right:10px;bottom:10px;display:none")
-        ul#shortcuts.list-group(style="position:fixed;cursor:move;max-height:300px;right:10px;top:100px")
+        ul#shortcuts.list-group(style="position:fixed;cursor:move;left:10px;top:100px")
             li.list-group-item.list-group-item-info 快捷鍵
             li.list-group-item(contenteditable="") ctrl+1
             li.list-group-item(contenteditable="") ctrl+2
