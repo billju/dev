@@ -4,9 +4,9 @@ html(lang="en")
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         title VizTranscriber
-        link(rel="stylesheet" href="css/fontawesome.css")
-        link(rel="stylesheet" href="css/bootstrap.css")
-        link(rel="stylesheet" href="css/transcriber.css")
+        link(rel="stylesheet" href="/css/fontawesome.css")
+        link(rel="stylesheet" href="/css/bootstrap.css")
+        link(rel="stylesheet" href="transcriber.css")
     body
         input#file(type="file" style="display:none;" onchange="handleFile(event.target.files[0])" accept="audio/*,video/*")
         #drop-field(ondrop="handleDrop(event)" ondragover="event.preventDefault()"
@@ -36,10 +36,8 @@ html(lang="en")
                 #audio-control-container
                     #audio-control-bar
                     #audio-control-text
-            span.px-2.text-light
-                i.fa.fa-cog
             span.px-2.position-relative.show-only-hover(style="cursor:pointer")
-                i.fa.fa-ellipsis-v.text-light
+                i#settings.fa.fa-cog.text-light
                 ul.list-group.list-group-flush.position-absolute(style="right:0;min-width:200px")
                     li.list-group-item.list-group-item-action(onclick="importSrt()") import .srt
                     li.list-group-item.list-group-item-action(onclick="exportSrt()") export .srt

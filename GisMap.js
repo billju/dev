@@ -180,7 +180,7 @@ class GisMap{
         this.vector = []
         this.raster = [
             {url:'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OSM',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}',name:'通用',opacity:1,active:true},
+            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}',name:'通用',opacity:1,active:false},
             {url:'https://wmts.nlsc.gov.tw/wmts/EMAP01/default/EPSG:3857/{z}/{y}/{x}',name:'灰階',opacity:1,active:false},
             {url:'https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/EPSG:3857/{z}/{y}/{x}',name:'航照',opacity:1,active:false},
             {url:'https://wmts.nlsc.gov.tw/wmts/EMAPX99/default/EPSG:3857/{z}/{y}/{x}',name:'通用向量',opacity:1,active:false},
@@ -468,6 +468,7 @@ class GisMap{
             let img = this.tiles[tile.z][src]
             this.ctx.drawImage(img,X,Y,W,H)
         })
+        this.ctx.fillStyle = 'black'
         tilesLoaded.map((t,i)=>{
             let text = t.x+'-'+t.y+'-'+t.z
             this.ctx.fillText(text,10,10*i)

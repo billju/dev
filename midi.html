@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI</title>
+</head>
+<body>
+    
+</body>
+<script>
+if(navigator.requestMIDIAccess){
+    navigator.requestMIDIAccess().then((midiAccess)=>{
+        var inputs = midiAccess.inputs
+        var outputs = midiAccess.outputs
+        for(let input of midiAccess.inputs.values()){
+            input.onmidimessage = getMIDIMessage
+        }
+    },()=>{console.log('could not access MIDI devices')})
+}
+function getMIDIMessage(msg){
+    let command = msg.data[0]
+    let note = msg.data[1]
+    let velocity = msg.data.length>2?msg.data[2]:0
+    switch(command){
+        case 144: //note on
+            noteOn(note,velocity)
+            break
+        case 128: //note off
+            noteOff(note,velocity)
+            break;
+    }
+}
+function noteOn(note,velocity){
+    console.log(`note ${note} velocity ${velocity}`)
+}
+function noteOff(note,velocity){
+    console.log(`note ${note} velocity ${velocity}`)
+}
+</script>
+</html>

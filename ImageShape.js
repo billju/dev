@@ -111,7 +111,7 @@ class ImageShape{
         ctx.rotate(-r)
         ctx.scale(this.isVerticalFlipped?-1:1,1)
         ctx.globalAlpha = this.opacity
-        ctx.drawImage(img,-w/2,-h/2,w,h)
+        ctx.drawImage(this.img,-w/2,-h/2,w,h)
         ctx.restore()
         if(this.editing){
             this.drawFrame(ctx)
