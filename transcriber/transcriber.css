@@ -86,6 +86,7 @@ span:hover #settings{
     padding-right: 5px;
     font-size: 10px;
     border-right: 3px solid palevioletred;
+    user-select: none;
 }
 #line-numbers div{
     cursor: pointer;

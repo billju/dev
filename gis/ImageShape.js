@@ -54,8 +54,7 @@ class ImageShape{
     }
     updateGisClient(){
         this.coords = this.gisCoords.map(coord=>{
-            var c = this.gismap.coord2client(coord)
-            return [c.x,c.y]
+            return this.gismap.coord2client(coord)
         })
         this.updateBbox()
         let Wdx =  this.coords[0][0]-this.coords[1][0]
@@ -73,7 +72,7 @@ class ImageShape{
     }
     updateGisCoord(){
         this.gisCoords = this.coords.map(coord=>{
-            return this.gismap.client2coord({x:coord[0],y:coord[1]})
+            return this.gismap.client2coord(coord)
         })
     }
     getImageBounds(img,cx,cy){
@@ -161,11 +160,8 @@ class ImageShape{
             this.coords[i][0] = vToC.x+x
             this.coords[i][1] = vToC.y+y
             if(this.gismap){
-                this.gisCoords[i] = this.gismap.client2coord({
-                    x: vToC.x+x,
-                    y: vToC.y+y
-                })
-            }    
+                this.gisCoords[i] = this.gismap.client2coord([vToC.x+x,vToC.y+y])
+            }
         })
     }
     verticalFlip(){

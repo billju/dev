@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Clip</title>
+</head>
+<body>
+    <svg width="0" height="0">
+        <defs><clipPath id="clipPath">
+            <circle cx="100" cy="100" r="50"/>
+        </clipPath></defs>
+        <defs><filter id="gooey">
+            <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="10" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+            <feGaussianBlur in="goo" stdDeviation="3" result="shadow" />
+            <feColorMatrix in="shadow" mode="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 -0.2" result="shadow" />
+            <feOffset in="shadow" dx="1" dy="1" result="shadow" />
+            <feComposite in2="shadow" in="goo" result="goo" />
+            <feComposite in2="goo" in="SourceGraphic" result="mix" />
+        </filter></defs>
+    </svg>
+    <div class="blobs">
+        <div class="blob"></div>
+        <div class="blob" style="left:100px"></div>
+    </div>
+    <img src="/static/image/crowd.jpg" alt="" class="clipPath">
+    <div class="bgClip">bang</div>
+    <div class="glitch">烏日文心北屯線</div>
+    <div class="swiper"></div>
+    <div>
+        <img id="glitch-image" src="" alt="">
+    </div>
+</body>
+<style>
+*{
+    font-family: 微軟正黑體;   
+}
+html,body{
+    margin: 0;
+    height: 100%;
+}
+body{
+    background: #000;
+}
+.bgClip{
+    background-image: url(/static/image/crowd.jpg);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    font-size: 48px;
+    font-weight: bold;
+    
+}
+.clipPath{
+    clip-path: url(#clipPath);
+}
+.blobs{
+    background: #fff;
+    position: relative;
+    filter:url(#gooey);
+}
+.blob{
+    position: absolute;
+    background: dodgerblue;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+}
+.glitch{
+    color: #fff;
+    background: #000;
+    font-size: 100px;
+    font-weight: 900;
+}
+</style>
+<script>
+function imageGlitch(img, src){
+    img.parentNode.style.position = 'relative'
+    img.src = src
+    if(img.complete){
+        animate()
+    }else{
+        img.onload = animate
+    }
+    function animate(){
+        let W = img.width
+        let H = img.height
+        let boxes = Array.from(Array(10),()=>{
+            let box = document.createElement('div')
+            Object.assign(box.style,{
+                position: 'absolute',
+                top: 0,
+                width: `${W}px`,
+                height: `${H}px`,
+                backgroundImage: `url(${src})`,
+            })
+            img.parentNode.appendChild(box)
+            return box
+        })
+        boxes.map(box=>{
+            box.animate(
+                Array.from(Array(20),()=>{
+                    let left = Math.floor(W*Math.random())
+                    let px = -left+W/10*(Math.random()-0.5)
+                    let top = Math.floor(H*Math.random())
+                    let width = Math.floor(W/5*Math.random())
+                    let height = Math.floor(H/10*Math.random())
+                    width = left+width>W?W-left:width
+                    height = top+height>H?H-top:height
+                    let py = -top
+                    return {
+                        left: `${left}px`,
+                        top: `${top}px`,
+                        width: width+'px',
+                        height: height+'px',
+                        backgroundPosition: `${px}px ${py}px`,
+                    }
+                }),{
+                    duration: 5000,
+                    iterations: Infinity,
+                    easing: 'steps(20,start)',
+                }
+            )
+        })
+        
+    }
+}
+imageGlitch(document.getElementById('glitch-image'),'/static/image/crowd.jpg')
+</script>
+</html>

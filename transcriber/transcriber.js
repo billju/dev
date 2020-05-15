@@ -43,6 +43,9 @@ class Visualizer{
         }
         window.addEventListener('mouseup', handleEnd)
         window.addEventListener('mouseleave', handleEnd)
+        window.addEventListener('resize',()=>{
+            barElement.style.width = container.clientWidth*media.currentTime/media.duration+'px'
+        })
     }
     getPeaks(width, data){
         let step = Math.floor(data.length/width)
@@ -157,76 +160,6 @@ class Visualizer{
             ctx.stroke()
             ctx.closePath()
         }
-    }
-    staticWaveform(canvas, peaks, offset=0, color='black'){
-        const ctx = canvas.getContext('2d')
-        const cy = canvas.height/2
-        const max = Math.max(...peaks.map(peak=>Math.max(peak[0],-peak[1])))
-        ctx.beginPath()
-        ctx.moveTo(offset,cy)
-        peaks.map((peak,i)=>{
-            ctx.lineTo(offset+i,peak[0]*cy+cy)
-            ctx.lineTo(offset+i,peak[1]*cy+cy)
-        })
-        ctx.strokeStyle = color
-        ctx.lineWidth = 1
-        ctx.stroke()
-        ctx.closePath()
-    }
-    waveformEditor(canvas, channelData){
-        const ctx = canvas.getContext('2d')
-        canvas.width = canvas.clientWidth
-        canvas.height = canvas.clientHeight
-        const cy = canvas.height/2
-        const peaks = this.getPeaks(canvas.width, channelData)
-        this.staticWaveform(canvas, peaks)
-        const bound = {active:false,left:0,right:0,start:0}
-        function drawBound(x,type, color='grey'){
-            ctx.beginPath()
-            ctx.moveTo(x,0)
-            ctx.lineTo(x,canvas.height)
-            ctx.fillStyle = color
-            ctx.strokeStyle = color
-            ctx.stroke()
-            ctx.fill()
-            ctx.closePath()
-            ctx.fillRect(type=='left'?x-10:x,cy-15,10,30)
-        }
-        canvas.addEventListener('contextmenu',e=>{
-            e.preventDefault()
-        })
-        canvas.addEventListener('mousedown',e=>{
-            var LEFT=1,MID=2,RIGHT=3
-            if(e.which==RIGHT){
-                bound.active = true
-                bound.start = bound.left = bound.right = Math.floor(e.clientX-canvas.offsetLeft)
-                ctx.clearRect(0,0,canvas.width,canvas.height)
-                this.staticWaveform(canvas, peaks)
-            }
-        })
-        canvas.addEventListener('mousemove',e=>{
-            if(bound.active){
-                const left = Math.floor(e.clientX-canvas.offsetLeft)
-                ctx.clearRect(0,0,canvas.width,canvas.height)
-                this.staticWaveform(canvas, peaks)
-                if(left>bound.start){
-                    bound.left = bound.start
-                    bound.right = left
-                }else{
-                    bound.left = left
-                    bound.right = bound.start
-                }
-                drawBound(bound.left,'left')
-                drawBound(bound.right,'right')
-                this.staticWaveform(canvas, peaks.slice(bound.left, bound.right), bound.left, 'dodgerblue')
-            }
-        })
-        canvas.addEventListener('mouseup',e=>{
-            bound.active = false
-        })
-        canvas.addEventListener('mouseleave',e=>{
-            bound.active = false
-        })
     }
 }
 class MediaPlayer{

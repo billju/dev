@@ -382,7 +382,7 @@
             let W = this.canvas.width-this.padding[1]-this.padding[3]
             let H = this.canvas.height-this.padding[0]-this.padding[2]
             // origin
-            this.ctx.setLineDash([])
+            // this.ctx.setLineDash([])
             this.ctx.strokeStyle = 'black'
             this.ctx.lineWidth = 1
             this.ctx.beginPath()
@@ -394,7 +394,7 @@
             this.ctx.closePath()
             // style
             let dashArray = styles.strokeDashArray||[5,15]
-            this.ctx.setLineDash(dashArray)
+            // this.ctx.setLineDash(dashArray)
             this.ctx.strokeStyle = styles.stroke||'grey'
             this.ctx.lineWidth = styles.strokeWidth||0.5
             this.ctx.fillStyle = styles.fill||'black'
@@ -418,7 +418,7 @@
             this.ctx.stroke()
             this.ctx.closePath()
             // y axis
-            let binsX = this.getBins(this.bbox[2]-this.bbox[0],W/20)
+            let binsX = this.getBins(this.bbox[2]-this.bbox[0],W/50)
             let stepX = binsX.step
             let sizeX = W/binsX.bins
             let offsetX = sizeX*(1-this.bbox[0]%stepX/stepX)

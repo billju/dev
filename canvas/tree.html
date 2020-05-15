@@ -21,8 +21,6 @@
             
         </ul>
     </div>
-    <input id="slider1" type="range" min="0" max="30" value="20">
-    <input id="slider2" type="range" min="9" max="30" value="10" step="0.5">
     <canvas id="fractal-tree"></canvas>
 </body>
 <style>
@@ -201,6 +199,7 @@ i{
             this.ctx = this.canvas.getContext('2d')
             this.args = {
                 radian: 20*Math.PI/180,
+                skew: 5*Math.PI/180,
                 trim: 20,
                 point: {x:this.canvas.width/2,y:this.canvas.height},
                 vector: {x:0,y:-100}
@@ -233,8 +232,8 @@ i{
             let newPoint = {x:point.x+vector.x, y:point.y+vector.y}
             this.paths.push([point.x,point.y,newPoint.x,newPoint.y,this.getLength(vector)])
             if(this.getLength(newVector)>=1){
-                this.branch(newPoint,this.rotate(newVector,this.args.radian))
-                this.branch(newPoint,this.rotate(newVector,-this.args.radian))
+                this.branch(newPoint,this.rotate(newVector,this.args.radian+this.args.skew))
+                this.branch(newPoint,this.rotate(newVector,-this.args.radian+this.args.skew))
             }
         }
         draw(){
@@ -257,12 +256,11 @@ i{
         }
     }
     var ft = new FractalTree(document.getElementById('fractal-tree'))
-    document.getElementById('slider1').oninput = e=>{
-        ft.update({radian: e.target.value*Math.PI/180})
-    }
-    document.getElementById('slider2').oninput = e=>{
-        ft.update({trim: e.target.value})
-    }
-    
+    window.addEventListener('mousemove',e=>{
+        ft.update({
+            skew: (20*e.clientX/window.innerWidth-10)*Math.PI/180,
+            trim: 10+20*e.clientY/window.innerHeight
+        })
+    })
 </script>
 </html>

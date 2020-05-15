@@ -2,33 +2,34 @@ function radialDistFilter(points, epsilon){
     var epsilon_squ = epsilon*epsilon
     return points.filter((point,i)=>{
         if(i==0) return true
-        var dx = point[i].x-point[i-1].x
-        var dy = point[i].y-point[i-1].y
+        var dx = point[i][0]-point[i-1][0]
+        var dy = point[i][1]-point[i-1][1]
         return dx*dx+dy*dy > epsilon_squ
     })
 }
 function PerpendicularDistance(p,p1,p2){
-    var x = p1.x,
-        y = p1.y,
-        dx = p2.x-p1.x,
-        dy = p2.y-p1.y
+    var x = p1[0],
+        y = p1[1],
+        dx = p2[0]-p1[0],
+        dy = p2[1]-p1[1]
     if(dx!==0||dy!==0){
-        var t = ((p.x-x)*dx+(p.y-y)*dy)/(dx*dx+dy*dy) //scale of projection
+        var t = ((p[0]-x)*dx+(p[1]-y)*dy)/(dx*dx+dy*dy) //scale of projection
         if(t>1){
-            x = p2.x
-            y = p2.y
+            x = p2[0]
+            y = p2[1]
         }else if(t>0){
             x+= dx*t
             y+= dy*t
         }
     }
-    dx = p.x-x
-    dy = p.y-y
+    dx = p[0]-x
+    dy = p[1]-y
     return Math.sqrt(dx*dx + dy*dy)
 }
 function DouglasPeucker(points, epsilon){
+    if(epsilon==0) return points
     var dmax=0, index=-1, firstPoint = points[0], lastPoint = points[points.length-1]
-    for(var i=1;i<points.length-1;i++){
+    for(var i=1;i<points.length;i++){
         var d = PerpendicularDistance(points[i], firstPoint, lastPoint)
         if(d>dmax){
             dmax = d
@@ -46,21 +47,21 @@ function DouglasPeucker(points, epsilon){
 }
 function isInPolygon(p, polygon) {
     var isInside = false,
-        xArr = polygon.map(pt=>pt.x),
-        yArr = polygon.map(pt=>pt.y),
+        xArr = polygon.map(pt=>pt[0]),
+        yArr = polygon.map(pt=>pt[1]),
         minX = Math.min(...xArr),
         minY = Math.min(...yArr),
         maxX = Math.max(...xArr),
         maxY = Math.max(...yArr)
-    if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) {
+    if (p[0] < minX || p[0] > maxX || p[1] < minY || p[1] > maxY) {
         return false;
     }
     for(var i=0, j=polygon.length-1; i<polygon.length; j=i++) {
         var p1 = polygon[j],
             p2 = polygon[i]
         if(
-            (p2.y > p.y) != (p1.y > p.y) &&
-            (p.x < (p1.x - p2.x) * (p.y - p2.y) / (p1.y - p2.y) + p2.x)
+            (p2[1] > p[1]) != (p1[1] > p[1]) &&
+            (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
         ){
             isInside = !isInside
         }
@@ -74,10 +75,10 @@ function getLength(coords){
     },0)
     function haversine(c1,c2){
         var r = 6371008.8,
-            lat1 = c1.y,
-            lat2 = c2.y,
+            lat1 = c1[1],
+            lat2 = c2[1],
             dlat = (lat2-lat1)*Math.PI/180,
-            dlon = (c2.x-c1.x)*Math.PI/180,
+            dlon = (c2[0]-c1[0])*Math.PI/180,
             a = Math.sin(dlat)*Math.sin(dlat)/4 + 
                 Math.cos(lat1)*Math.cos(lat2)*
                 Math.sin(dlon)*Math.sin(dlon)/4
@@ -88,9 +89,9 @@ function getArea(coords){
     var r = 6371008.8
     return coords.reduce((acc,cur,i)=>{
         if(i==0) return acc
-        let dx = cur.x-coords[i-1].x
-        let y2 = cur.y
-        let y1 = coords[i-1].y
+        let dx = cur[0]-coords[i-1][0]
+        let y2 = cur[1]
+        let y1 = coords[i-1][1]
         return acc+Math.sin(dx*Math.PI/180)*(2+Math.sin(y1*Math.PI/180))+Math.sin(y2*Math.PI/180)
     },0)
 }
@@ -178,19 +179,7 @@ class GisMap{
         }   
         this.updateView()
         this.vector = []
-        this.raster = [
-            {url:'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OSM',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}',name:'通用',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP01/default/EPSG:3857/{z}/{y}/{x}',name:'灰階',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/EPSG:3857/{z}/{y}/{x}',name:'航照',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/EMAPX99/default/EPSG:3857/{z}/{y}/{x}',name:'通用向量',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/LUIMAP/default/EPSG:3857/{z}/{y}/{x}',name:'國土利用',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/LAND_OPENDATA/default/EPSG:3857/{z}/{y}/{x}',name:'公有土地',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/SCHOOL/default/EPSG:3857/{z}/{y}/{x}',name:'學校',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/Village/default/EPSG:3857/{z}/{y}/{x}',name:'村里界',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/TOWN/default/EPSG:3857/{z}/{y}/{x}',name:'鄉市鎮界',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/CITY/default/EPSG:3857/{z}/{y}/{x}',name:'縣市界',opacity:1,active:false},
-        ]
+        this.raster = []
         this.overlay = []
         this.tiles = {}
         this.canvas.height = rect.height
@@ -220,11 +209,11 @@ class GisMap{
                 var dt = (2-2*t)/this.zoomEvent.frames
                 this.zoomEvent.t--
                 var dz = (this.zoomEvent.after-this.zoomEvent.before)*dt
-                var coord = this.client2coord({x:this.zoomEvent.x, y:this.zoomEvent.y})
+                var coord = this.client2coord([this.zoomEvent.x, this.zoomEvent.y])
                 var scale = Math.pow(2,dz)
                 var view = this.view
-                view.center.x+= (coord.x-view.center.x)*(1-1/scale)
-                view.center.y+= (coord.y-view.center.y)*(1-1/scale)
+                view.center.x+= (coord[0]-view.center.x)*(1-1/scale)
+                view.center.y+= (coord[1]-view.center.y)*(1-1/scale)
                 view.zoom+= dz
                 if(this.zoomEvent.t==0){this.zoomEvent.before = this.zoomEvent.after}
                 this.updateView()
@@ -232,15 +221,56 @@ class GisMap{
             // draw tiles
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
             this.renderGrids()
-            for(let raster of this.raster){
+            for(let raster of this.raster.slice().reverse()){
                 if(!raster.active) continue
                 this.ctx.globalAlpha = raster.opacity
                 this.renderTiles(raster.url)
+            }
+            for(let vector of this.vector){
+                this.renderVector(vector)
             }
             this.renderDraw()
             this.canvas.dispatchEvent(new CustomEvent('render',{}))
         }
         this.render()
+    }
+    renderVector(vector){
+        let tolerance = Math.pow(2,18-this.view.zoom)
+        tolerance = tolerance<1?0:tolerance
+        switch(vector.geometry.type){
+            case 'Polygon':
+                for(let coords of vector.geometry.coordinates){
+                    this.ctx.beginPath()
+                    coords.map((c,i)=>{
+                        if(i==0)
+                            this.ctx.moveTo(c[0],c[1])
+                        else
+                            this.ctx.lineTo(c[0],c[1])
+                    })
+                    this.ctx.fill()
+                    this.ctx.closePath()
+                }
+                break
+            case 'MultiPolygon':
+                for(let coordinates of vector.geometry.coordinates){
+                    for(let coords of coordinates){
+                        this.ctx.beginPath()
+                        DouglasPeucker(coords,tolerance).map((coord,i)=>{
+                            let c = this.coord2client(coord)
+                            if(i==0)
+                                this.ctx.moveTo(c[0],c[1])
+                            else
+                                this.ctx.lineTo(c[0],c[1])
+                        })
+                        this.ctx.strokeStyle = 'white'
+                        this.ctx.fillStyle = 'dodgerblue'
+                        this.ctx.stroke()
+                        this.ctx.fill()
+                        this.ctx.closePath()
+                    }
+                }
+                break
+        }
     }
     renderDraw(){
         // draw polygon
@@ -251,9 +281,9 @@ class GisMap{
         this.ctx.strokeStyle = 'dodgerblue'
         path.map((client,i)=>{
             if(i>0){
-                this.ctx.lineTo(client.x,client.y)
+                this.ctx.lineTo(client[0],client[1])
             }else{
-                this.ctx.moveTo(client.x,client.y)
+                this.ctx.moveTo(client[0],client[1])
             }
         })
         this.ctx.stroke()
@@ -264,7 +294,7 @@ class GisMap{
             this.ctx.lineWidth = 2
             this.ctx.strokeStyle = 'white'
             this.ctx.fillStyle = 'dodgerblue'
-            this.ctx.arc(client.x,client.y,10,0,2*Math.PI,false)
+            this.ctx.arc(client[0],client[1],10,0,2*Math.PI,false)
             this.ctx.stroke()
             this.ctx.fill()
             this.ctx.closePath()
@@ -300,7 +330,7 @@ class GisMap{
     }
     handleMouseup(e){
         if(this.drawEvent.active&&!this.moveEvent.moved){
-            this.drawEvent.path.push(this.client2coord({x:e.clientX,y:e.clientY})) 
+            this.drawEvent.path.push(this.client2coord([e.clientX,e.clientY])) 
             // let path = this.drawEvent.path
             // if(path.length>2){
             //     let i = path.length-1
@@ -310,7 +340,6 @@ class GisMap{
         }
         this.moveEvent.active = false
         this.moveEvent.moved = false
-        // console.log(this.toLatlng(this.client2coord({x:e.clientX,y:e.clientY})))
         e.target.style.cursor = 'grab'
     }
     handleDblclick(e){
@@ -322,6 +351,7 @@ class GisMap{
         e.target.style.cursor = 'grab'
     }
     handleWheel(e){
+        e.preventDefault()
         var view = this.view
         var delta = this.zoomEvent.delta
         var frames = this.zoomEvent.frames
@@ -357,7 +387,6 @@ class GisMap{
         this.view.bbox[1] = view.center.y - H/2
         this.view.bbox[2] = view.center.x + W/2
         this.view.bbox[3] = view.center.y + H/2
-        this.latlng = this.toLatlng({x:this.view.center.x, y:this.view.center.y})
     }
     setView(offset){
         var view = this.view,
@@ -371,19 +400,19 @@ class GisMap{
         var view = this.view,
             W = view.bbox[2]-view.bbox[0],
             H = view.bbox[1]-view.bbox[3]
-        return {
-            x: view.bbox[0]+client.x*W/view.w,
-            y: view.bbox[3]+client.y*H/view.h
-        }
+        return [
+            view.bbox[0]+client[0]*W/view.w,
+            view.bbox[3]+client[1]*H/view.h
+        ]
     }
     coord2client(coord){
         var view = this.view,
             W = view.bbox[2]-view.bbox[0],
             H = view.bbox[1]-view.bbox[3]
-        return {
-            x: (coord.x-view.bbox[0])/W*view.w,
-            y: (coord.y-view.bbox[3])/H*view.h
-        }
+        return [
+            (coord[0]-view.bbox[0])/W*view.w,
+            (coord[1]-view.bbox[3])/H*view.h
+        ]
     }
     minmax(input,min,max){
         return input<min?min:input>max?max:input
@@ -415,15 +444,16 @@ class GisMap{
         var z = Math.floor(view.zoom)
         var {tiles, minX, minY, maxX, maxY} = this.getXYZ(z)
         // load tiles
-        if(!(z in this.tiles)){
-            this.tiles[z] = {}
+        if(!(url in this.tiles)){
+            this.tiles[url] = {}
         }
         tiles.map(tile=>{
+            let xyz = [tile.x,tile.y,tile.z]
             let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
-            if(!(src in this.tiles[tile.z])){
+            if(!(xyz in this.tiles[url])){
                 var img = new Image()
                 img.src = src
-                this.tiles[tile.z][src] = img
+                this.tiles[url][xyz] = img
             }
         })
         // find loaded images
@@ -433,24 +463,22 @@ class GisMap{
         while(tilesNotLoaded.length&&z>=view.minZoom&&z<=view.maxZoom){
             let unique = {}
             for(let tile of tilesNotLoaded){
-                let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
-                let loaded = this.tiles[z]?this.tiles[z][src]?this.tiles[z][src].complete:false:false
+                let xyz = [tile.x,tile.y,tile.z]
+                let loaded = this.tiles[url][xyz]?this.tiles[url][xyz].complete:false
                 if(loaded){
                     tilesLoaded.unshift(tile)
                 }else if(zStep==1){
                     tile.x = Math.floor(tile.x/2)
                     tile.y = Math.floor(tile.y/2)
                     tile.z-= 1
-                    src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
-                    unique[src] = tile
+                    unique[[tile.x,tile.y,tile.z]] = tile
                 }else if(zStep==-1){
                     for(let i=0;i<4;i++){
                         let newTile = Object.assign({},tile)
                         newTile.x = newTile.x*2+i%2
                         newTile.y = newTile.y*2+Math.floor(i/2)
-                        newTile.z+= 1
-                        src = url.replace('{x}',newTile.x).replace('{y}',newTile.y).replace('{z}',newTile.z)
-                        unique[src] = newTile
+                        newTile.z+= 1 
+                        unique[[newTile.x,newTile.y,newTile.z]] = newTile
                     }
                 }
             }
@@ -464,9 +492,11 @@ class GisMap{
             let H = tp.h*scale
             let X = origin.x+tile.x*W
             let Y = origin.y+tile.y*H
-            let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
-            let img = this.tiles[tile.z][src]
-            this.ctx.drawImage(img,X,Y,W,H)
+            let xyz = [tile.x,tile.y,tile.z]
+            let img = this.tiles[url][xyz]
+            try{
+                this.ctx.drawImage(img,X,Y,W,H)
+            }catch{}
         })
         this.ctx.fillStyle = 'black'
         tilesLoaded.map((t,i)=>{
@@ -495,21 +525,21 @@ class GisMap{
         }
         return {tiles, minX, minY, maxX, maxY}
     }
-    toCoord(latlng) {
+    toCoord(lnglat) {
         var d = Math.PI / 180,
             max = 85.0511287798,
-            lat = Math.max(Math.min(max, latlng.lat), -max),
+            lat = Math.max(Math.min(max, lnglat[1]), -max),
             sin = Math.sin(lat * d);
-        return {
-            x: 6378137 * latlng.lng * d,
-            y: 6378137 * Math.log((1 + sin) / (1 - sin)) / 2
-        }
+        return [
+            6378137 * lnglat[0] * d,
+            6378137 * Math.log((1 + sin) / (1 - sin)) / 2 
+        ]
     }
-    toLatlng(point) {
+    toLnglat(point) {
         var d = 180 / Math.PI
-        return {
-            lat: (2 * Math.atan(Math.exp(point.y / 6378137)) - (Math.PI / 2)) * d,
-            lng: point.x * d / 6378137
-        }
+        return [
+            point[0] * d / 6378137,
+            (2 * Math.atan(Math.exp(point[1] / 6378137)) - (Math.PI / 2)) * d
+        ]
     }
 }
