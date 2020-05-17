@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Clip</title>
+    <title>Motion Graphic</title>
 </head>
 <body>
     <svg width="0" height="0">
@@ -23,14 +23,16 @@
     <div class="blobs">
         <div class="blob"></div>
         <div class="blob" style="left:100px"></div>
+        <div class="blob" style="left:200px"></div>
     </div>
-    <img src="/static/image/crowd.jpg" alt="" class="clipPath">
-    <div class="bgClip">bang</div>
-    <div class="glitch">烏日文心北屯線</div>
-    <div class="swiper"></div>
-    <div>
-        <img id="glitch-image" src="" alt="">
-    </div>
+    
+    <div class="hidden-text" style="font-size:100px;display:inline-block;">烏日文心北屯線</div>
+    <div class="hopping-text" style="transform:skewY(-5deg);font-size:100px;display:inline-block;">烏日文心北屯線</div>
+    <div class="count-up" style="font-size: 100px;"></div>
+    <div class="textClip">烏日文心北屯線</div>
+    <div id="typing-text" style="font-size: 20px;">烏日文心北屯線</div>
+    <div id="spinner" style="position: relative;"></div>
+    <div id="svgContainer"></div>
 </body>
 <style>
 *{
@@ -40,16 +42,23 @@ html,body{
     margin: 0;
     height: 100%;
 }
-body{
-    background: #000;
-}
-.bgClip{
-    background-image: url(/static/image/crowd.jpg);
+.textClip{
+    background-image: url(/static/image/tetris.gif);
     -webkit-text-fill-color: transparent;
     -webkit-background-clip: text;
-    font-size: 48px;
-    font-weight: bold;
-    
+    font-size: 50px;
+    font-weight: 900;
+    animation: bg-pos 5s ease infinite;
+}
+@keyframes bg-pos{
+    0%,100%{
+        background-position: center 0;
+        background-size: 100%;
+    }
+    50%{
+        background-position: center 10px;
+        background-size: 80%;
+    }
 }
 .clipPath{
     clip-path: url(#clipPath);
@@ -66,11 +75,10 @@ body{
     height: 100px;
     border-radius: 50%;
 }
-.glitch{
-    color: #fff;
-    background: #000;
-    font-size: 100px;
-    font-weight: 900;
+#svgContainer{
+    stroke: black;
+    stroke-dashoffset: 0;
+    stroke-dasharray: 200;
 }
 </style>
 <script>
@@ -125,6 +133,178 @@ function imageGlitch(img, src){
         
     }
 }
-imageGlitch(document.getElementById('glitch-image'),'/static/image/crowd.jpg')
+// imageGlitch(document.getElementById('glitch-image'),'/static/image/crowd.jpg')
+function fadeIn(element){
+    element
+}
+function createDots(element){
+    let len = 20, delay = 0.1, radius= 100
+    for(let i=0;i<len;i++){
+        let circle = document.createElement('div')
+        Object.assign(circle.style,{
+            position: 'fixed',
+            left: radius*(1+Math.cos(i*Math.PI*2/len))+'px',
+            top: radius*(1+Math.sin(i*Math.PI*2/len))+'px',
+            width: '20px',
+            height: '20px',
+            background: 'violet',
+            borderRadius: '50%',
+            transitionOrigin: 'center',
+            animationName: 'scale',
+            animationDuration: `${delay*len}s`,
+            animationDelay: `${delay*i}s`,
+            animationTimingFunction: 'ease',
+            animationIterationCount: 'infinite'
+        })
+        element.appendChild(circle)
+    }
+}
+// createDots(document.getElementById('spinner'))
+function hiddenText(element,textStyle={},maskStyle={},dir='top'){
+    let axis = dir=='top'||dir=='bottom'?'Y':'X'
+    let sign = dir=='top'||dir=='left'?1:-1
+    let textDiv = document.createElement('div')
+    let maskDiv = document.createElement('div')
+    textDiv.textContent = element.textContent
+    element.textContent = ''
+    element.appendChild(textDiv)
+    element.appendChild(maskDiv)
+    Object.assign(element.style,{
+        position: 'relative',
+        textAlign: 'center',
+        overflow: 'hidden'
+    })
+    Object.assign(textDiv.style,{
+        ...textStyle,
+        width: '100%',
+        height: '100%',
+        transform: `translate${axis}(${sign*100}%)`,
+        transition: `transform ${1}s`
+    })
+    Object.assign(maskDiv.style,{
+        ...maskStyle,
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        transform: `translate${axis}(${sign*100}%)`,
+        transition: `transform ${0.5}s`
+    })
+    setTimeout(()=>{
+        textDiv.style.transform = `translate${axis}(0%)`
+    },1500)
+    setTimeout(()=>{
+        maskDiv.style.transform = `translate${axis}(${sign*-100}%)`
+    },1000)
+    setTimeout(()=>{
+        maskDiv.style.transform = `translate${axis}(0%)`
+    },100)
+}
+hiddenText(document.querySelector('.hidden-text'),{padding:'10px',fontWeight:'bold'},{background:'dodgerblue'},'bottom')
+function hoppingText(element){
+    let chars = element.textContent
+    element.textContent = ''
+    Object.assign(element.style,{
+        position: 'relative',
+        overflow: 'hidden',
+    })
+    for(let i=0;i<chars.length;i++){
+        let div = document.createElement('div')
+        div.textContent = chars[i]
+        element.appendChild(div)
+        Object.assign(div.style,{
+            display: 'inline-block',
+            transition: 'transform 1s',
+            transform: 'translateY(100%)'
+        })
+        setTimeout(()=>{
+            div.style.transform = 'translateY(0%)'
+        },i*200)
+    }
+}
+hoppingText(document.querySelector('.hopping-text'))
+function typingText(element){
+    let cursor = document.createElement('span')
+    let span = document.createElement('span')
+    let text = element.textContent
+    element.textContent = ''
+    Object.assign(cursor.style,{
+        margin: '2px',
+        border: '1px solid black'
+    })
+    cursor.animate([
+        {opacity: 0},
+        {opacity: 1},
+        {opacity: 0},
+    ],{
+        duration: 1000,
+        iterations: Infinity,
+        easing: 'steps(2,end)',
+    })
+    element.appendChild(span)
+    element.appendChild(cursor)
+    let idx = 0
+    function randomDelay(){
+        setTimeout(()=>{
+            if(idx<=text.length){
+                span.textContent = text.slice(0,idx)
+                idx++
+                randomDelay()
+            }
+        },Math.random()*200+200)
+    }
+    randomDelay()
+}
+typingText(document.getElementById('typing-text'))
+class CountUp{
+    constructor(el){
+        this.el = el
+        this.denominator = 30
+        this.paused = true
+    }
+    countTo(num,step=30,interval=40){
+        if(this.paused){
+            this.denominator=step
+            this.paused = false
+        }
+        const EasingFunctions = {
+            linear: t => t,
+            easeIn: t => t*t,
+            easeOut: t => t*(2-t),
+            easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t,
+        }
+        let t = (this.denominator-step)/this.denominator
+        this.el.innerText = parseInt(num*EasingFunctions['easeOut'](t))
+        if(step==0){
+            this.paused=true
+        }else{    
+            setTimeout(()=>{this.countTo(num,step-1,interval)},interval)
+        }
+    }
+}
+new CountUp(document.querySelector('.count-up')).countTo(3396,60)
+
+function svgAnimation(container,style={}){
+    xhr = new XMLHttpRequest();
+    xhr.open("GET","logo.svg",false);
+    xhr.overrideMimeType("image/svg+xml");
+    xhr.onload = function(e) {
+        let svg = xhr.responseXML.documentElement
+        Object.assign(svg.style,{
+            strokeDasharray: 500,
+            strokeDashoffset: 0,
+            ...style
+        })
+        container.appendChild(svg);
+        svg.animate([
+            {strokeDashoffset: 500},
+            {strokeDashoffset: 0}
+        ],{
+            duration: 5000
+        })
+    }
+    xhr.send();
+}
+svgAnimation(document.getElementById('svgContainer'))
 </script>
 </html>

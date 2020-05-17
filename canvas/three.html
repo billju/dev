@@ -15,7 +15,7 @@
         height: 100%;
     }
 </style>
-<script src="js/three.min.js"></script>
+<script src="../js/three.min.js"></script>
 <script>
 let camera, scene, renderer;
 let cloudParticles = [], flash, rain, rainGeo, rainMaterial, rainCount = 15000
@@ -66,7 +66,7 @@ function init() {
     scene.add(rain)
 
     let loader = new THREE.TextureLoader()
-    loader.load('static/image/smoke.png', texture=>{
+    loader.load('../static/image/smoke.png', texture=>{
         cloudGeo = new THREE.PlaneBufferGeometry(500,500)
         cloudMaterial = new THREE.MeshLambertMaterial({
             map: texture,

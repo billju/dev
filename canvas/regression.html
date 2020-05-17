@@ -7,41 +7,37 @@
     <link rel="stylesheet" href="/css/bootstrap.css">
 </head>
 <body>
-    <div class="container">
-        <canvas id="canvas"></canvas>
-        <div class="d-flex align-items-center">
-            <div>
+    <canvas id="canvas"></canvas>
+    <div class="d-flex align-items-center">
+        <div class="control">
+            <div class="text-light">
                 <label for="rate">playback rate</label>
                 <input id="rate" type="range" class="custom-range" min="1" max="100" step="1" value="1">
             </div>
-            <div>
-                <div class="btn btn-primary" onclick="randomizeDataset()">random</div>
-                <div class="btn btn-primary" onclick="switchRegressor('linear')">linear</div>
-                <div class="btn btn-primary" onclick="switchRegressor('square')">square</div>
-                <div class="btn btn-primary" onclick="switchRegressor('cube')">cube</div>
-            </div>
+            <div class="btn btn-primary" onclick="randomizeDataset()">random</div>
+            <div class="btn btn-primary" onclick="clearDataset()">clear</div>
+            <div class="btn btn-primary" onclick="switchRegressor('linear')">linear</div>
+            <div class="btn btn-primary" onclick="switchRegressor('square')">square</div>
+            <div class="btn btn-primary" onclick="switchRegressor('cube')">cube</div>
         </div>
     </div>
 </body>
 <style>
+    *{
+        font-family: 微軟正黑體;
+    }
     html,body{
         margin: 0;
         height: 100%;
     }
-    body{
-        animation: pop-in 1s;
-    }
     canvas{
         width: 100%;
-        height: 90vh;
+        height: 100%;
     }
-    @keyframes pop-in{
-        0%{
-            transform: scale(0);
-        }
-        100%{
-            transform: scale(1);
-        }
+    .control{
+        position: fixed;
+        right: 0;
+        bottom: 0;
     }
 </style>
 <script>
@@ -213,7 +209,7 @@
             this.ctx = canvas.getContext('2d')
             this.resize()
             this.data = args.data||[]
-            this.padding = args.padding||[10,10,30,30]//[N,E,S,W]
+            this.padding = args.padding||[30,30,30,30]//[N,E,S,W]
             this.beginAtZero = args.beginAtZero
             this.bbox = args.bbox?args.bbox:args.data?this.getBbox(args.data,args.beginAtZero):[0,0,canvas.width,canvas.height]
             this.imgData = []
@@ -320,7 +316,6 @@
             let checkInBound = this.checkInBound
             const rate = styles.smoothRate||0
             this.ctx.beginPath()
-            this.ctx.setLineDash([])
             this.ctx.strokeStyle = styles.stroke||'red'
             this.ctx.lineWidth = styles.strokeWith||2
             if(rate){
@@ -383,7 +378,7 @@
             let H = this.canvas.height-this.padding[0]-this.padding[2]
             // origin
             // this.ctx.setLineDash([])
-            this.ctx.strokeStyle = 'black'
+            this.ctx.strokeStyle = 'white'
             this.ctx.lineWidth = 1
             this.ctx.beginPath()
             this.ctx.moveTo(xStart,yStart)
@@ -402,6 +397,7 @@
             // x axis
             // let sizeY = 50
             // let stepY = Math.ceil((this.bbox[3]-this.bbox[1])/H*sizeY)
+            this.ctx.fillStyle = 'white'
             let binsY = this.getBins(this.bbox[3]-this.bbox[1],H/20)
             let stepY = binsY.step
             let sizeY = H/binsY.bins
@@ -468,7 +464,8 @@
             this.canvas.width = this.canvas.clientWidth
         }
         clear(){
-            this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
+            this.ctx.fillStyle = '#333'
+            this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height)
         }
         update(args){
             Object.assign(this,args)
@@ -490,7 +487,7 @@
         random(length=this.length){
             this.b = new Matrix().random(length).sub(0.5).mul(100).add(250)
             this.x = new Matrix().random(length).mul(500)
-            this.y = this.x.mul(Math.random()-0.5).add(this.x.mul(this.x).mul((Math.random()-0.5)/500)).add(this.b)
+            this.y = this.x.mul(Math.random()-0.5).add(this.x.mul(this.x).mul((Math.random()-0.5)/1000)).add(this.b)
             this.xy = this.x.hstack(this.y)
             return this
         }
@@ -520,6 +517,11 @@
         }else{
             chart.update({beginAtZero:true})
         }
+        reg.fit(dataset.x,dataset.y)
+    }
+    function clearDataset(){
+        iteration = 0
+        dataset.random(1)
         reg.fit(dataset.x,dataset.y)
     }
     canvas.onmousedown = e=>{
@@ -562,7 +564,8 @@
             'iteration:'+iteration,
             'y='+reg.w1.toFixed(3)+' x +'+reg.b.toFixed(3)
         ],{
-            font: '16px sans-serif'
+            font: '16px sans-serif',
+            fill: 'white'
         })
         window.requestAnimationFrame(draw)
     }

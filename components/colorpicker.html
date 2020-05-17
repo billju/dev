@@ -6,54 +6,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Colorpicker</title>
     <link rel="stylesheet" href="../css/bootstrap.css" />
-    <link rel="stylesheet" href="../css/colorpicker.css" />
 </head>
 
 <body>
-    <div class="d-inline-block border rounded">
-        <div class="rounded bg-active px-3 py-3"></div>
+    <div class="d-inline-block border rounded bg-transparent-image">
+        <div id="color-btn" class="rounded bg-active px-3 py-3"></div>
     </div>
-    <div class="mt-1">
-        <div class="position-relative d-inline-block palette-rect">
-            <div class="position-absolute palette-rect bg-white-gradient"></div>
-            <div class="position-absolute palette-rect bg-black-gradient"></div>
-            <div class="position-absolute palette-rect bg-active"></div>
-            <div class="position-absolute border border-secondary rounded-circle bg-light px-1 py-1"
-                style="left:10px;top:10px"></div>
+    <div id="colorpicker">
+        <div class="mt-1">
+            <div id="cp-theme" class="position-relative d-inline-block palette-rect">
+                <div id="cp-theme-bg" class="position-absolute palette-rect" style="background:rgb(255,0,0);"></div>
+                <div class="position-absolute palette-rect bg-white-gradient"></div>
+                <div class="position-absolute palette-rect bg-black-gradient"></div>
+                <div id="cp-theme-cursor" class="position-absolute border border-secondary rounded-circle bg-light px-1 py-1"
+                    style="left:0;top:0"></div>
+            </div>
+            <div id="cp-rainbow" class="position-relative bg-rainbow-gradient palette-bar-vertical mx-2">
+                <div id="cp-rainbow-cursor" class="position-absolute border border-secondary rounded bg-light px-2 py-1"
+                    style="left:-3px;top:0"></div>
+            </div>
         </div>
-        <div class="position-relative bg-rainbow-gradient palette-bar-vertical mx-2">
-            <div class="position-absolute border border-secondary rounded bg-light px-2 py-1"
-                style="left:-3px;top:10px"></div>
+        <div id="cp-opacity" class="position-relative bg-transparent-image palette-bar-horizontal mt-1">
+            <div id="cp-opacity-cursor" class="position-absolute border border-secondary rounded bg-light px-1 py-2" style="left:100%;top:-3px">
+            </div>
+        </div>
+        <div class="input-group mt-1" style="width:300px"><input class="form-control" type="text" />
+            <div class="input-group-append">
+                <div class="btn btn-outline-secondary">clear</div>
+                <div class="btn btn-outline-secondary">submit</div>
+            </div>
         </div>
     </div>
-    <div class="position-relative bg-transparent-image palette-bar-horizontal mt-1">
-        <div class="position-absolute border border-secondary rounded bg-light px-1 py-2" style="left:10px;top:-3px">
-        </div>
+    <div class="d-inline-block border rounded bg-transparent-image">
+        <div id="sample-btn" class="rounded bg-active px-3 py-3"></div>
     </div>
-    <div class="input-group mt-1" style="width:300px"><input class="form-control" type="text" />
-        <div class="input-group-append">
-            <div class="btn btn-outline-secondary">clear</div>
-            <div class="btn btn-outline-secondary">submit</div>
-        </div>
-    </div>
+    <canvas id="color-sampler"></canvas>
+    <input type="file" onchange="colorSampler.import(event.target.files[0])">
 </body>
 <style>
 .palette-rect{
     width: 250px;
     height: 200px;
 }
-.bg-active{
-    background-color: rgb(0, 125, 255);
-    opacity: 0.2;
-}
-.bg-white-gradient{
+.bg-white-gradient{    
     background: linear-gradient(90deg,#fff,hsla(0,0%,100%,0));
 }
 .bg-black-gradient{
     background: linear-gradient(0deg,#000,transparent);
 }
 .bg-rainbow-gradient{
-    background: linear-gradient(180deg,red 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,red);
+    background: linear-gradient(180deg,#f00 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00);
 }
 .bg-transparent-image{
     background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAGUlEQVQYV2M4gwH+YwCGIasIUwhT25BVBADtzYNYrHvv4gAAAABJRU5ErkJggg==);
@@ -69,45 +71,271 @@
 }
 </style>
 <script>
-let container = document.querySelectorAll('md-content ul.palette-container')
-let csv = ''
-for(let ul of container){
-    for(let li of [...ul.children].slice(0,10)){
-        csv+= '"'+li.getAttribute('value')+'",'
+class CustomRange{
+    constructor(container,cursor,ctrlX=true,ctrlY=false){
+        this.container = container
+        this.container.style.userSelect = 'none'
+        this.cursor = cursor
+        this.cursor.style.userSelect = 'none'
+        this.ctrlX = ctrlX
+        this.ctrlY = ctrlY
+        this.pctX = 1
+        this.pctY = 1
+        this.active = false
+        this.container.onmousedown = e=>this.handleMousedown(e)
+        window.addEventListener('mousemove',e=>this.handleMousemove(e))
+        window.addEventListener('mouseup',e=>this.handleMouseup(e))
+        window.addEventListener('mouseleave',e=>this.handleMouseup(e))
+        this.event = {input:[], change:[]}
     }
-    csv+= '\n'
+    wrapX(x){
+        return x<0?0:x>this.container.clientWidth?this.container.clientWidth:x
+    }
+    wrapY(y){
+        return y<0?0:y>this.container.clientHeight?this.container.clientHeight:y
+    }
+    update(e){
+        let x =  this.wrapX(e.clientX-this.container.offsetLeft)
+        let y = this.wrapY(e.clientY-this.container.offsetTop)
+        if(this.ctrlX) this.cursor.style.left = x-5+'px'
+        if(this.ctrlY) this.cursor.style.top = y-5+'px'
+        this.pctX = x/this.container.clientWidth
+        this.pctY = y/this.container.clientHeight
+        this.dispatch('input',{
+            pctX: this.pctX,
+            pctY: this.pctY
+        })
+    }
+    handleMousedown(e){
+        this.active = true
+        document.body.style.cursor = 'none'
+        this.update(e)
+    }
+    handleMousemove(e){
+        if(this.active){
+            this.update(e)
+        }   
+    }
+    handleMouseup(e){
+        this.active = false
+        document.body.style.cursor = 'auto'
+        this.dispatch('change',{
+            pctX: this.pctX,
+            pctY: this.pctY
+        })
+    }
+    dispatch(type,payload){
+        for(let fn of this.event[type]){ fn(payload) }
+    }
+    addEventListener(type,fn){
+        try{ this.event[type].push(fn) }
+        catch{ console.error('no such type of event!') }
+    }
 }
-let a = document.createElement('a')
-a.href = "data:text/plain;charset=UTF-8," + encodeURIComponent(csv)
-a.download = 'material-colors.txt'
-a.click()
+let themePalette = new CustomRange(
+    document.getElementById('cp-theme'),
+    document.getElementById('cp-theme-cursor'),
+    true,
+    true
+)
+let rainbowPalette = new CustomRange(
+    document.getElementById('cp-rainbow'),
+    document.getElementById('cp-rainbow-cursor'),
+    false,
+    true
+)
+let opacityPalette = new CustomRange(
+    document.getElementById('cp-opacity'),
+    document.getElementById('cp-opacity-cursor'),
+    true,
+    false
+)
+class Gradient{
+    constructor(stops){
+        // #f00 0,#ff0 17%,#0f0 33%,#0ff 50%,#00f 67%,#f0f 83%,#f00
+        this.stops = stops||[
+            {pct:0.00, rgb:[255,0,0]},
+            {pct:0.17, rgb:[255,255,0]},
+            {pct:0.33, rgb:[0,255,0]},
+            {pct:0.50, rgb:[0,255,255]},
+            {pct:0.67, rgb:[0,0,255]},
+            {pct:0.83, rgb:[255,0,255]},
+            {pct:1.00, rgb:[255,0,0]},
+        ]
+        this.stops.sort((a,b)=>a.pct-b.pct)
+    }
+    addStop(pct,rgb){
+        this.stops.push({
+            pct,
+            rgb: Array.isArray(hex)?hex:this.hex2rgb(rgb)
+        })
+        this.stops.sort((a,b)=>a.pct-b.pct)
+    }
+    getHEX(pct){
+        return this.rgb2hex(this.getRGB(pct))
+    }
+    getInterpolate(arr1,arr2, pct){
+        return arr1.map((x,i)=>Math.round(x+(arr2[i]-x)*pct))
+    }
+    getRGB(pct){
+        let p1,p2
+        for(let i=0;i<this.stops.length-1;i++){
+            p1 = this.stops[i]
+            p2 = this.stops[i+1]
+            if(p2.pct>=pct) break
+        }
+        pct = (pct-p1.pct)/(p2.pct-p1.pct)
+        return this.getInterpolate(p1.rgb, p2.rgb, pct)
+    }
+    rgb2hex(arr){
+        return '#'+arr.map(x=>('0'+x.toString(16)).substr(-2)).join('')
+    }
+    rgb2hsl(arr){
 
-function hex2rgb(str){
-    let r = parseInt(str.substr(1,2),16)
-    let g = parseInt(str.substr(3,2),16)
-    let b = parseInt(str.substr(5,2),16)
-    return [r,g,b]
+    }
+    rgb2cmyk(arr){
+        
+    }
+    hex2rgb(str){
+        if(hex.length==7){
+            let r = parseInt(str.substr(1,2),16)
+            let g = parseInt(str.substr(3,2),16)
+            let b = parseInt(str.substr(5,2),16)
+            return [r,g,b]
+        }else if(hex.length==4){
+            let r = parseInt(str[1],16)
+            let g = parseInt(str[2],16)
+            let b = parseInt(str[3],16)
+            return [r,g,b]
+        }
+    }
 }
-const h = [50,100,200,300,400,500,600,700,800,900]
-const c = ['red','pink','purple','deep purple','indigo','blud','light blue','cyan','teal','green','light green','lime','yellow','amber','orange','deep orange','brown','grey','blue grey']
-["#FFEBEE","#FFCDD2","#EF9A9A","#E57373","#EF5350","#F44336","#E53935","#D32F2F","#C62828","#B71C1C",
-"#FCE4EC","#F8BBD0","#F48FB1","#F06292","#EC407A","#E91E63","#D81B60","#C2185B","#AD1457","#880E4F",
-"#F3E5F5","#E1BEE7","#CE93D8","#BA68C8","#AB47BC","#9C27B0","#8E24AA","#7B1FA2","#6A1B9A","#4A148C",
-"#EDE7F6","#D1C4E9","#B39DDB","#9575CD","#7E57C2","#673AB7","#5E35B1","#512DA8","#4527A0","#311B92",
-"#E8EAF6","#C5CAE9","#9FA8DA","#7986CB","#5C6BC0","#3F51B5","#3949AB","#303F9F","#283593","#1A237E",
-"#E3F2FD","#BBDEFB","#90CAF9","#64B5F6","#42A5F5","#2196F3","#1E88E5","#1976D2","#1565C0","#0D47A1",
-"#E1F5FE","#B3E5FC","#81D4FA","#4FC3F7","#29B6F6","#03A9F4","#039BE5","#0288D1","#0277BD","#01579B",
-"#E0F7FA","#B2EBF2","#80DEEA","#4DD0E1","#26C6DA","#00BCD4","#00ACC1","#0097A7","#00838F","#006064",
-"#E0F2F1","#B2DFDB","#80CBC4","#4DB6AC","#26A69A","#009688","#00897B","#00796B","#00695C","#004D40",
-"#E8F5E9","#C8E6C9","#A5D6A7","#81C784","#66BB6A","#4CAF50","#43A047","#388E3C","#2E7D32","#1B5E20",
-"#F1F8E9","#DCEDC8","#C5E1A5","#AED581","#9CCC65","#8BC34A","#7CB342","#689F38","#558B2F","#33691E",
-"#F9FBE7","#F0F4C3","#E6EE9C","#DCE775","#D4E157","#CDDC39","#C0CA33","#AFB42B","#9E9D24","#827717",
-"#FFFDE7","#FFF9C4","#FFF59D","#FFF176","#FFEE58","#FFEB3B","#FDD835","#FBC02D","#F9A825","#F57F17",
-"#FFF8E1","#FFECB3","#FFE082","#FFD54F","#FFCA28","#FFC107","#FFB300","#FFA000","#FF8F00","#FF6F00",
-"#FFF3E0","#FFE0B2","#FFCC80","#FFB74D","#FFA726","#FF9800","#FB8C00","#F57C00","#EF6C00","#E65100",
-"#FBE9E7","#FFCCBC","#FFAB91","#FF8A65","#FF7043","#FF5722","#F4511E","#E64A19","#D84315","#BF360C",
-"#EFEBE9","#D7CCC8","#BCAAA4","#A1887F","#8D6E63","#795548","#6D4C41","#5D4037","#4E342E","#3E2723",
-"#FAFAFA","#F5F5F5","#EEEEEE","#E0E0E0","#BDBDBD","#9E9E9E","#757575","#616161","#424242","#212121",
-"#ECEFF1","#CFD8DC","#B0BEC5","#90A4AE","#78909C","#607D8B","#546E7A","#455A64","#37474F","#263238"]
+const gd = new Gradient()
+rainbowPalette.addEventListener('input',e=>{setPalette()})
+themePalette.addEventListener('input',e=>{setPalette()})
+opacityPalette.addEventListener('input',e=>{setPalette()})
+function setPalette(){
+    let rgb = gd.getRGB(rainbowPalette.pctY)
+    document.getElementById('cp-theme-bg').style.background = gd.rgb2hex(rgb)
+    let w = gd.getInterpolate([255,255,255],rgb,themePalette.pctX)
+    let b = gd.getInterpolate(w,[0,0,0],themePalette.pctY)
+    let a = opacityPalette.pctX
+    document.getElementById('color-btn').style.background = `rgba(${b[0]},${b[1]},${b[2]},${a})`
+}
+class MaterialColor{
+    constructor(){
+        this.colorNames = [
+            'red','pink','purple','deep purple','indigo','blue',
+            'light blue','cyan','teal','green','light green','lime',
+            'yellow','amber','orange','deep orange','brown','grey','blue grey'
+        ]
+        this.staturations = [50,100,200,300,400,500,600,700,800,900]
+        this.colors = [
+            "#FFEBEE","#FFCDD2","#EF9A9A","#E57373","#EF5350","#F44336","#E53935","#D32F2F","#C62828","#B71C1C",
+            "#FCE4EC","#F8BBD0","#F48FB1","#F06292","#EC407A","#E91E63","#D81B60","#C2185B","#AD1457","#880E4F",
+            "#F3E5F5","#E1BEE7","#CE93D8","#BA68C8","#AB47BC","#9C27B0","#8E24AA","#7B1FA2","#6A1B9A","#4A148C",
+            "#EDE7F6","#D1C4E9","#B39DDB","#9575CD","#7E57C2","#673AB7","#5E35B1","#512DA8","#4527A0","#311B92",
+            "#E8EAF6","#C5CAE9","#9FA8DA","#7986CB","#5C6BC0","#3F51B5","#3949AB","#303F9F","#283593","#1A237E",
+            "#E3F2FD","#BBDEFB","#90CAF9","#64B5F6","#42A5F5","#2196F3","#1E88E5","#1976D2","#1565C0","#0D47A1",
+            "#E1F5FE","#B3E5FC","#81D4FA","#4FC3F7","#29B6F6","#03A9F4","#039BE5","#0288D1","#0277BD","#01579B",
+            "#E0F7FA","#B2EBF2","#80DEEA","#4DD0E1","#26C6DA","#00BCD4","#00ACC1","#0097A7","#00838F","#006064",
+            "#E0F2F1","#B2DFDB","#80CBC4","#4DB6AC","#26A69A","#009688","#00897B","#00796B","#00695C","#004D40",
+            "#E8F5E9","#C8E6C9","#A5D6A7","#81C784","#66BB6A","#4CAF50","#43A047","#388E3C","#2E7D32","#1B5E20",
+            "#F1F8E9","#DCEDC8","#C5E1A5","#AED581","#9CCC65","#8BC34A","#7CB342","#689F38","#558B2F","#33691E",
+            "#F9FBE7","#F0F4C3","#E6EE9C","#DCE775","#D4E157","#CDDC39","#C0CA33","#AFB42B","#9E9D24","#827717",
+            "#FFFDE7","#FFF9C4","#FFF59D","#FFF176","#FFEE58","#FFEB3B","#FDD835","#FBC02D","#F9A825","#F57F17",
+            "#FFF8E1","#FFECB3","#FFE082","#FFD54F","#FFCA28","#FFC107","#FFB300","#FFA000","#FF8F00","#FF6F00",
+            "#FFF3E0","#FFE0B2","#FFCC80","#FFB74D","#FFA726","#FF9800","#FB8C00","#F57C00","#EF6C00","#E65100",
+            "#FBE9E7","#FFCCBC","#FFAB91","#FF8A65","#FF7043","#FF5722","#F4511E","#E64A19","#D84315","#BF360C",
+            "#EFEBE9","#D7CCC8","#BCAAA4","#A1887F","#8D6E63","#795548","#6D4C41","#5D4037","#4E342E","#3E2723",
+            "#FAFAFA","#F5F5F5","#EEEEEE","#E0E0E0","#BDBDBD","#9E9E9E","#757575","#616161","#424242","#212121",
+            "#ECEFF1","#CFD8DC","#B0BEC5","#90A4AE","#78909C","#607D8B","#546E7A","#455A64","#37474F","#263238"
+        ]
+    }
+    hex2rgb(str){
+        if(hex.length==7){
+            let r = parseInt(str.substr(1,2),16)
+            let g = parseInt(str.substr(3,2),16)
+            let b = parseInt(str.substr(5,2),16)
+            return [r,g,b]
+        }else if(hex.length==4){
+            let r = parseInt(str[1],16)
+            let g = parseInt(str[2],16)
+            let b = parseInt(str[3],16)
+            return [r,g,b]
+        }
+    }
+}
+
+class ColorSampler{
+    constructor(canvas){
+        this.canvas = canvas
+        this.ctx = this.canvas.getContext('2d')
+        this.img = new Image()
+        this.event = {change:[],select:[]}
+        this.canvas.addEventListener('click',e=>this.handleClick(e))
+        this.canvas.addEventListener('mousemove',e=>this.handleMousemove(e))
+        this.canvas.addEventListener('mouseleave',e=>this.handleMouseleave(e))
+        this.bbox = [0,0,500,500]
+        this.scale = 1
+        this.canvas.height = 500
+        this.canvas.width = 500
+    }
+    handleWheel(){
+        this.ctx.drawImage(this.img,0,0,this.canvas.width,this.canvas.height)
+    }
+    handleMousedown(e){
+
+    }
+    handleClick(e){
+        var [r,g,b,a] = this.ctx.getImageData(e.clientX-this.canvas.offsetLeft,e.clientY-this.canvas.offsetTop+window.scrollY,1,1).data
+        this.dispatch('select',{value:`rgba(${r},${g},${b},${a/255})`})
+    }
+    handleMousemove(e){
+        var [r,g,b,a] = this.ctx.getImageData(e.clientX-this.canvas.offsetLeft,e.clientY-this.canvas.offsetTop+window.scrollY,1,1).data
+        this.dispatch('change',{value:`rgba(${r},${g},${b},${a/255})`})
+    }
+    handleMouseleave(e){
+        this.canvas.style.cursor = 'auto'
+    }
+    colorize(){
+        let imgData = this.ctx.getImageData(0,0,this.canvas.width,this.canvas.height)
+        for(var i=0;i<imgData.data.length;i+=4){
+            var [r,g,b,a] = imgData.data.slice(i,i+4)
+            if(r>254&&g>254&&b>254){
+                imgData.data[i+3] = 0
+            }
+        }
+        this.ctx.putImageData(imgData,0,0)
+    }
+    import(file){
+        this.img.src = URL.createObjectURL(file)
+        this.img.onload = ()=>{
+            // this.canvas.width = this.img.width
+            // this.canvas.height = this.img.height
+            this.ctx.drawImage(this.img,0,0,this.canvas.width,this.canvas.height)
+            // this.colorize()
+        }        
+    }
+    download(imgType='png'){    
+        const a = document.createElement('a')
+        a.download = 'transparent.png'
+        a.href = this.canvas.toDataURL('image/'+imgType)
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+    }
+    dispatch(type,payload){
+        for(let fn of this.event[type]){ fn(payload) }
+    }
+    addEventListener(type,fn){
+        try{ this.event[type].push(fn) }
+        catch{ console.error('no such type of event!') }
+    }
+}
+const colorSampler = new ColorSampler(document.getElementById('color-sampler'))
+colorSampler.addEventListener('change',e=>{
+    document.getElementById('sample-btn').style.background = e.value
+})
 </script>
 </html>

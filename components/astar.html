@@ -6,175 +6,314 @@
     <title>A*</title>
 </head>
 <body>
-    <!-- <div id="grid-container"></div> -->
-    <svg xmlns="http://www.w3.org/2000/svg" id="grid-container"></svg>
+    <div id="maze"></div>
+    <div id="control-panel">
+        <button onclick="nextStep()">start</button>
+        <button onclick="clearMaze()">clear</button>
+    </div>
 </body>
 <style>
+    *{
+        font-family: sans-serif;
+    }
     html,body{
         margin: 0;
+        height: 100%;
     }
-    #grid-container{
+    #maze{
         width: 100%;
-        height: 100vh;
-        position: relative;
+        height: 100%;
         overflow: hidden;
-        user-select: none;
+        position: relative;
     }
     .rect{
         position: absolute;
         background: #fff;
         border: 1px solid #000;
+        box-shadow: 5px 5px 5px 0 #000;
+        text-align: center;
         transform-origin: center;
         transition: transform 0.1s;
-        z-index: 50;
+        font-size: 12px;
+        user-select: none;
     }
-    rect{
-        transition: transform 0.1s;
+    #control-panel{
+        right: 0;
+        top: 0;
+        position: fixed;
+        padding: 15px;
+        border-radius: 5px;
+        background: rgba(0,0,0,0.3);
     }
 </style>
 <script>
-const size = 30
-var grid = document.getElementById('grid-container')
-var gridRect = grid.getBoundingClientRect()
-grid.setAttribute('viewBox',`0 0 ${gridRect.width} ${gridRect.height}`)
-var xs = Math.ceil(gridRect.width/size)
-var ys = Math.ceil(gridRect.height/size) 
-grid.addEventListener('mousedown',e=>{
-    grid.mousedown = true
-    grid.mouseIndex = -1
-    handleGrid(e)
-})
-function handleGrid(e){
-    if(grid.mousedown){
-        let dx = Math.floor((e.clientX-grid.clientLeft)/size)
-        let dy = Math.floor((e.clientY-grid.clientTop)/size)
-        let idx = dx*ys+dy
-        let scale = 1.1, coef = size*(scale-1), pad = 5
-        if(grid.children[idx]&&grid.mouseIndex!=idx){
-            if(grid.action===undefined)
-                grid.action = !grid.children[idx].dataSelected
-            if(grid.children[idx].dataSelected!==grid.action)
-                grid.children[idx].dataSelected = grid.action
-            grid.children[idx].style.fill = grid.children[idx].dataSelected?'grey':'#fff'
-            // grid.children[idx].style.background = grid.children[idx].dataSelected?'grey':'#fff'
-            // grid.children[idx].style.zIndex = 666
-            grid.children[idx].style.transform = `matrix(${scale},0,0,${scale},${-dx*coef-pad},${-dy*coef-pad})`
-            setTimeout(()=>{
-                // grid.children[idx].style.zIndex = 50
-                grid.children[idx].style.transform = 'matrix(1,0,0,1,0,0)'
-            },200)
-            grid.mouseIndex = idx
-        }
-    }
-}
-grid.addEventListener('mousemove',handleGrid)
-grid.addEventListener('mouseup',e=>{
-    grid.mousedown = false
-    grid.action = undefined
-})
-grid.addEventListener('mouseleave',e=>{
-    grid.mousedown = false
-    grid.action = undefined
-})
-function createRects(){
-    for(let i=0;i<xs;i++){
-        for(let j=0;j<ys;j++){
-            // let rect = document.createElement('div')
-            // rect.className = 'rect'
-            // Object.assign(rect.style,{
-            //     left: i*30+'px',
-            //     top: j*30+'px',
-            //     width: size+'px',
-            //     height: size+'px',
-            // })
-            let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
-            rect.dataSelected = false
-            rect.setAttribute('x',i*30)
-            rect.setAttribute('y',j*30)
-            rect.setAttribute('width',size)
-            rect.setAttribute('height',size)
-            rect.setAttribute('stroke','black')
-            rect.setAttribute('fill','white')
-            grid.appendChild(rect)
-        }
-    }
-}
-createRects()
 class Node{
-    constructor(parent,position){
-        this.parent = parent
-        this.position = position
+    constructor(point=[0,0]){
+        this.point = point
+        this.neighbors = []
+        this.from = null
+        this.isWall = false
         this.g = 0
         this.h = 0
         this.f = 0
     }
-}
-const distanceFunction = {
-    Manhattan: (p1,p2)=>Math.abs(p1[0]-p2[0])+Math.abs(p1[1]-p2[1]),
-    Euclidean: (p1,p2)=>Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2),
-    Octile: ()=>{},
-    Chebyshev: ()=>Math.max(Math.abs(p1[0]-p2[0]),Math.abs(p1[1]-p2[1]))
-}
-function AStar(maze, start, end){
-    let startNode = new Node(null, start)
-    let endNode = new Node(null, end)
-    let unvisited = [startNode]
-    let visited = []
-    const isEqual = (p1,p2)=>p1.position[0]==p2.position[0]&&p1.position[1]==p2.position[1]
-    while(unvisited.length){
-        // extract the node which has the smallest f in unvisited
-        unvisited.sort((a,b)=>a.f-b.f)
-        let curNode = unvisited.shift()
-        visited.push(curNode)
-        // if shortest path is found!
-        if(isEqual(curNode, endNode)){
-            let path = []
-            let node = curNode
-            while(node){
-                path.push(node)
-                node = node.parent
-            }
-            return path.reverse()
+    isEqual(node){
+        return this.point[0]==node.point[0]&&this.point[1]==node.point[1]
+    }
+    Manhattan(node){
+        return Math.abs(this.point[0]-node.point[0])+Math.abs(this.point[1]-node.point[1])
+    }
+    Euclidean(node){
+        return Math.pow(this.point[0]-node.point[0],2)+Math.pow(this.point[1]-node.point[1],2)
+    }
+    Chebyshev(node){
+        return Math.max(Math.abs(this.point[0]-node.point[0]),Math.abs(this.point[1]-node.point[1]))
+    }
+    findNeighbors(dirs=[[0,1],[0,-1],[1,0],[-1,0]],nodes=Maze.nodes){
+        this.neighbors = []
+        for(let dir of dirs){
+            let x = this.point[0]+dir[0]
+            let y = this.point[1]+dir[1]
+            if(x<0||x>=nodes.length)
+                continue
+            if(y<0||y>=nodes[0].length)
+                continue
+            if(nodes[x][y].isWall)
+                continue
+            this.neighbors.push(nodes[x][y])
         }
-        // test moving conditions
-        let children = []
-        for(let dir of [[0,1],[0,-1],[1,0],[-1,0]]){
-            let nodePos = [curNode.position[0]+dir[0],curNode.position[1]+dir[1]]
-            if(nodePos[0]>maze.length-1 || nodePos[0]<0)
-                continue
-            if(nodePos[1]>maze[0].length-1 || nodePos[1]<0)
-                continue
-            if(maze[nodePos[0]][nodePos[1]]!=0)
-                continue
-            children.push(new Node(curNode, nodePos))    
+        return this.neighbors
+    }
+}
+class Maze{
+    constructor(container){
+        this.container = container
+        this.size = 30
+        this.event = {active: false, fill: undefined, index: -1}
+        this.nodes = []
+        this.resize()
+        this.createRects()
+        this.createNodes()
+        this.container.addEventListener('mousedown',e=>{
+            this.event.active = true            
+            this.render(e)
+        })
+        this.container.addEventListener('mousemove',e=>{
+            this.render(e)
+        })
+        this.container.addEventListener('mouseup',e=>{
+            this.event = {active: false, fill: undefined, index: -1}
+        })
+        this.container.addEventListener('mouseleave',e=>{
+            this.event = {active: false, fill: undefined, index: -1}
+        })
+        window.addEventListener('resize',()=>{
+            // this.resize()
+            // this.createRects()
+        })
+    }
+    resize(){
+        let W = this.container.clientWidth
+        let H = this.container.clientHeight
+        this.rows = Math.ceil(H/this.size)
+        this.columns = Math.ceil(W/this.size)
+        this.container.setAttribute('viewBox',`0 0 ${W} ${H}`)
+    }
+    createRects(){
+        this.container.innerHTML = ''
+        for(let i=0;i<this.columns;i++){
+            for(let j=0;j<this.rows;j++){
+                let rect = document.createElement('div')
+                rect.className = 'rect'
+                rect.dataset.fill = 'white'
+                Object.assign(rect.style,{
+                    left: i*this.size+'px',
+                    top: j*this.size+'px',
+                    width: this.size+'px',
+                    height: this.size+'px',
+                    lineHeight: this.size+'px',
+                })
+                // let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
+                // rect.dataSelected = false
+                // rect.setAttribute('x',i*30)
+                // rect.setAttribute('y',j*30)
+                // rect.setAttribute('width',this.size)
+                // rect.setAttribute('height',this.size)
+                // rect.setAttribute('stroke','black')
+                // rect.setAttribute('fill','white')
+                this.container.appendChild(rect)
+            }
         }
-        // update node f value
-        for(let child of children){
-            for(let node of visited){
-                if(isEqual(child,node))
-                    continue
+    }
+    createNodes(){
+        let dirs = [[0,1],[0,-1],[1,0],[-1,0]]
+        for(let i=0;i<this.columns;i++){
+            let row = []
+            for(let j=0;j<this.rows;j++){
+                row.push(new Node([i,j]))
             }
-            child.g = curNode.g + 1
-            child.h = distanceFunction.Euclidean(child.position,endNode.position)
-            child.f = child.g + child.h
-            for(let node of unvisited){
-                if(isEqual(child,node)&&child.g>node.g)
-                    continue
+            this.nodes.push(row)
+        }
+    }
+    getElementOfNode(node){
+        let idx = node.point[0]*this.rows+node.point[1]
+        return this.container.children[idx]
+    }
+    render(e){
+        if(this.event.active){
+            let dx = Math.floor((e.clientX-this.container.clientLeft)/this.size)
+            let dy = Math.floor((e.clientY-this.container.clientTop)/this.size)
+            let idx = dx*this.rows+dy
+            let children = this.container.children
+            if(children[idx]&&this.event.index!=idx){
+                if(this.event.fill===undefined)
+                    this.event.fill = children[idx].dataset.fill=='white'?color.grey:'white'
+                this.nodes[dx][dy].isWall = this.event.fill==color.grey
+                children[idx].dataset.fill = this.event.fill
+                children[idx].style.background = children[idx].dataset.fill
+                children[idx].style.transform = 'translate(-5px,-5px)'
+                setTimeout(()=>{
+                    children[idx].style.transform = 'translate(0,0)'
+                },200)
+                this.event.index = idx
             }
-            unvisited.push(child)
         }
     }
 }
-var maze = [[0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
-console.log(AStar(maze, [0,0], [7,6]))
+class Astar{
+    constructor(nodes=[],start=Node,end=Node){
+        this.nodes = nodes
+        this.curNode = start
+        this.endNode = end
+        this.unvisited = [this.curNode]
+        this.visited = []
+    }
+    getPath(){
+        let path = []
+        let node = this.curNode
+        while(node){
+            path.push(node)
+            node = node.from
+        }
+        return path.reverse()
+    }
+    nextStep(){
+        if(this.unvisited.length==0) return 'infeasible'
+        if(this.curNode.isEqual(this.endNode)) return 'finished'
+        // extract the node which has the smallest f in unvisited
+        this.unvisited.sort((a,b)=>a.f-b.f)
+        this.curNode = this.unvisited.shift()
+        this.visited.push(this.curNode)
+        // update f value
+        const dirs = [[0,1],[0,-1],[1,0],[-1,0],[1,1],[-1,1],[1,-1],[-1,-1]]
+        const neighbors = this.curNode.findNeighbors(dirs,this.nodes)
+        for(let neighbor of neighbors){
+            // if neighbor is visited
+            if(neighbor.from) continue
+            if(this.visited.some(node=>neighbor.isEqual(node))) continue
+            neighbor.g = this.curNode.g + 1
+            neighbor.h = neighbor.Euclidean(this.endNode)
+            neighbor.f = neighbor.g + neighbor.h
+            neighbor.from = this.curNode
+            // if g value is not smaller
+            if(this.unvisited.some(node=>neighbor.isEqual(node)&&neighbor.g>node.g)) continue
+            this.unvisited.push(neighbor)
+        }
+        return 'not yet'
+    }
+    findSolution(){
+        let msg = this.nextStep()
+        while(msg=='not yet'){
+            msg = this.nextStep()
+        }
+        // if(msg=='finished') return this.getPath()
+        return msg
+    }
+}
+const color = {
+    blue: '#5DADE2',
+    darkblue: '#5DADE2',
+    green: '#D5F5E3',
+    darkgreen: '#58D68D',
+    red: '#F5B7B1',
+    grey: '#5D6D7E',
+}
+const maze = new Maze(document.getElementById('maze'))
+let startNode = maze.nodes[0][0]
+let endNode = maze.nodes[10][10]
+let astar = new Astar(maze.nodes,startNode,endNode)
+maze.getElementOfNode(startNode).style.background = color.blue
+maze.getElementOfNode(endNode).style.background = color.red
+function nextStep(){
+    let msg = astar.nextStep()
+    astar.unvisited.filter(node=>!node.isEqual(startNode)&&!node.isEqual(endNode))
+        .map(node=>{
+            let rect =maze.getElementOfNode(node)
+            rect.style.background=color.green
+            rect.textContent = node.f
+        })
+    astar.visited.filter(node=>!node.isEqual(startNode)&&!node.isEqual(endNode))
+        .map(node=>maze.getElementOfNode(node).style.background=color.darkgreen)
+    maze.getElementOfNode(astar.curNode).style.background = color.darkblue
+    if(msg=='not yet'){
+        setTimeout(()=>{
+            nextStep()
+        }, 50)
+    }
+}
+function clearMaze(){
+    startNode = maze.nodes[Math.floor(Math.random()*maze.columns)][Math.floor(Math.random()*maze.rows)]
+    endNode = maze.nodes[Math.floor(Math.random()*maze.columns)][Math.floor(Math.random()*maze.rows)]
+    astar = new Astar(maze.nodes,startNode,endNode)
+    maze.nodes.flatMap(n=>n).map(node=>{
+        let rect = maze.getElementOfNode(node)
+        rect.style.background = 'white'
+        rect.dataset.fill = 'white'
+        rect.textContent = ''
+        node.isWall = false
+        node.from = null
+    })
+    maze.getElementOfNode(startNode).style.background = color.blue
+    maze.getElementOfNode(endNode).style.background = color.red
+}
+
+function makeElementMovable(element){
+    element.addEventListener('mousedown', e=>{
+        element.dataset.dragging = true
+        element.dataset.x = e.clientX
+        element.dataset.y = e.clientY
+    })
+    window.addEventListener('mousemove', e=>{
+        if(element.dataset.dragging=='true'){
+            let left = element.offsetLeft+e.clientX-element.dataset.x
+            let top = element.offsetTop+e.clientY-element.dataset.y
+            if(left+element.clientWidth/2>window.innerWidth/2){
+                let right = window.innerWidth-left-element.clientWidth
+                element.style.left = ''
+                element.style.right = right+'px'
+            }else{
+                element.style.right = ''
+                element.style.left = left+'px'
+            }
+            if(top+element.clientHeight/2>window.innerHeight/2){
+                let bottom = window.innerHeight-top-element.clientHeight
+                element.style.top = ''
+                element.style.bottom = bottom+'px'
+            }else{
+                element.style.bottom = ''
+                element.style.top = top+'px'
+            }
+            element.dataset.x = e.clientX
+            element.dataset.y = e.clientY
+        }
+    })
+    window.addEventListener('mouseup', e=>{
+        element.dataset.dragging = false
+    })
+    window.addEventListener('mouseleave', e=>{
+        element.dataset.dragging = false
+    })
+}
+makeElementMovable(document.getElementById('control-panel'))
 </script>
 </html>

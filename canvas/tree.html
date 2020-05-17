@@ -4,197 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TreeView</title>
-    <link rel="stylesheet" href="../css/fontawesome.css">
-    <link rel="stylesheet" href="../css/bootstrap.css">
 </head>
 <body>
-    <textarea name="request" id="request-url"></textarea>
-    <button class="btn btn-primary" onclick="handleRequest()">send</button>
-    <div id="treeview"></div>
-    <div class="row">
-        <ul id="go" class="list-group col-6">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span class="badge badge-pill">3分</span>
-            </li>
-        </ul>
-        <ul id="back" class="list-group col-6">
-            
-        </ul>
-    </div>
     <canvas id="fractal-tree"></canvas>
 </body>
 <style>
 html,body{
     margin:0;
+    height: 100%;
 }
-i{
-    width: 30px;
-    text-align: center;
-    cursor: pointer;
-    user-select: none;
-}
-.d-flex{
-    display: flex;
-    align-items: center;
-}
-.tree-content:hover{
-    background: #eee;
+#fractal-tree{
+    width: 100%;
+    height: 100%;
 }
 </style>
 <script>
-    var route = 9
-    var reqURL = `https://ptx.transportdata.tw/MOTC/v2/Bus/EstimatedTimeOfArrival/City/Taichung/${route}?$select=PlateNumb,StopName,EstimateTime&$filter=NextBusTime ne null and RouteID eq '${route}'&$orderby=Direction,StopSequence&$format=JSON`
-    document.getElementById('request-url').value = reqURL
-    function handleRequest(){
-        let url = document.getElementById('request-url').value
-        fetch(url,{}).then(res=>res.json()).then(json=>{
-            let go = document.getElementById('go')
-            let back = document.getElementById('back')
-            json.map(row=>{
-                let li = document.createElement('li')
-                let text = row.StopName.Zh_tw+' '+row.PlateNumb+' '
-                let date = new Date(row.NextBusTime)
-                let formateTime = ('0'+date.getHours()).substr(-2)+':'+('0'+date.getMinutes()).substr(-2)
-                let formateEst = row.EstimateTime>60?Math.floor(row.EstimateTime/60):row.EstimateTime
-                text+= row.EstimateTime?formateEst+'分':formateTime
-                li.textContent = text
-                if(row.direction==0){
-                    go.appendChild(li)
-                }else{
-                    back.appendChild(li)
-                }
-                let child = root.appendChild('object')
-                for(let key in row){
-                    child.appendChild(key+':'+row[key])
-                }
-            })
-        })
-    }
-    
-    class Treeview{
-        constructor(parent){
-            this.level = parent.level==undefined?0:parent.level+1
-            this.parent = parent
-            if(parent.mask){
-                this.mask = parent.childMask
-            }else{ // if parent is root
-                this.mask = document.createElement('div')
-                this.mask.className = 'tree-mask'
-                this.mask.style.overflow = 'hidden'
-                this.mask.style.transition = '0.3s'
-                parent.appendChild(this.mask)
-                this.parent.childMask = this.mask
-            }
-            this.content = this.createContent()
-            this.mask.appendChild(this.content)
-            // this.content.style.height = this.content.clientHeight+'px'
-            this.childMask = document.createElement('div')
-            this.childMask.className = 'tree-mask'
-            this.childMask.style.overflow = 'hidden'
-            this.childMask.style.transition = 'height 0.3s'
-            this.childMask.style.height = 0
-            this.mask.appendChild(this.childMask)
-            this.children = []
-            this.expanded = true
-        }
-        createContent(){
-            var div = document.createElement('div')
-            div.className = 'tree-content'
-            this.caret = document.createElement('i')
-            this.caret.className = 'fas fa-caret-down'
-            this.caret.style.opacity = 0
-            this.caret.style.transition = 'transform 0.3s'
-            this.span = document.createElement('span')
-            this.checkbox = document.createElement('input')
-            this.checkbox.type = 'checkbox'
-            div.appendChild(this.caret)
-            div.appendChild(this.checkbox)
-            div.appendChild(this.span)
-            this.caret.onclick = e=>{
-                e.stopPropagation()
-                this.toggle()
-            }
-            div.oncontextmenu = e=>{
-                e.preventDefault()
-                this.appendChild()
-            }
-            div.style.paddingLeft = 30*this.level+'px'
-            return div
-        }
-        appendChild(content){
-            this.caret.style.opacity = '1'
-            let newTreeview = new Treeview(this)
-            newTreeview.span.textContent = content
-            this.children.push(newTreeview)
-            let diff = newTreeview.content.clientHeight
-            newTreeview.syncParentHeight(diff)
-            return newTreeview
-        }
-        remove(){
-            if(this.parent.childMask)
-                this.parent.children = this.parent.children.filter(x=>x!=this)
-            this.mask.remove()
-        }
-        toggle(){
-            if(this.childMask){
-                this.expanded = !this.expanded
-                if(this.expanded){
-                    this.expand()
-                }else{
-                    this.collapse()
-                }
-            }
-        }
-        syncParentHeight(diff){
-            let parent = this
-            while(parent.mask){
-                parent.mask.style.height = parent.mask.clientHeight+diff+'px'
-                parent = parent.parent
-            }
-        }
-        expand(){
-            var diff = this.children.reduce((acc,cur)=>acc+cur.content.clientHeight+cur.childMask.clientHeight,0)
-            this.childMask.style.height = diff+'px'
-            this.syncParentHeight(diff)
-            this.content.querySelector('i').style.transform = 'rotate(0)'
-        }
-        collapse(){
-            var diff = -this.childMask.clientHeight
-            this.syncParentHeight(diff)
-            this.childMask.style.height = 0
-            this.content.querySelector('i').style.transform = 'rotate(-90deg)'
-        }
-        flatten(){
-            var result = [this]
-            for(let child of this.children){
-                result = result.concat(child.flatten())
-            }
-            return result
-        }
-    }
-    var root = new Treeview(document.getElementById('treeview'))
-    root.appendChild()//.appendChild().appendChild()
-
-    function createContextMenu(coord){
-        let div = document.createElement('div')
-        var button = document.createElement('button')
-        button.innerHTML = 'bang'
-        button.onclick = ()=>{
-
-        }
-        div.appendChild(button)
-        Object.assign(div.style,{
-            position: 'fixed',
-            left: coord.x+'px',
-            top: coord.y+'px'
-        })
-        document.body.appendChild(div)
-        return div
-    }
     class FractalTree{
         constructor(canvas){
-            canvas.width = canvas.style.width = window.innerWidth
-            canvas.height = canvas.style.height = 600
             this.canvas = canvas
             this.ctx = this.canvas.getContext('2d')
             this.args = {
@@ -248,19 +74,39 @@ i{
             }
         }
         update(args){
-            this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
             this.paths = []
             Object.assign(this.args, args)
             this.branch(this.args.point,this.args.vector)
-            this.draw()
         }
     }
-    var ft = new FractalTree(document.getElementById('fractal-tree'))
+    const canvas = document.getElementById('fractal-tree')
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+    var ft = new FractalTree(canvas)
+    var me = {x:0,y:0}
     window.addEventListener('mousemove',e=>{
+        me.x = e.clientX
+        me.y = e.clientY
         ft.update({
             skew: (20*e.clientX/window.innerWidth-10)*Math.PI/180,
             trim: 10+20*e.clientY/window.innerHeight
         })
     })
+    function draw(){
+        let ctx = canvas.getContext('2d')
+        let r1 = 20
+        let r2 = Math.max(canvas.width,canvas.height)
+        let pct = me.y/canvas.height
+        pct = pct>1?1:pct
+        let gd = ctx.createRadialGradient(me.x,me.y,r1,me.x,me.y,r2)
+        gd.addColorStop(0,'yellow')
+        gd.addColorStop(1-pct,'darkorange')
+        gd.addColorStop(1,'black')
+        ctx.fillStyle = gd
+        ctx.fillRect(0,0,canvas.width,canvas.height)
+        ft.draw()
+        requestAnimationFrame(draw)
+    }
+    draw()
 </script>
 </html>

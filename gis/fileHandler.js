@@ -89,9 +89,12 @@ function handleRequest(){
     //     }
     // }
 }
-function downloadTxt(text,filename='downlaod.txt'){
+function downloadText(text,filename='downlaod.txt'){
     let a = document.createElement('a')
     a.href = "data:text/plain;charset=UTF-8," + encodeURIComponent(text)
     a.download = filename
     a.click()
 }
+window.addEventListener('paste',e=>{
+    let blob = e.clipboardData.items[0].getAsFile()
+})

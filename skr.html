@@ -92,33 +92,6 @@
         }
     }
     skr()
-    class Counter{
-        constructor(el){
-            this.el = el
-            this.denominator = 50
-            this.paused = true
-        }
-        countTo(num,step=60,interval=40){
-            if(this.paused){
-                this.denominator=step
-                this.paused = false
-            }
-            const EasingFunctions = {
-                linear: t => t,
-                easeIn: t => t*t,
-                easeOut: t => t*(2-t),
-                easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t,
-            }
-            let t = (this.denominator-step)/this.denominator
-            this.el.innerText = parseInt(num*EasingFunctions['easeOut'](t))
-            if(step==0){
-                this.paused=true
-            }else{    
-                setTimeout(()=>{this.countTo(num,step-1,interval)},interval)
-            }
-        }
-    }
-    new Counter(document.querySelector('.num')).countTo(3396)
     var pe = [], prevDiff = 0
     window.onpointerdown = e=>{
         pe.push(e)

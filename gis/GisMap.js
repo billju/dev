@@ -262,6 +262,7 @@ class GisMap{
                             else
                                 this.ctx.lineTo(c[0],c[1])
                         })
+                        this.ctx.globalAlpha = 1
                         this.ctx.strokeStyle = 'white'
                         this.ctx.fillStyle = 'dodgerblue'
                         this.ctx.stroke()
