@@ -58,35 +58,41 @@
         }
     }
     let particles = Array.from(Array(150),()=>new Particle(bbox))
+    let event = {x:0,y:0}
     function draw(){
         ctx.fillStyle = 'rgba(100,100,100,0.2)'
         ctx.fillRect(...bbox)
         ctx.fillStyle = 'white'
         for(let i=0;i<particles.length;i++){
             let pi = particles[i]
-            for(let j=i+1;j<particles.length;j++){
-                let pj = particles[j]
-                let d = pi.distanceTo(pj)
-                let threshold = 100
-                if(d<threshold){
-                    ctx.beginPath()
-                    ctx.moveTo(pi.x,pi.y)
-                    ctx.lineTo(pj.x,pj.y)
-                    ctx.strokeStyle = `rgba(255,255,255,${(threshold-d)/threshold})`
-                    ctx.stroke()
-                    ctx.closePath()
+            if(Math.pow(pi.x-event.x,2)+Math.pow(pi.y-event.y,2)<10000){
+                for(let j=i+1;j<particles.length;j++){
+                    let pj = particles[j]
+                    let d = pi.distanceTo(pj)
+                    let threshold = 100
+                    if(d<threshold){
+                        ctx.beginPath()
+                        ctx.moveTo(pi.x,pi.y)
+                        ctx.lineTo(pj.x,pj.y)
+                        ctx.strokeStyle = `rgba(255,255,255,${(threshold-d)/threshold})`
+                        ctx.stroke()
+                        ctx.closePath()
+                    }
                 }
+                ctx.beginPath()
+                ctx.moveTo(pi.x,pi.y)
+                ctx.arc(pi.x,pi.y,5,0,Math.PI*2,false)
+                ctx.fill()
+                ctx.closePath()
+                pi.moveIn(bbox)
             }
-            ctx.beginPath()
-            ctx.moveTo(pi.x,pi.y)
-            ctx.arc(pi.x,pi.y,5,0,Math.PI*2,false)
-            ctx.fill()
-            ctx.closePath()
-            pi.moveIn(bbox)
         }
         window.requestAnimationFrame(draw)
     }
     draw()
+    window.addEventListener('mousemove',e=>{
+        event = {x:e.clientX,y:e.clientY}
+    })
     window.addEventListener('resize',()=>{resizeCanvas()})
 </script>
 </html>

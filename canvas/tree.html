@@ -89,7 +89,8 @@ html,body{
         me.y = e.clientY
         ft.update({
             skew: (20*e.clientX/window.innerWidth-10)*Math.PI/180,
-            trim: 10+20*e.clientY/window.innerHeight
+            trim: 10+20*e.clientY/window.innerHeight,
+            vector: {x:0,y:-50-50*(1-e.clientY/window.innerHeight)}
         })
     })
     function draw(){

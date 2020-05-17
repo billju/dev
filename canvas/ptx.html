@@ -8,21 +8,28 @@
     <link rel="stylesheet" href="../css/bootstrap.css">
 </head>
 <body>
-    <textarea name="request" id="request-url"></textarea>
+    <div class="form-group">
+        <label for="request-url">網址</label>
+        <textarea id="request-url" class="form-control"></textarea>
+    </div>
     <button class="btn btn-primary" onclick="handleRequest()">send</button>
     <div id="treeview"></div>
     <div class="row">
         <ul id="go" class="list-group col-6">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span class="badge badge-pill">3分</span>
+            <li id="template" class="list-group-item d-flex justify-content-between align-items-center">
+                <span class="badge badge-primary badge-pill text-center" style="font-size: 16px;width:60px">{{time}}</span>
+                <span class="px-2" style="flex:1">{{stop}}</span>
+                <span class="badge badge-primary">{{plate}}</span>
             </li>
         </ul>
         <ul id="back" class="list-group col-6">
-            
         </ul>
     </div>
 </body>
 <style>
+*{
+    font-family: 微軟正黑體;
+}
 html,body{
     margin:0;
 }
@@ -41,32 +48,38 @@ i{
 }
 </style>
 <script>
-        var route = 9
+    var route = 9
     var reqURL = `https://ptx.transportdata.tw/MOTC/v2/Bus/EstimatedTimeOfArrival/City/Taichung/${route}?$select=PlateNumb,StopName,EstimateTime&$filter=NextBusTime ne null and RouteID eq '${route}'&$orderby=Direction,StopSequence&$format=JSON`
     document.getElementById('request-url').value = reqURL
     function handleRequest(){
         let url = document.getElementById('request-url').value
+        let template = document.getElementById('template')
         fetch(url,{}).then(res=>res.json()).then(json=>{
             let go = document.getElementById('go')
             let back = document.getElementById('back')
+            console.log(json)
             json.map(row=>{
-                let li = document.createElement('li')
-                let text = row.StopName.Zh_tw+' '+row.PlateNumb+' '
+                let li = template.cloneNode(true)
                 let date = new Date(row.NextBusTime)
                 let formateTime = ('0'+date.getHours()).substr(-2)+':'+('0'+date.getMinutes()).substr(-2)
                 let formateEst = row.EstimateTime>60?Math.floor(row.EstimateTime/60):row.EstimateTime
-                text+= row.EstimateTime?formateEst+'分':formateTime
-                li.textContent = text
-                if(row.direction==0){
+                let state = {
+                    time: row.EstimateTime?formateEst+'分':formateTime,
+                    stop: row.StopName.Zh_tw,
+                    plate: row.PlateNumb
+                }
+                for(let child of li.children){
+                    for(let key in state){
+                        child.textContent = child.textContent.replace(`{{${key}}}`,state[key])
+                    }
+                }
+                if(row.Direction==0){
                     go.appendChild(li)
                 }else{
                     back.appendChild(li)
                 }
-                let child = root.appendChild('object')
-                for(let key in row){
-                    child.appendChild(key+':'+row[key])
-                }
             })
+            template.remove()
         })
     }
     
@@ -171,7 +184,7 @@ i{
             return result
         }
     }
-    var root = new Treeview(document.getElementById('treeview'))
-    root.appendChild()//.appendChild().appendChild()
+    // var root = new Treeview(document.getElementById('treeview'))
+    // root.appendChild()//.appendChild().appendChild()
 </script>
 </html>

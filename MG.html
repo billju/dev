@@ -137,7 +137,7 @@ function imageGlitch(img, src){
 function fadeIn(element){
     element
 }
-function createDots(element){
+function createTicks(element){
     let len = 20, delay = 0.1, radius= 100
     for(let i=0;i<len;i++){
         let circle = document.createElement('div')
@@ -146,9 +146,10 @@ function createDots(element){
             left: radius*(1+Math.cos(i*Math.PI*2/len))+'px',
             top: radius*(1+Math.sin(i*Math.PI*2/len))+'px',
             width: '20px',
-            height: '20px',
+            height: '2px',
             background: 'violet',
-            borderRadius: '50%',
+            // borderRadius: '50%',
+            transform: `rotate(${360*i/len}deg)`,
             transitionOrigin: 'center',
             animationName: 'scale',
             animationDuration: `${delay*len}s`,
@@ -159,7 +160,7 @@ function createDots(element){
         element.appendChild(circle)
     }
 }
-// createDots(document.getElementById('spinner'))
+createTicks(document.getElementById('spinner'))
 function hiddenText(element,textStyle={},maskStyle={},dir='top'){
     let axis = dir=='top'||dir=='bottom'?'Y':'X'
     let sign = dir=='top'||dir=='left'?1:-1

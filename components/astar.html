@@ -7,9 +7,10 @@
 </head>
 <body>
     <div id="maze"></div>
-    <div id="control-panel">
+    <div id="control-panel" style="position:fixed;top:0;right:0">
         <button onclick="nextStep()">start</button>
         <button onclick="clearMaze()">clear</button>
+        <button onclick="resetMaze()">reset</button>
     </div>
 </body>
 <style>
@@ -38,12 +39,10 @@
         user-select: none;
     }
     #control-panel{
-        right: 0;
-        top: 0;
-        position: fixed;
         padding: 15px;
         border-radius: 5px;
         background: rgba(0,0,0,0.3);
+        user-select: none;
     }
 </style>
 <script>
@@ -106,10 +105,6 @@ class Maze{
         })
         this.container.addEventListener('mouseleave',e=>{
             this.event = {active: false, fill: undefined, index: -1}
-        })
-        window.addEventListener('resize',()=>{
-            // this.resize()
-            // this.createRects()
         })
     }
     resize(){
@@ -231,39 +226,50 @@ class Astar{
     }
 }
 const color = {
-    blue: '#5DADE2',
-    darkblue: '#5DADE2',
+    blue: '#5DC3E2',
     green: '#D5F5E3',
     darkgreen: '#58D68D',
     red: '#F5B7B1',
     grey: '#5D6D7E',
+    lime: '#5DE2BF'
 }
 const maze = new Maze(document.getElementById('maze'))
 let startNode = maze.nodes[0][0]
 let endNode = maze.nodes[10][10]
 let astar = new Astar(maze.nodes,startNode,endNode)
+var timeout = undefined
 maze.getElementOfNode(startNode).style.background = color.blue
 maze.getElementOfNode(endNode).style.background = color.red
 function nextStep(){
     let msg = astar.nextStep()
-    astar.unvisited.filter(node=>!node.isEqual(startNode)&&!node.isEqual(endNode))
-        .map(node=>{
-            let rect =maze.getElementOfNode(node)
-            rect.style.background=color.green
-            rect.textContent = node.f
-        })
-    astar.visited.filter(node=>!node.isEqual(startNode)&&!node.isEqual(endNode))
-        .map(node=>maze.getElementOfNode(node).style.background=color.darkgreen)
-    maze.getElementOfNode(astar.curNode).style.background = color.darkblue
+    astar.unvisited.map(node=>{
+        let rect =maze.getElementOfNode(node)
+        rect.style.background=color.green
+        rect.textContent = node.f
+    })
+    astar.visited.map(node=>maze.getElementOfNode(node).style.background=color.darkgreen)  
+    maze.getElementOfNode(startNode).style.background = color.blue
+    maze.getElementOfNode(endNode).style.background = color.red
+    maze.getElementOfNode(astar.curNode).style.background = color.blue
     if(msg=='not yet'){
-        setTimeout(()=>{
+        timeout = setTimeout(()=>{
             nextStep()
         }, 50)
+    }else if(msg=='finished'){
+        astar.getPath().map(node=>{
+            maze.getElementOfNode(node).style.background = color.lime
+            if(node.isEqual(startNode))
+                maze.getElementOfNode(node).style.background = color.blue
+            if(node.isEqual(endNode))
+                maze.getElementOfNode(node).style.background = color.red
+        })
+    }else{
+        alert('no feasible path')
     }
 }
+
 function clearMaze(){
-    startNode = maze.nodes[Math.floor(Math.random()*maze.columns)][Math.floor(Math.random()*maze.rows)]
-    endNode = maze.nodes[Math.floor(Math.random()*maze.columns)][Math.floor(Math.random()*maze.rows)]
+    clearTimeout(timeout)
     astar = new Astar(maze.nodes,startNode,endNode)
     maze.nodes.flatMap(n=>n).map(node=>{
         let rect = maze.getElementOfNode(node)
@@ -276,8 +282,24 @@ function clearMaze(){
     maze.getElementOfNode(startNode).style.background = color.blue
     maze.getElementOfNode(endNode).style.background = color.red
 }
-
+function resetMaze(){
+    startNode = maze.nodes[Math.floor(Math.random()*maze.columns)][Math.floor(Math.random()*maze.rows)]
+    endNode = maze.nodes[Math.floor(Math.random()*maze.columns)][Math.floor(Math.random()*maze.rows)]
+    clearMaze()
+}
+window.addEventListener('resize',()=>{
+    maze.container.innerHTML = ''
+    maze.nodes = []
+    maze.resize()
+    maze.createRects()
+    maze.createNodes()
+    if(maze.rows<=startNode.point[1]||maze.rows<=endNode.point[1]||maze.columns<=startNode.point[0]||maze.columns<=endNode.point[0])
+        resetMaze()
+    else
+        clearMaze()
+})
 function makeElementMovable(element){
+    // do not assign top,left,right,bottom in css class
     element.addEventListener('mousedown', e=>{
         element.dataset.dragging = true
         element.dataset.x = e.clientX
@@ -287,7 +309,7 @@ function makeElementMovable(element){
         if(element.dataset.dragging=='true'){
             let left = element.offsetLeft+e.clientX-element.dataset.x
             let top = element.offsetTop+e.clientY-element.dataset.y
-            if(left+element.clientWidth/2>window.innerWidth/2){
+            if(left+element.clientWidth/2>=window.innerWidth/2){
                 let right = window.innerWidth-left-element.clientWidth
                 element.style.left = ''
                 element.style.right = right+'px'
