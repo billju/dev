@@ -210,7 +210,7 @@ class ImageShape{
                 }
             }
         }
-        if(this.contains([e.clientX,e.clientY],this.coords)){
+        if(this.contains([e.clientX,e.clientY])){
             this.editing = true
             this.event.type = 'M'
             this.event.point = {x:e.clientX,y:e.clientY}

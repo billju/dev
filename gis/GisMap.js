@@ -45,32 +45,7 @@ function DouglasPeucker(points, epsilon){
         return [points[0], points[points.length-1]]
     }
 }
-function isOverlap(bbox1,bbox2){
-    return bbox1[0]<bbox2[2]&&bbox1[2]>bbox2[0]&&bbox1[1]<bbox2[3]&&bbox1[3]>bbox2[1]
-}
-function isInPolygon(p, polygon) {
-    var isInside = false,
-        xArr = polygon.map(pt=>pt[0]),
-        yArr = polygon.map(pt=>pt[1]),
-        minX = Math.min(...xArr),
-        minY = Math.min(...yArr),
-        maxX = Math.max(...xArr),
-        maxY = Math.max(...yArr)
-    if (p[0] < minX || p[0] > maxX || p[1] < minY || p[1] > maxY) {
-        return false;
-    }
-    for(var i=0, j=polygon.length-1; i<polygon.length; j=i++) {
-        var p1 = polygon[j],
-            p2 = polygon[i]
-        if(
-            (p2[1] > p[1]) != (p1[1] > p[1]) &&
-            (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
-        ){
-            isInside = !isInside
-        }
-    }
-    return isInside;
-}
+
 function getLength(coords){
     return coords.reduce((acc,cur,i,arr)=>{
         if(i==0) return acc
@@ -193,6 +168,7 @@ class GisMap{
         this.drawEvent = {path:[],active:false}
         this.momentum = {x:0,y:0,t:0}
         this.animationFrame = null
+        this.selectedFeature = null
         this.render = ()=>{
             this.animationFrame = window.requestAnimationFrame(this.render)
             // update parameters
@@ -229,92 +205,13 @@ class GisMap{
                 this.ctx.globalAlpha = raster.opacity
                 this.renderTiles(raster.url)
             }
-            for(let vector of this.vector){
-                this.renderVector(vector)
+            for(let feature of this.vector){
+                this.renderVector(feature)
             }
             this.renderDraw()
             this.canvas.dispatchEvent(new CustomEvent('render',{}))
         }
         this.render()
-    }
-    renderVector(vector){
-        let tolerance = Math.pow(2,18-this.view.zoom)
-        tolerance = tolerance<1?0:tolerance
-        let fillMap = {
-            '公': 'rgba(254,255,191,1)',
-            '私': 'rgba(188,233,252,1)',
-            '公私共有': 'rgba(202,214,159,1)',
-            '公法人': 'rgba(215,177,158,1)',
-            '糖': 'rgba(239,177,208,1)'
-        }                
-        let owner = vector.properties['權屬'] 
-        let fillStyle = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
-        switch(vector.geometry.type){
-            case 'Point':
-                break
-            case 'MultiPoint':
-                break
-            case 'LineString':
-                this.ctx.beginPath()
-                vector.geometry.coordinates.map((c,i)=>{
-                    if(i==0)
-                        this.ctx.moveTo(c[0],c[1])
-                    else
-                        this.ctx.lineTo(c[0],c[1])
-                })
-                this.ctx.stroke()
-                this.ctx.closePath()
-                break
-            case 'MultiLineString':
-                for(let coords of vector.geometry.coordinates){
-                    this.ctx.beginPath()
-                    DouglasPeucker(coords,tolerance).map((coord,i)=>{
-                        let c = this.coord2client(coord)
-                        if(i==0)
-                            this.ctx.moveTo(c[0],c[1])
-                        else
-                            this.ctx.lineTo(c[0],c[1])
-                    })
-                    this.ctx.globalAlpha = 1
-                    this.ctx.strokeStyle = 'orange'
-                    this.ctx.stroke()
-                    this.ctx.closePath()
-                }
-                break
-            case 'Polygon':
-                for(let coords of vector.geometry.coordinates){
-                    this.ctx.beginPath()
-                    coords.map((c,i)=>{
-                        if(i==0)
-                            this.ctx.moveTo(c[0],c[1])
-                        else
-                            this.ctx.lineTo(c[0],c[1])
-                    })
-                    this.ctx.fill()
-                    this.ctx.closePath()
-                }
-                break
-            case 'MultiPolygon':
-                for(let coordinates of vector.geometry.coordinates){
-                    for(let coords of coordinates){
-                        this.ctx.beginPath()
-                        DouglasPeucker(coords,tolerance).map((coord,i)=>{
-                            let c = this.coord2client(coord)
-                            if(i==0)
-                                this.ctx.moveTo(c[0],c[1])
-                            else
-                                this.ctx.lineTo(c[0],c[1])
-                        })
-                        this.ctx.globalAlpha = 1
-                        this.ctx.strokeStyle = 'dodgerblue'
-                        this.ctx.fillStyle = fillStyle
-                        this.ctx.stroke()
-                        this.ctx.fill()
-                        this.ctx.closePath()
-                    }
-                }
-                break
-        }
     }
     renderDraw(){
         // draw polygon
@@ -584,5 +481,163 @@ class GisMap{
             point[0] * d / 6378137,
             (2 * Math.atan(Math.exp(point[1] / 6378137)) - (Math.PI / 2)) * d
         ]
+    }
+    isInPolygon(p, polygon) {
+        let isInside = false
+        for(let i=0, j=polygon.length-1; i<polygon.length; j=i++) {
+            let p1 = polygon[j], p2 = polygon[i]
+            let c1 = (p2[1] > p[1]) != (p1[1] > p[1])
+            let c2 = (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
+            if(c1&&c2){ isInside = !isInside }
+        }
+        return isInside;
+    }
+    geojson(geojson){
+        geojson.features.map(feature=>{
+            let geom = feature.geometry
+            geom.bbox = [Infinity,Infinity,-Infinity,-Infinity]
+            const project = lnglat=>{
+                let [x,y] = this.toCoord(lnglat)
+                geom.bbox[0] = Math.min(geom.bbox[0],x)
+                geom.bbox[1] = Math.min(geom.bbox[1],y)
+                geom.bbox[2] = Math.max(geom.bbox[2],x)
+                geom.bbox[3] = Math.max(geom.bbox[3],y)
+                lnglat[0] = x
+                lnglat[1] = y
+            }
+            switch(geom.type){
+                case 'Point':
+                    project(geom.coordinates);break;
+                case 'MultiPoint':
+                    geom.coordinates.map(lnglat=>project(lnglat));break;
+                case 'LineString':
+                    geom.coordinates.map(lnglat=>project(lnglat));break;
+                case 'MultiLineString':
+                    geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
+                case 'Polygon':
+                    geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
+                case 'MultiPolygon':
+                    geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))));break;
+            }
+            this.vector.push(feature)
+        })   
+    }
+    detectClient(e){
+        const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0])+Math.pow(p1[0]-p2[0]))
+        const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
+        const isInBbox = (p,bbox)=>p[0]>=bbox[0]&&p[0]<=bbox[2]&&p[1]>=bbox[1]&&p[1]<=bbox[3]
+        let point = this.client2coord([e.clientX,e.clientY])
+        let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox)&&isInBbox(point,feature.geometry.bbox))
+        for(let feature of features){
+            let geom = feature.geometry
+            let isInGeometry = false
+            switch(geom.type){
+                case 'Point':
+                    isInGeometry = Euclidean([e.clientX,e.clientY],this.coord2client(geom.coordinates)) < 5;break;
+                case 'MultiPoint':
+                    isInGeometry = geom.coordinates.some(coord=>Euclidean([e.clientX,e.clientY],this.coord2client(coord)) < 5);break;
+                case 'LineString':
+                    isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance([e.clientX,e.clientY],coords[i-1],coord)<5);break;
+                case 'MultiLineString':
+                    isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance([e.clientX,e.clientY],coords[i-1],coord)<5));break;
+                case 'Polygon':
+                    isInGeometry = geom.coordinates.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr));break;
+                case 'MultiPolygon':
+                    isInGeometry = geom.coordinates.some(arr2d=>arr2d.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr)));break;
+            }
+            if(isInGeometry){
+                this.selectedFeature = feature
+                return feature
+            }
+        }
+        return false
+    }
+    renderVector(feature,style={}){
+        let tolerance = Math.pow(2,18-this.view.zoom)
+        tolerance = tolerance<1?0:tolerance
+        if(feature==this.selectedFeature){
+            Object.assign(style,{
+                stroke: 'red',
+                fill: 'rgba(255,0,0,0.3)'
+            })
+        }
+        let fillMap = {
+            '公': 'rgba(254,255,191,1)',
+            '私': 'rgba(188,233,252,1)',
+            '公私共有': 'rgba(202,214,159,1)',
+            '公法人': 'rgba(215,177,158,1)',
+            '糖': 'rgba(239,177,208,1)'
+        }
+        let owner = feature.properties['權屬']
+        let fillStyle = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
+        switch(feature.geometry.type){
+            case 'Point':
+                break
+            case 'MultiPoint':
+                break
+            case 'LineString':
+                this.ctx.beginPath()
+                feature.geometry.coordinates.map((coord,i)=>{
+                    let c = this.coord2client(coord)
+                    if(i==0)
+                        this.ctx.moveTo(c[0],c[1])
+                    else
+                        this.ctx.lineTo(c[0],c[1])
+                })
+                this.ctx.strokeStyle = style.stroke
+                this.ctx.stroke()
+                this.ctx.closePath()
+                break
+            case 'MultiLineString':
+                for(let coords of feature.geometry.coordinates){
+                    this.ctx.beginPath()
+                    DouglasPeucker(coords,tolerance).map((coord,i)=>{
+                        let c = this.coord2client(coord)
+                        if(i==0)
+                            this.ctx.moveTo(c[0],c[1])
+                        else
+                            this.ctx.lineTo(c[0],c[1])
+                    })
+                    this.ctx.globalAlpha = 1
+                    this.ctx.strokeStyle = style.stroke||'orange'
+                    this.ctx.stroke()
+                    this.ctx.closePath()
+                }
+                break
+            case 'Polygon':
+                this.ctx.beginPath()
+                for(let coords of feature.geometry.coordinates){
+                    coords.map((c,i)=>{
+                        if(i==0)
+                            this.ctx.moveTo(c[0],c[1])
+                        else
+                            this.ctx.lineTo(c[0],c[1])
+                    })    
+                }
+                this.ctx.fill()
+                this.ctx.closePath()
+                break
+            case 'MultiPolygon':
+                for(let coordinates of feature.geometry.coordinates){
+                    this.ctx.beginPath()
+                    for(let coords of coordinates){     
+                        DouglasPeucker(coords,tolerance).map((coord,i)=>{
+                            let c = this.coord2client(coord)
+                            if(i==0)
+                                this.ctx.moveTo(c[0],c[1])
+                            else
+                                this.ctx.lineTo(c[0],c[1])
+                        })
+                        
+                    }
+                    this.ctx.globalAlpha = 1
+                    this.ctx.strokeStyle = style.stroke||'dodgerblue'
+                    this.ctx.fillStyle = style.fill||fillStyle
+                    this.ctx.stroke()
+                    this.ctx.fill()
+                    this.ctx.closePath()
+                }
+                break
+        }
     }
 }

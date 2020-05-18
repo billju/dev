@@ -23,6 +23,7 @@
                 </td>
             </tr>
         </table>
+        <table id="properties" class="table table-striped table-hover table-dark" style="max-width:300px;max-height:100vh;position:fixed;left:0;top:0"></table>
         <input type="file" id="file" style="display: none;"
             onchange="handleFile(event.target.files[0])">
         <div id="drop-field" ondrop="handleDrop(event)" ondragover="event.preventDefault()"
@@ -62,7 +63,9 @@
     var canvas = document.getElementById('canvas')
     var ctx = canvas.getContext('2d')
     var gm = new GisMap(canvas)
+    // gm.geojson({features:[{properties:{bang:'gang'},geometry:{type:'LineString',coordinates:[[121,24],[122,25]]}}]})
     var imageShapes = []
+    const propsTable = document.getElementById('properties')
     canvas.addEventListener('render',e=>{
         for(let imageShape of imageShapes){
             imageShape.updateGisClient()
@@ -93,6 +96,18 @@
     canvas.addEventListener('mouseup',e=>{
         for(let imageShape of imageShapes)
             imageShape.handleMouseup(e)
+        let feature = gm.detectClient(e)
+        if(feature){
+            propsTable.innerHTML = ''
+            Object.entries(feature.properties).map(([key,val])=>{
+                let tr = propsTable.insertRow()
+                tr.insertCell().textContent = key
+                tr.insertCell().textContent = val
+            })
+        }else if(!gm.moveEvent.moved){
+            propsTable.innerHTML = ''
+            gm.selectedFeature = null
+        }
         gm.handleMouseup(e)
     })
     canvas.addEventListener('mouseleave',e=>{
@@ -156,6 +171,14 @@
             let idx = gm.raster.findIndex(x=>x.name==raster.name)
             gm.raster[idx].active = e.target.checked
         }
+        if(raster.name=='通用'){
+            setTimeout(()=>{
+                checkbox.checked=true
+            },2000)
+            setTimeout(()=>{
+                raster.active = true
+            },3000)
+        }
         rE.querySelector('label').setAttribute('for',raster.name)
         let range = rE.querySelector('input[type="range"')
         range.oninput = e=>{
@@ -184,38 +207,7 @@
             let reader = new FileReader()
             reader.onload = ()=>{
                 let geojson = JSON.parse(reader.result)
-                geojson.features.map(f=>{
-                    let geom = f.geometry
-                    switch(geom.type){
-                        case 'Point':
-                            geom.coordinates = gm.toCoord(geom.coordinates)
-                            break
-                        case 'MultiPoint':
-                            geom.coordinates = geom.coordinates.map(lnglat=>gm.toCoord(lnglat))
-                            break
-                        case 'LineString':
-                            geom.coordinates = geom.coordinates.map(lnglat=>gm.toCoord(lnglat))
-                            break
-                        case 'MultiLineString':
-                            geom.coordinates = geom.coordinates.map(l=>l.map(lnglat=>gm.toCoord(lnglat)))
-                            break
-                        case 'Polygon':
-                            geom.coordinates = geom.coordinates.map(l=>l.map(lnglat=>gm.toCoord(lnglat)))
-                            break
-                        case 'MultiPolygon':
-                            for(let coordinates of geom.coordinates){
-                                for(let coords of coordinates){
-                                    for(let lnglat of coords){
-                                        let coord = gm.toCoord(lnglat)
-                                        lnglat[0] = coord[0]
-                                        lnglat[1] = coord[1]
-                                    }
-                                }
-                            }
-                            break
-                    }
-                    gm.vector.push(f)
-                })   
+                gm.geojson(geojson)
             }
             reader.readAsText(file)
         }
