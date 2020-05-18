@@ -37,7 +37,7 @@
             </div>
         </div>
     </div>
-    <div class="d-inline-block border rounded bg-transparent-image">
+    <div id="sample-container" class="d-inline-block border rounded bg-transparent-image">
         <div id="sample-btn" class="rounded bg-active px-3 py-3"></div>
     </div>
     <canvas id="color-sampler"></canvas>
@@ -387,6 +387,13 @@ class ColorSampler{
 const colorSampler = new ColorSampler(document.getElementById('color-sampler'))
 colorSampler.addEventListener('change',e=>{
     document.getElementById('sample-btn').style.background = e.value
+})
+colorSampler.addEventListener('select',e=>{
+    let btn = document.getElementById('sample-btn').cloneNode(true)
+    let div = document.createElement('div')
+    div.textContent = e.value
+    document.getElementById('sample-container').appendChild(btn)
+    document.getElementById('sample-container').appendChild(div)
 })
 </script>
 </html>

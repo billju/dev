@@ -132,7 +132,10 @@
         {url:'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}',name:'通用',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/EMAP01/default/EPSG:3857/{z}/{y}/{x}',name:'灰階',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/EPSG:3857/{z}/{y}/{x}',name:'航照',opacity:0.8,active:false},
-        {url:'https://wmts.nlsc.gov.tw/wmts/EMAPX99/default/EPSG:3857/{z}/{y}/{x}',name:'通用向量',opacity:0.8,active:false},
+        {url:'https://mts1.google.com/vt/lyrs=s@186112443&hl=x-local&src=app&x={x}&y={y}&z={z}&s=Galile',name:'Google衛星',opacity:0.8,active:false},
+        {url:'https://mts1.google.com/vt/lyrs=p@186112443&hl=x-local&src=app&x={x}&y={y}&z={z}&s=Galile',name:'Google地形',opacity:0.8,active:false},
+        {url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',name:'ESRI衛星',opacity:0.8,active:false},
+        {url:'https://wmts.nlsc.gov.tw/wmts/EMAPX99/default/EPSG:3857/{z}/{y}/{x}',name:'交通路網',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/LUIMAP/default/EPSG:3857/{z}/{y}/{x}',name:'國土利用',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/LAND_OPENDATA/default/EPSG:3857/{z}/{y}/{x}',name:'公有土地',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/SCHOOL/default/EPSG:3857/{z}/{y}/{x}',name:'學校',opacity:0.8,active:false},
@@ -183,24 +186,36 @@
                 let geojson = JSON.parse(reader.result)
                 geojson.features.map(f=>{
                     let geom = f.geometry
-                    if(geom.type=='Polygon'){
-                        geom.coordinates = geom.coordinates.map(l=>l.map(lnglat=>gm.toCoord(lnglat)))
-                    }
-                    if(geom.type=='MultiPolygon'){
-                        for(let coordinates of geom.coordinates){
-                            for(let coords of coordinates){
-                                for(let lnglat of coords){
-                                    let coord = gm.toCoord(lnglat)
-                                    lnglat[0] = coord[0]
-                                    lnglat[1] = coord[1]
+                    switch(geom.type){
+                        case 'Point':
+                            geom.coordinates = gm.toCoord(geom.coordinates)
+                            break
+                        case 'MultiPoint':
+                            geom.coordinates = geom.coordinates.map(lnglat=>gm.toCoord(lnglat))
+                            break
+                        case 'LineString':
+                            geom.coordinates = geom.coordinates.map(lnglat=>gm.toCoord(lnglat))
+                            break
+                        case 'MultiLineString':
+                            geom.coordinates = geom.coordinates.map(l=>l.map(lnglat=>gm.toCoord(lnglat)))
+                            break
+                        case 'Polygon':
+                            geom.coordinates = geom.coordinates.map(l=>l.map(lnglat=>gm.toCoord(lnglat)))
+                            break
+                        case 'MultiPolygon':
+                            for(let coordinates of geom.coordinates){
+                                for(let coords of coordinates){
+                                    for(let lnglat of coords){
+                                        let coord = gm.toCoord(lnglat)
+                                        lnglat[0] = coord[0]
+                                        lnglat[1] = coord[1]
+                                    }
                                 }
                             }
-                        }
-                        
+                            break
                     }
                     gm.vector.push(f)
-                })
-                
+                })   
             }
             reader.readAsText(file)
         }

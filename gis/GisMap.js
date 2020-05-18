@@ -45,6 +45,9 @@ function DouglasPeucker(points, epsilon){
         return [points[0], points[points.length-1]]
     }
 }
+function isOverlap(bbox1,bbox2){
+    return bbox1[0]<bbox2[2]&&bbox1[2]>bbox2[0]&&bbox1[1]<bbox2[3]&&bbox1[3]>bbox2[1]
+}
 function isInPolygon(p, polygon) {
     var isInside = false,
         xArr = polygon.map(pt=>pt[0]),
@@ -220,7 +223,7 @@ class GisMap{
             }
             // draw tiles
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
-            this.renderGrids()
+            // this.renderGrids()
             for(let raster of this.raster.slice().reverse()){
                 if(!raster.active) continue
                 this.ctx.globalAlpha = raster.opacity
@@ -237,7 +240,47 @@ class GisMap{
     renderVector(vector){
         let tolerance = Math.pow(2,18-this.view.zoom)
         tolerance = tolerance<1?0:tolerance
+        let fillMap = {
+            '公': 'rgba(254,255,191,1)',
+            '私': 'rgba(188,233,252,1)',
+            '公私共有': 'rgba(202,214,159,1)',
+            '公法人': 'rgba(215,177,158,1)',
+            '糖': 'rgba(239,177,208,1)'
+        }                
+        let owner = vector.properties['權屬'] 
+        let fillStyle = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
         switch(vector.geometry.type){
+            case 'Point':
+                break
+            case 'MultiPoint':
+                break
+            case 'LineString':
+                this.ctx.beginPath()
+                vector.geometry.coordinates.map((c,i)=>{
+                    if(i==0)
+                        this.ctx.moveTo(c[0],c[1])
+                    else
+                        this.ctx.lineTo(c[0],c[1])
+                })
+                this.ctx.stroke()
+                this.ctx.closePath()
+                break
+            case 'MultiLineString':
+                for(let coords of vector.geometry.coordinates){
+                    this.ctx.beginPath()
+                    DouglasPeucker(coords,tolerance).map((coord,i)=>{
+                        let c = this.coord2client(coord)
+                        if(i==0)
+                            this.ctx.moveTo(c[0],c[1])
+                        else
+                            this.ctx.lineTo(c[0],c[1])
+                    })
+                    this.ctx.globalAlpha = 1
+                    this.ctx.strokeStyle = 'orange'
+                    this.ctx.stroke()
+                    this.ctx.closePath()
+                }
+                break
             case 'Polygon':
                 for(let coords of vector.geometry.coordinates){
                     this.ctx.beginPath()
@@ -263,8 +306,8 @@ class GisMap{
                                 this.ctx.lineTo(c[0],c[1])
                         })
                         this.ctx.globalAlpha = 1
-                        this.ctx.strokeStyle = 'white'
-                        this.ctx.fillStyle = 'dodgerblue'
+                        this.ctx.strokeStyle = 'dodgerblue'
+                        this.ctx.fillStyle = fillStyle
                         this.ctx.stroke()
                         this.ctx.fill()
                         this.ctx.closePath()
@@ -436,7 +479,6 @@ class GisMap{
         })
     }
     renderTiles(url='https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}'){
-        // 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'
         const tp = this.tilePixel, world = this.world, view = this.view
         const origin = {
             x: (world.bbox[0]-view.bbox[0])/world.w*tp.w*Math.pow(2,view.zoom),
@@ -444,7 +486,7 @@ class GisMap{
         }
         var z = Math.floor(view.zoom)
         var {tiles, minX, minY, maxX, maxY} = this.getXYZ(z)
-        // load tiles
+        // load images
         if(!(url in this.tiles)){
             this.tiles[url] = {}
         }
