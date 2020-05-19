@@ -439,10 +439,10 @@ class GisMap{
             }catch{}
         })
         this.ctx.fillStyle = 'black'
-        tilesLoaded.map((t,i)=>{
-            let text = t.x+'-'+t.y+'-'+t.z
-            this.ctx.fillText(text,10,10*i)
-        })
+        // tilesLoaded.map((t,i)=>{
+        //     let text = t.x+'-'+t.y+'-'+t.z
+        //     this.ctx.fillText(text,10,10*i)
+        // })
     }
     getXYZ(z){
         z = Math.floor(z||this.view.zoom)
@@ -505,44 +505,44 @@ class GisMap{
                 lnglat[0] = x
                 lnglat[1] = y
             }
-            switch(geom.type){
-                case 'Point':
+            switch(geom.type.toUpperCase()){
+                case 'POINT':
                     project(geom.coordinates);break;
-                case 'MultiPoint':
+                case 'MULTIPOINT':
                     geom.coordinates.map(lnglat=>project(lnglat));break;
-                case 'LineString':
+                case 'LINESTRING':
                     geom.coordinates.map(lnglat=>project(lnglat));break;
-                case 'MultiLineString':
+                case 'MULTILINESTRING':
                     geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
-                case 'Polygon':
+                case 'POLYGON':
                     geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
-                case 'MultiPolygon':
+                case 'MULTIPOLYGON':
                     geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))));break;
             }
             this.vector.push(feature)
         })   
     }
     detectClient(e){
-        const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0])+Math.pow(p1[0]-p2[0]))
+        const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2))
         const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
         const isInBbox = (p,bbox)=>p[0]>=bbox[0]&&p[0]<=bbox[2]&&p[1]>=bbox[1]&&p[1]<=bbox[3]
         let point = this.client2coord([e.clientX,e.clientY])
-        let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox)&&isInBbox(point,feature.geometry.bbox))
+        let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox)).filter(feature=>feature.geometry.type.includes('Point')?true:isInBbox(point,feature.geometry.bbox))
         for(let feature of features){
             let geom = feature.geometry
             let isInGeometry = false
-            switch(geom.type){
-                case 'Point':
-                    isInGeometry = Euclidean([e.clientX,e.clientY],this.coord2client(geom.coordinates)) < 5;break;
-                case 'MultiPoint':
+            switch(geom.type.toUpperCase()){
+                case 'POINT':
+                    isInGeometry = Euclidean([e.clientX,e.clientY],this.coord2client(geom.coordinates)) < (feature.properties.radius||5);break;
+                case 'MULTIPOINT':
                     isInGeometry = geom.coordinates.some(coord=>Euclidean([e.clientX,e.clientY],this.coord2client(coord)) < 5);break;
-                case 'LineString':
+                case 'LINESTRING':
                     isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance([e.clientX,e.clientY],coords[i-1],coord)<5);break;
-                case 'MultiLineString':
+                case 'MULTILINESTRING':
                     isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance([e.clientX,e.clientY],coords[i-1],coord)<5));break;
-                case 'Polygon':
+                case 'POLYGON':
                     isInGeometry = geom.coordinates.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr));break;
-                case 'MultiPolygon':
+                case 'MULTIPOLYGON':
                     isInGeometry = geom.coordinates.some(arr2d=>arr2d.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr)));break;
             }
             if(isInGeometry){
@@ -569,13 +569,32 @@ class GisMap{
             '糖': 'rgba(239,177,208,1)'
         }
         let owner = feature.properties['權屬']
-        let fillStyle = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
-        switch(feature.geometry.type){
-            case 'Point':
+        let fill = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
+        let radius = feature.properties.radius||5
+        switch(feature.geometry.type.toUpperCase()){
+            case 'POINT':
+                let c = this.coord2client(feature.geometry.coordinates)
+                this.ctx.beginPath()
+                this.ctx.moveTo(c[0]+radius,c[1])
+                this.ctx.arc(c[0],c[1],radius,0,Math.PI*2,false)
+                this.ctx.strokeStyle = style.stroke||'darkorange'
+                this.ctx.fillStyle = style.fill||'orange'
+                this.ctx.stroke()
+                this.ctx.fill()
+                this.ctx.closePath()
                 break
-            case 'MultiPoint':
+            case 'MULTIPOINT':
+                this.ctx.beginPath()
+                feature.geometry.coordinates.map((coord,i)=>{
+                    let c = this.coord2client(coord)
+                    this.ctx.moveTo(c[0],c[1])
+                    this.ctx.arc(c[0],c[1],radius,0,Math.PI*2,false)
+                })
+                this.ctx.strokeStyle = style.stroke
+                this.ctx.stroke()
+                this.ctx.closePath()
                 break
-            case 'LineString':
+            case 'LINESTRING':
                 this.ctx.beginPath()
                 feature.geometry.coordinates.map((coord,i)=>{
                     let c = this.coord2client(coord)
@@ -588,7 +607,7 @@ class GisMap{
                 this.ctx.stroke()
                 this.ctx.closePath()
                 break
-            case 'MultiLineString':
+            case 'MULTILINESTRING':
                 for(let coords of feature.geometry.coordinates){
                     this.ctx.beginPath()
                     DouglasPeucker(coords,tolerance).map((coord,i)=>{
@@ -604,7 +623,7 @@ class GisMap{
                     this.ctx.closePath()
                 }
                 break
-            case 'Polygon':
+            case 'POLYGON':
                 this.ctx.beginPath()
                 for(let coords of feature.geometry.coordinates){
                     coords.map((c,i)=>{
@@ -617,7 +636,7 @@ class GisMap{
                 this.ctx.fill()
                 this.ctx.closePath()
                 break
-            case 'MultiPolygon':
+            case 'MULTIPOLYGON':
                 for(let coordinates of feature.geometry.coordinates){
                     this.ctx.beginPath()
                     for(let coords of coordinates){     
@@ -632,12 +651,28 @@ class GisMap{
                     }
                     this.ctx.globalAlpha = 1
                     this.ctx.strokeStyle = style.stroke||'dodgerblue'
-                    this.ctx.fillStyle = style.fill||fillStyle
+                    this.ctx.fillStyle = style.fill||fill
                     this.ctx.stroke()
                     this.ctx.fill()
                     this.ctx.closePath()
                 }
                 break
         }
+    }
+    addVector(geomType, coords, properties={}){
+        let geojson = {features:[{
+            geometry: {
+                type: geomType,
+                coordinates: coords
+            },
+            properties: properties
+        }]}
+        this.geojson(geojson)
+    }
+    WKT(wkt,properties){
+        let type = wkt.match(/\w+/)[0]
+        let jsonString = wkt.slice(type.length).replace(/[\d.]+\s[\d.]+/g,'[$&]').replace(/\s/g,',').replace(/\(/g,'[').replace(/\)/g,']')
+        let coordinates = JSON.parse(jsonString)
+        this.addVector(type,coordinates,properties)
     }
 }

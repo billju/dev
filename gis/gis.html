@@ -100,9 +100,11 @@
         if(feature){
             propsTable.innerHTML = ''
             Object.entries(feature.properties).map(([key,val])=>{
-                let tr = propsTable.insertRow()
-                tr.insertCell().textContent = key
-                tr.insertCell().textContent = val
+                if(val&&val!='null'){
+                    let tr = propsTable.insertRow()
+                    tr.insertCell().textContent = key
+                    tr.insertCell().textContent = val
+                }
             })
         }else if(!gm.moveEvent.moved){
             propsTable.innerHTML = ''
@@ -211,6 +213,23 @@
             }
             reader.readAsText(file)
         }
+        if(file.name.split('.')[1]=='wkt'){
+            let reader = new FileReader()
+            reader.onload = ()=>{
+                gm.WKT(reader.result)
+            }
+            reader.readAsText(file)
+        }
+        if(file.name.split('.')[1]=='json'){
+            let reader = new FileReader()
+            reader.onload = ()=>{
+                const dir = {0:'去程',1:'返程',2:'迴圈',255:'未知'}
+                JSON.parse(reader.result).map(row=>{
+                    gm.WKT(row.Geometry,{'路線':row.RouteName.Zh_tw,'方向':dir[row.Direction]})
+                })
+            }
+            reader.readAsText(file)
+        }
     }
     var dragged
     function handleDrop(e,element){
@@ -226,6 +245,20 @@
         }else{
             element.parentNode.insertBefore(dragged,element.nextSibling)
         }
+    }
+    function getPTX(){
+        fetch('https://ptx.transportdata.tw/MOTC/v2/Bike/Station/Taichung?$select=StationName%2CStationPosition%2CBikesCapacity&$format=JSON')
+        .then(res=>res.json()).then(json=>{
+            for(let row of json){
+                gm.addVector('Point',[row.StationPosition.PositionLon,row.StationPosition.PositionLat],{
+                    "車站": row.StationName.Zh_tw,
+                    "容量": row.BikesCapacity,
+                    "經度": row.StationPosition.PositionLon,
+                    "緯度": row.StationPosition.PositionLat,
+                    radius: row.BikesCapacity/10,
+                })
+            }
+        })
     }
 </script>
 </html>
