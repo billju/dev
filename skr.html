@@ -3,42 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>waves</title>
 </head>
 <body>
-    <header>
-        <video></video>
-        <h1>烏日文心北屯線</h1>
-        <countdown>距離通車 ...天</countdown>
-    </header>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+        <path fill="#0099ff" fill-opacity="1" d="M0,192L34.3,165.3C68.6,139,137,85,206,101.3C274.3,117,343,203,411,240C480,277,549,267,617,234.7C685.7,203,754,149,823,117.3C891.4,85,960,75,1029,90.7C1097.1,107,1166,149,1234,176C1302.9,203,1371,213,1406,218.7L1440,224L1440,0L1405.7,0C1371.4,0,1303,0,1234,0C1165.7,0,1097,0,1029,0C960,0,891,0,823,0C754.3,0,686,0,617,0C548.6,0,480,0,411,0C342.9,0,274,0,206,0C137.1,0,69,0,34,0L0,0Z"></path>
+        <path fill="#0099ff" fill-opacity="0.6" d="M0,224L40,197.3C80,171,160,117,240,117.3C320,117,400,171,480,176C560,181,640,139,720,133.3C800,128,880,160,960,154.7C1040,149,1120,107,1200,85.3C1280,64,1360,64,1400,64L1440,64L1440,0L1400,0C1360,0,1280,0,1200,0C1120,0,1040,0,960,0C880,0,800,0,720,0C640,0,560,0,480,0C400,0,320,0,240,0C160,0,80,0,40,0L0,0Z"></path>  
+    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+        <path fill="#0099ff" fill-opacity="1" d="M0,224L240,224L480,160L720,64L960,96L1200,32L1440,160L1440,320L1200,320L960,320L720,320L480,320L240,320L0,320Z"></path>
+        <path fill="#0099ff" fill-opacity="0.6" d="M0,256L240,128L480,128L720,64L960,160L1200,128L1440,32L1440,320L1200,320L960,320L720,320L480,320L240,320L0,320Z"></path>
+    </svg>
     <section>
-        <h1>一瞥</h1>
-        <p>東起自臺中市北屯區松竹路二號橋附近，以高架型式沿松竹路西行跨越臺鐵再左轉至北屯路，沿北屯路至文心路四段路口前右轉文心路，經文心南路由中山醫學大學後方轉到建國路，並跨越環中路高架橋及穿越中彰快速道路後，沿鐵路北側跨越筏子溪進入高鐵臺中站區。</p>
-        <p>全長約16.71公里，共設置18座高架車站，全線規劃有6站 7處捷運車站共構的土地開發場站，並於105年開工。其中G4松竹站、G13大慶站及G17臺中高鐵站為與臺鐵、高鐵的轉乘車站。</p>
-        <h1>系統型式</h1>
-        <p></p>
-        <h1>工程進度</h1>
-        <h2>路線土建標案</h2>
-        <h2>共構出入口標案</h2>
-        <h1>展望</h1>
-        <p>全線高架車站土木建築已完成橋墩、橋梁、軌道、車站結構等工程，正持續進行車站水電環控及室內裝修工程，目前CJ910區段標已於108年2月18日完成竣工，其餘各標皆同步推動中，市府和臺北市政府捷運工程局嚴謹並持續進行各土地開發共構場站出入口建築基地結構體施工、捷運車站站體裝修收尾、車站與出入口水電環控施工以及地面景觀復舊施工。機電部分，18列電聯車已於106年底運抵北屯機廠，並上主線測試，刻正進行機電子系統測試；另土地開發招商作業持續進行</p>
-        <p>捷運綠線已於107年正式啟動試運轉，臺中捷運採無人自動駕駛，採用世界最先進的機電系統-通訊式列車控制技術(CBTC)，讓電聯車行進時，藉由無線通訊方式依預定班表行進及停靠，將電聯車控制於移動式閉塞區間，維持安全的行車間距，自動等級為世界最高等級的GOA-4，安全等級亦是最高級的SIL4。未來捷運綠線通車後，民眾從G0 北屯總站至G17臺中高鐵站搭乘時間為38分鐘，臺中將正式邁入捷運時代。</p>
+        <div class="bg-img" data-0="transform:translateY(0px)" data-bottom="transform:translateY(-300px)"></div>
+        <div class="gradient"></div>
+        <div class="bg-bluegrey"></div>
+        <div class="skew"></div>
+        <div class="bg-img"></div>
     </section>
-    <footer>
-        <h3>聯絡方式</h3>
-    </footer>
-   
-    <nav>車站</nav>
-    <nav>新聞與工程現況</nav>
-    <nav>大事紀</nav>
-    <div data-0="transform:translateY(100px)" data-123="transform:translateY(500px)">bang</div>
-    <div class="num">1</div>
 </body>
 <style>
-    *{
-        font-family: monospace;
-        text-align: right;
-    }
+html,body{
+    margin: 0;
+    height: 100%;
+}
+.bg-img{
+    height: 80vh;
+    background: url(static/image/pomodoro.gif);
+    background-repeat: no-repeat;
+    background-size:cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+.gradient{
+    height: 50vh;
+    margin-top: -50vh;
+    background: linear-gradient(180deg,transparent 0%,#5D6D7E 100%);
+}
+.bg-bluegrey{
+    height: 20vh;
+    background: #5D6D7E;
+}
+.skew{
+    transform: skewY(-5deg);
+    height: 200px;
+    margin-top: -100px;
+    margin-bottom: -100px;
+    background: #5D6D7E;
+    box-shadow: 5px 5px 5px 0 #000;
+}
 </style>
 <script>
     function skr(node=document.body){
@@ -92,29 +105,5 @@
         }
     }
     skr()
-    var pe = [], prevDiff = 0
-    window.onpointerdown = e=>{
-        pe.push(e)
-        if(pe.length==2){
-            let dx = pe[0].clientX-pe[1].clientX
-            let dy = pe[0].clientY-pe[1].clientY
-            prevDiff = Math.sqrt(dx*dx+dy*dy)
-        }
-    }
-    window.onpointermove = e=>{
-        if(pe.length==2){
-            let dx = pe[0].clientX-pe[1].clientX
-            let dy = pe[0].clientY-pe[1].clientY
-            let diff = Math.sqrt(dx*dx+dy*dy)
-            console.log(diff/prevDiff)
-        }
-    }
-    const handlePointerup = e=>{
-        pe = []
-    }
-    window.onpointerup = handlePointerup
-    window.onpointercancel = handlePointerup
-    window.onpointerout = handlePointerup
-    window.onpointerleave = handlePointerup
 </script>
 </html>

@@ -148,7 +148,6 @@ class GisMap{
         this.view = {
             bbox: [],
             center: {x: 13437548.485305637, y: 2772337.9239074644},
-            latlng: {lat: 24.15525395533066, lng: 120.7115518544718},
             w: rect.width,
             h: rect.height,
             zoom: 9,
@@ -165,6 +164,7 @@ class GisMap{
         this.ctx = canvas.getContext('2d')
         this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5,zStep:1}
         this.moveEvent = {x:0,y:0,active:false,moved:false}
+        this.panEvent = {before:[0,0],after:[0,0],t:0,frames:60}
         this.drawEvent = {path:[],active:false}
         this.momentum = {x:0,y:0,t:0}
         this.animationFrame = null
@@ -196,6 +196,15 @@ class GisMap{
                 view.zoom+= dz
                 if(this.zoomEvent.t==0){this.zoomEvent.before = this.zoomEvent.after}
                 this.updateView()
+            }
+            if(this.panEvent.t>0){
+                let t = this.panEvent.t/this.panEvent.frames
+                t = t*(2-t)
+                let x = this.panEvent.before.x*t+this.panEvent.after.x*(1-t)
+                let y = this.panEvent.before.y*t+this.panEvent.after.y*(1-t)
+                this.view.center = {x,y}
+                this.updateView()
+                this.panEvent.t--
             }
             // draw tiles
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
@@ -241,11 +250,32 @@ class GisMap{
             this.ctx.closePath()
         })
     }
+    panTo(coord,duration=1500){
+        // let coord = this.toCoord(lnglat)
+        this.panEvent.before = {...this.view.center}
+        this.panEvent.after = {x:coord[0],y:coord[1]}
+        this.panEvent.frames = Math.round(duration/60)
+        this.panEvent.t = this.panEvent.frames
+    }
+    zoomTo(bbox){
+        let vw = this.view.bbox[2]-this.view.bbox[0], vh = this.view.bbox[3]-this.view.bbox[1]
+        let bw = bbox[2]-bbox[0], bh = bbox[3]-bbox[1], bx = bbox[0]+bw/2, by = bbox[1]+bh/2
+        let ratio = Math.min(vw/bw,vh/bh)
+        let newZoom = this.view.zoom+Math.log2(ratio)
+        this.panTo([bx,by])
+        Object.assign(this.zoomEvent,{
+            before: this.view.zoom,
+            after: newZoom,
+            t: this.zoomEvent.frames,
+            zStep: newZoom<this.view.zoom?-1:1
+        })
+    }
     handleMousedown(e){
         this.moveEvent.x = e.clientX
         this.moveEvent.y = e.clientY
         this.moveEvent.active = true
         e.target.style.cursor = 'grabbing'
+        this.panEvent.t = 0
     }
     handleMousemove(e){
         if(this.moveEvent.active){
@@ -571,6 +601,7 @@ class GisMap{
         let owner = feature.properties['權屬']
         let fill = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
         let radius = feature.properties.radius||5
+        this.ctx.globalAlpha = 1
         switch(feature.geometry.type.toUpperCase()){
             case 'POINT':
                 let c = this.coord2client(feature.geometry.coordinates)
@@ -617,7 +648,6 @@ class GisMap{
                         else
                             this.ctx.lineTo(c[0],c[1])
                     })
-                    this.ctx.globalAlpha = 1
                     this.ctx.strokeStyle = style.stroke||'orange'
                     this.ctx.stroke()
                     this.ctx.closePath()

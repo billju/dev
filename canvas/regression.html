@@ -273,7 +273,7 @@
             let bins = range/den
             let terms = [2,5]
             let termIndex = 0
-            while(true){
+            while(range>0){
                 let tmp = range/den
                 if(tmp>maxBins)
                     break
@@ -318,7 +318,7 @@
             this.ctx.beginPath()
             this.ctx.strokeStyle = styles.stroke||'red'
             this.ctx.lineWidth = styles.strokeWith||2
-            if(rate){
+            if(rate||data.length<3){
                 coords.filter(c=>checkInBound(c)).map((c,i)=>{
                     if(i==0)
                         this.ctx.moveTo(c[0],c[1])

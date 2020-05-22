@@ -6,7 +6,7 @@
     <title>A*</title>
 </head>
 <body>
-    <div id="maze"></div>
+    <svg id="maze"></svg>
     <div id="control-panel" style="position:fixed;top:0;right:0">
         <button onclick="nextStep()">start</button>
         <button onclick="clearMaze()">clear</button>
@@ -43,6 +43,11 @@
         border-radius: 5px;
         background: rgba(0,0,0,0.3);
         user-select: none;
+    }
+    text{
+        user-select: none;
+        font-size: 12px;
+        font-family: sans-serif;
     }
 </style>
 <script>
@@ -118,27 +123,37 @@ class Maze{
         this.container.innerHTML = ''
         for(let i=0;i<this.columns;i++){
             for(let j=0;j<this.rows;j++){
-                let rect = document.createElement('div')
-                rect.className = 'rect'
+                // let rect = document.createElement('div')
+                // rect.className = 'rect'
+                
+                // Object.assign(rect.style,{
+                //     left: i*this.size+'px',
+                //     top: j*this.size+'px',
+                //     width: this.size+'px',
+                //     height: this.size+'px',
+                //     lineHeight: this.size+'px',
+                // })
+                let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
                 rect.dataset.fill = 'white'
-                Object.assign(rect.style,{
-                    left: i*this.size+'px',
-                    top: j*this.size+'px',
-                    width: this.size+'px',
-                    height: this.size+'px',
-                    lineHeight: this.size+'px',
-                })
-                // let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
-                // rect.dataSelected = false
-                // rect.setAttribute('x',i*30)
-                // rect.setAttribute('y',j*30)
-                // rect.setAttribute('width',this.size)
-                // rect.setAttribute('height',this.size)
-                // rect.setAttribute('stroke','black')
-                // rect.setAttribute('fill','white')
+                rect.setAttribute('x',i*this.size)
+                rect.setAttribute('y',j*this.size)
+                rect.setAttribute('width',this.size)
+                rect.setAttribute('height',this.size)
+                rect.setAttribute('stroke','black')
+                rect.setAttribute('fill','white')
+                rect.style.transition = 'transform 0.2s'
                 this.container.appendChild(rect)
             }
         }
+    }
+    createText(node){
+        let text = document.createElementNS('http://www.w3.org/2000/svg','text')
+        text.setAttribute('x',node.point[0]*this.size+this.size/2)
+        text.setAttribute('y',node.point[1]*this.size+this.size/2) 
+        text.setAttribute('text-anchor','middle')
+        text.setAttribute('dominant-baseline','middle')
+        this.container.appendChild(text)
+        return text
     }
     createNodes(){
         let dirs = [[0,1],[0,-1],[1,0],[-1,0]]
@@ -160,15 +175,16 @@ class Maze{
             let dy = Math.floor((e.clientY-this.container.clientTop)/this.size)
             let idx = dx*this.rows+dy
             let children = this.container.children
+            let scale = 1.1, coef = this.size*(scale-1), pad = 5
             if(children[idx]&&this.event.index!=idx){
                 if(this.event.fill===undefined)
                     this.event.fill = children[idx].dataset.fill=='white'?color.grey:'white'
                 this.nodes[dx][dy].isWall = this.event.fill==color.grey
                 children[idx].dataset.fill = this.event.fill
-                children[idx].style.background = children[idx].dataset.fill
-                children[idx].style.transform = 'translate(-5px,-5px)'
+                children[idx].style.fill = children[idx].dataset.fill
+                children[idx].style.transform = `matrix(${scale},0,0,${scale},${-dx*coef-pad},${-dy*coef-pad})`
                 setTimeout(()=>{
-                    children[idx].style.transform = 'translate(0,0)'
+                    children[idx].style.transform = 'matrix(1,0,0,1,0,0)'
                 },200)
                 this.event.index = idx
             }
@@ -200,7 +216,7 @@ class Astar{
         this.curNode = this.unvisited.shift()
         this.visited.push(this.curNode)
         // update f value
-        const dirs = [[0,1],[0,-1],[1,0],[-1,0],[1,1],[-1,1],[1,-1],[-1,-1]]
+        const dirs = [[0,1],[0,-1],[1,0],[-1,0]]//,[1,1],[-1,1],[1,-1],[-1,-1]]
         const neighbors = this.curNode.findNeighbors(dirs,this.nodes)
         for(let neighbor of neighbors){
             // if neighbor is visited
@@ -238,30 +254,33 @@ let startNode = maze.nodes[0][0]
 let endNode = maze.nodes[10][10]
 let astar = new Astar(maze.nodes,startNode,endNode)
 var timeout = undefined
-maze.getElementOfNode(startNode).style.background = color.blue
-maze.getElementOfNode(endNode).style.background = color.red
+maze.getElementOfNode(startNode).style.fill = color.blue
+maze.getElementOfNode(endNode).style.fill = color.red
 function nextStep(){
     let msg = astar.nextStep()
     astar.unvisited.map(node=>{
-        let rect =maze.getElementOfNode(node)
-        rect.style.background=color.green
-        rect.textContent = node.f
+        let rect = maze.getElementOfNode(node)
+        rect.style.fill=color.green
+        if(!node.text){
+            node.text = maze.createText(node)
+            node.text.textContent = node.f
+        }
     })
-    astar.visited.map(node=>maze.getElementOfNode(node).style.background=color.darkgreen)  
-    maze.getElementOfNode(startNode).style.background = color.blue
-    maze.getElementOfNode(endNode).style.background = color.red
-    maze.getElementOfNode(astar.curNode).style.background = color.blue
+    astar.visited.map(node=>maze.getElementOfNode(node).style.fill=color.darkgreen)  
+    maze.getElementOfNode(startNode).style.fill = color.blue
+    maze.getElementOfNode(endNode).style.fill = color.red
+    maze.getElementOfNode(astar.curNode).style.fill = color.blue
     if(msg=='not yet'){
         timeout = setTimeout(()=>{
             nextStep()
         }, 50)
     }else if(msg=='finished'){
         astar.getPath().map(node=>{
-            maze.getElementOfNode(node).style.background = color.lime
+            maze.getElementOfNode(node).style.fill = color.lime
             if(node.isEqual(startNode))
-                maze.getElementOfNode(node).style.background = color.blue
+                maze.getElementOfNode(node).style.fill = color.blue
             if(node.isEqual(endNode))
-                maze.getElementOfNode(node).style.background = color.red
+                maze.getElementOfNode(node).style.fill = color.red
         })
     }else{
         alert('no feasible path')
@@ -273,14 +292,16 @@ function clearMaze(){
     astar = new Astar(maze.nodes,startNode,endNode)
     maze.nodes.flatMap(n=>n).map(node=>{
         let rect = maze.getElementOfNode(node)
-        rect.style.background = 'white'
-        rect.dataset.fill = 'white'
-        rect.textContent = ''
-        node.isWall = false
+        let isWall = node.isEqual(startNode)||node.isEqual(endNode)?false:Math.random()>0.7
+        rect.style.fill = isWall?color.grey:'white'
+        rect.dataset.fill = isWall?color.grey:'white'
+        node.isWall = isWall
         node.from = null
+        node.text = null
     })
-    maze.getElementOfNode(startNode).style.background = color.blue
-    maze.getElementOfNode(endNode).style.background = color.red
+    maze.container.querySelectorAll('text').forEach(text=>text.remove())
+    maze.getElementOfNode(startNode).style.fill = color.blue
+    maze.getElementOfNode(endNode).style.fill = color.red
 }
 function resetMaze(){
     startNode = maze.nodes[Math.floor(Math.random()*maze.columns)][Math.floor(Math.random()*maze.rows)]
