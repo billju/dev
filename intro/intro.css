@@ -1,6 +1,24 @@
 *{
     font-family: 微軟正黑體;
 }
+html,body{
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+.vh-100{
+    min-height: 100vh;
+}
+.vw-100{
+    width: 100vw;
+}
+#chart{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
 .mouse{
     display: inline-block;
     margin: auto;
@@ -27,7 +45,7 @@
 .bg-img{
     background-repeat: no-repeat;
     background-size: contain;
-    background-position-x: center;
+    background-position: center;
 }
 .hover-mask{
     position: relative;
@@ -53,4 +71,62 @@
 .hover-mask:hover .mask{
     transform: translateY(0);
     opacity: 1;
+}
+.folder{
+    border-radius: 10px;
+    background: #333;
+    border: 1px solid #fff;
+    color: #fff;
+    margin: auto;
+    min-width: 360px;
+    padding: 20px;
+}
+.folder h3{
+    padding: 5px;
+    border-bottom: 1px solid #fff;
+}
+.folder p{
+    cursor: pointer;
+    margin: 0;
+    padding: 5px;
+    transition: 0.3s;
+}
+.folder p:hover{
+    background: rgba(255,255,255,0.3);
+    font-size: 32px;
+}
+
+@media (max-width: 576px) {
+    .folder {
+        margin: auto;
+        margin: 10px;
+    }
+}
+.shaker{
+    transition-duration: 1s;
+    cursor: pointer;
+    box-shadow: 5px 5px 5px 0 rgba(0,0,0,0.3);
+}
+.shaker:hover{
+    transition-delay: transform 1s;
+    animation: shake 1s;
+    transform: rotate3d(0,1,0.3,-10deg);
+    box-shadow: 5px 5px 20px 20px rgba(0,0,0,0.1);
+}
+@keyframes shake{
+    0%{
+        transform: rotate3d(0,0,0,0);
+    }
+    20%{
+        transform: rotate3d(0,1,0.3,-20deg);
+    }
+    40%{
+        transform: rotate3d(0,1,0.3,20deg);
+    }
+    60%{
+        transform: rotate3d(0,1,0.3,-20deg);
+    }
+    100%{
+        transform: rotate3d(0,1,0.3,-10deg);
+    }
 }

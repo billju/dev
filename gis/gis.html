@@ -71,6 +71,10 @@
             imageShape.draw(ctx)
         }
     })
+    canvas.addEventListener('dblclick',e=>{
+        gm.handleDblclick(e)
+    })
+    canvas.oncontextmenu = e=>e.preventDefault()
     canvas.addEventListener('mousedown',e=>{
         let noImageShapeSelected = true
         for(let imageShape of imageShapes){
@@ -114,7 +118,7 @@
     canvas.addEventListener('mouseleave',e=>{
         for(let imageShape of imageShapes)
             imageShape.handleMouseup(e)
-        gm.handleMouseup(e)
+        gm.handleMouseleave(e)
     })
     window.addEventListener('keydown',e=>{
         for(let imageShape of imageShapes)

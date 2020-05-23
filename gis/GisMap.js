@@ -53,13 +53,13 @@ function getLength(coords){
     },0)
     function haversine(c1,c2){
         var r = 6371008.8,
-            lat1 = c1[1],
-            lat2 = c2[1],
-            dlat = (lat2-lat1)*Math.PI/180,
-            dlon = (c2[0]-c1[0])*Math.PI/180,
-            a = Math.sin(dlat)*Math.sin(dlat)/4 + 
+            lat1 = c1[1]*Math.PI/180,
+            lat2 = c2[1]*Math.PI/180,
+            dlat = (lat2-lat1)/2,
+            dlon = (c2[0]-c1[0])*Math.PI/180/2,
+            a = Math.sin(dlat)*Math.sin(dlat) + 
                 Math.cos(lat1)*Math.cos(lat2)*
-                Math.sin(dlon)*Math.sin(dlon)/4
+                Math.sin(dlon)*Math.sin(dlon)
         return 2*r*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
     }
 }
@@ -198,11 +198,14 @@ class GisMap{
                 this.updateView()
             }
             if(this.panEvent.t>0){
-                let t = this.panEvent.t/this.panEvent.frames
-                t = t*(2-t)
+                let t = (this.panEvent.t-1)/this.panEvent.frames
+                t = t<.5 ? 2*t*t : -1+(4-2*t)*t
                 let x = this.panEvent.before.x*t+this.panEvent.after.x*(1-t)
                 let y = this.panEvent.before.y*t+this.panEvent.after.y*(1-t)
+                let z = this.panEvent.before.z*t+this.panEvent.after.z*(1-t)
+                this.zoomEvent.after = z
                 this.view.center = {x,y}
+                this.view.zoom = z
                 this.updateView()
                 this.panEvent.t--
             }
@@ -250,32 +253,29 @@ class GisMap{
             this.ctx.closePath()
         })
     }
-    panTo(coord,duration=1500){
+    panTo(coord,zoom=this.view.zoom,duration=1500){
         // let coord = this.toCoord(lnglat)
-        this.panEvent.before = {...this.view.center}
-        this.panEvent.after = {x:coord[0],y:coord[1]}
+        this.panEvent.before = {...this.view.center,z:this.view.zoom}
+        this.panEvent.after = {x:coord[0],y:coord[1],z:zoom}
         this.panEvent.frames = Math.round(duration/60)
         this.panEvent.t = this.panEvent.frames
     }
-    zoomTo(bbox){
+    fitBound(bbox,duration=1500){
         let vw = this.view.bbox[2]-this.view.bbox[0], vh = this.view.bbox[3]-this.view.bbox[1]
         let bw = bbox[2]-bbox[0], bh = bbox[3]-bbox[1], bx = bbox[0]+bw/2, by = bbox[1]+bh/2
         let ratio = Math.min(vw/bw,vh/bh)
         let newZoom = this.view.zoom+Math.log2(ratio)
-        this.panTo([bx,by])
-        Object.assign(this.zoomEvent,{
-            before: this.view.zoom,
-            after: newZoom,
-            t: this.zoomEvent.frames,
-            zStep: newZoom<this.view.zoom?-1:1
-        })
+        newZoom = this.minmax(newZoom,this.view.minZoom,this.view.maxZoom)
+        this.panTo([bx,by],newZoom,duration)
     }
     handleMousedown(e){
         this.moveEvent.x = e.clientX
         this.moveEvent.y = e.clientY
         this.moveEvent.active = true
         e.target.style.cursor = 'grabbing'
-        this.panEvent.t = 0
+        if(e.button==2){
+            this.drawEvent.active = true
+        }
     }
     handleMousemove(e){
         if(this.moveEvent.active){
@@ -292,12 +292,8 @@ class GisMap{
             this.moveEvent.y = e.clientY
             this.momentum = {x,y,t:90}
         }
-        var lineStringLength = this.drawEvent.path.reduce((acc,cur,i,arr)=>{
-            if(i==0) return acc
-            var dx = arr[i].x-arr[i-1].x
-            var dy = arr[i].y-arr[i-1].y
-            return acc+Math.sqrt(dx*dx+dy*dy)
-        },0)
+        var lineStringLength = getLength([...this.drawEvent.path,this.client2coord([e.clientX,e.clientY])].map(this.toLnglat))
+        console.log(lineStringLength)
     }
     handleMouseup(e){
         if(this.drawEvent.active&&!this.moveEvent.moved){

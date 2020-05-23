@@ -3,12 +3,14 @@ function skr(node=document.body){
     let rect = node.getBoundingClientRect()
     let keyPoints = []
     for(let data of datas){
-        let [key,value] = data
+        let key = data[0]
         let y = undefined
         if(key=='center')
             y = Math.round((rect.bottom-rect.top)/2)
-        if(key=='top'||key=='bottom')
-            y = rect[key]
+        if(key=='top')
+            y = node.offsetTop-window.innerHeight
+        if(key=='bottom')
+        y = node.offsetTop+node.clientHeight
         let numeric = key.match(/^(\d+)$/)
         if(numeric)
             y = parseInt(numeric[1])
@@ -16,6 +18,7 @@ function skr(node=document.body){
             keyPoints.push({y, cssText:node.dataset[key]})
     }
     if(datas.length){
+        console.log(datas)
         keyPoints.sort((a,b)=>a.y-b.y)
         function getMatchArray(string,regexp){
             return Array.from(string.matchAll(regexp),x=>x[0])
@@ -27,9 +30,9 @@ function skr(node=document.body){
                     let prev = keyPoints[i-1]
                     let next = keyPoints[i]
                     let ratio = (window.scrollY-prev.y)/(next.y-prev.y)
-                    cssText = cssText.replace(/\d+/g, '{}')
-                    let prevs = getMatchArray(prev.cssText, /(\d+)/g)
-                    let nexts = getMatchArray(next.cssText, /(\d+)/g)
+                    cssText = cssText.replace(/[-\d]+/g, '{}')
+                    let prevs = getMatchArray(prev.cssText, /([-\d]+)/g)
+                    let nexts = getMatchArray(next.cssText, /([-\d]+)/g)
                     prevs.map((a,i)=>{
                         a = parseInt(a)
                         let b = parseInt(nexts[i])
@@ -48,7 +51,6 @@ function skr(node=document.body){
         skr(child)   
     }
 }
-skr()
 
 function smoothScroll(){
     const main = document.getElementById('main');

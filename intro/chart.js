@@ -266,3 +266,171 @@ class Chart{
         Object.assign(this,args)
     }
 }
+class Matrix{
+    constructor(arr){
+        this.v = arr
+        if(arr) this.length = arr.length
+    }
+    valueOf(){return this.v}
+    add(y){
+        let arr = y instanceof Matrix?this.v.map((x,i)=>x+y.v[i]):this.v.map(x=>x+y)
+        return new Matrix(arr)
+    }
+    sub(y){
+        let arr = y instanceof Matrix?this.v.map((x,i)=>x-y.v[i]):this.v.map(x=>x-y)
+        return new Matrix(arr)
+    }
+    mul(y){
+        let arr = y instanceof Matrix?this.v.map((x,i)=>x*y.v[i]):this.v.map(x=>x*y)
+        return new Matrix(arr)
+    }
+    div(y){
+        let arr = y instanceof Matrix?this.v.map((x,i)=>x/y.v[i]):this.v.map(x=>x/y)
+        return new Matrix(arr)
+    }
+    pow(y){
+        return new Matrix(this.v.map(x=>Math.pow(x,y)))
+    }
+    sum(){
+        return this.v.reduce((acc,cur)=>acc+cur,0)
+    }
+    mean(){
+        return this.sum()/this.length
+    }
+    zero(size){
+        return new Matrix(Array.from(Array(size),()=>0))
+    }
+    random(size){
+        return new Matrix(Array.from(Array(size),()=>Math.random()))
+    }
+    range(min,max,step=1){
+        let length = Math.floor((max-min)/step)
+        return new Matrix(Array.from(Array(length).keys(),i=>min+i*step))
+    }
+    norm(size){ //return a number between -1 and 1
+        function boxMuller(){
+            var u=0,v=0
+            while(u===0) u = Math.random()
+            while(v===0) v = Math.random()
+            var num = Math.sqrt(-2.0*Math.log(u))*Math.cos(2.0*Math.PI*v)
+            num/= Math.PI
+            if(num>1||num<-1) return boxMuller()
+            return num
+        }
+        return new Matrix(Array.from(Array(size),()=>boxMuller()))
+    }
+    hstack(y){
+        return this.v.map((x,i)=>( [x,y.v[i]] ))
+    }
+}
+class Regressor{
+    constructor(kernal='linear'){
+        function norm(){ //return a number between -1 and 1
+            function boxMuller(){
+                var u=0,v=0
+                while(u===0) u = Math.random()
+                while(v===0) v = Math.random()
+                var num = Math.sqrt(-2.0*Math.log(u))*Math.cos(2.0*Math.PI*v)
+                num/= Math.PI
+                if(num>1||num<-1) return boxMuller()
+                return num
+            }
+            return boxMuller()
+        }
+        const model = {
+            'linear': {
+                w1: norm(), b: norm(),
+                gradients: {
+                    w1: diff=>diff.mul(-2).mul(this.x).sum(),
+                    b: diff=>diff.mul(-2).sum()
+                },
+                learningRate: {
+                    w1: 1e-9,
+                    b: 1e-3,
+                },
+                f: x=>x.mul(this.w1).add(this.b)
+            },
+            'square': {
+                w1: norm(), w2: norm()*1e-2, b: norm(),
+                gradients: {
+                    w1: diff=>diff.mul(-2).mul(this.x).sum(),
+                    w2: diff=>diff.mul(-2).mul(this.x.pow(2)).sum(),
+                    b: diff=>diff.mul(-2).sum()
+                },
+                learningRate: {
+                    w1: 1e-9,
+                    w2: 1e-14,
+                    b: 1e-3
+                },
+                f: x=>x.mul(this.w1).add(x.pow(2).mul(this.w2)).add(this.b)
+            },
+            'cube': {
+                w1: norm(), w2: norm()*1e-2, w3: norm()*1e-5, b: norm(),
+                gradients: {
+                    w1: diff=>diff.mul(-2).mul(this.x).sum(),
+                    w2: diff=>diff.mul(-2).mul(this.x.pow(2)).sum(),
+                    w3: diff=>diff.mul(-2).mul(this.x.pow(3)).sum(),
+                    b: diff=>diff.mul(-2).sum()
+                },
+                learningRate: {
+                    w1: 1e-9,
+                    w2: 1e-15,
+                    w3: 1e-19,
+                    b: 1e-5
+                },
+                f: x=>x.mul(this.w1)
+                    .add(x.pow(2).mul(this.w2))
+                    .add(x.pow(3).mul(this.w3))
+                    .add(this.b)
+            },
+        }
+        this.loss = Infinity
+        Object.assign(this,model[kernal]) 
+    }
+    fit(x,y){
+        this.x = x
+        this.yHat = y
+    }
+    predict(x){
+        return this.f(x)
+    }
+    regularizer(){
+        let lambda = 0.1
+        return lambda*this.w*this.w
+    }
+    gradientDecent(){
+        let y = this.predict(this.x)
+        let diff = this.yHat.sub(y)//.add(this.regularizer())
+        let loss = diff.pow(2).mean()
+        let params = {}
+        for(let param in this.gradients){
+            let gradient = this.gradients[param](diff)
+            this[param]-= gradient*this.learningRate[param]
+            params['dld'+param] = gradient
+            params[param] = this.param
+        }
+        this.loss = loss
+        return {loss, ...params}
+    }
+}
+class Dataset{
+    constructor(length=10){
+        this.length = length
+        this.x = new Matrix()
+        this.y = new Matrix()
+        this.xy = []
+    }
+    add(v){
+        this.x = new Matrix([...this.x.v,v[0]])
+        this.y = new Matrix([...this.y.v,v[1]])
+        this.xy = this.x.hstack(this.y)
+        this.length = this.xy.length
+    }
+    random(length=this.length){
+        this.b = new Matrix().random(length).sub(0.5).mul(100).add(250)
+        this.x = new Matrix().random(length).mul(500)
+        this.y = this.x.mul(Math.random()-0.5).add(this.x.mul(this.x).mul((Math.random()-0.5)/1000)).add(this.b)
+        this.xy = this.x.hstack(this.y)
+        return this
+    }
+}

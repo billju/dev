@@ -6,55 +6,85 @@ html(lang="en")
         meta(name="description", content="bang")
         title Intro
         link(rel="stylesheet" href="../css/bootstrap.css")
+        link(rel="stylesheet", href="navbar.css")
         link(rel="stylesheet", href="intro.css")
     body
         header
-            nav my portfolio
-        section
-            .container
-                .row
-                    .col-sm-6
-                        .display-1 ChuBoy
-                    .col-sm-6
-                        .display-4 web
-                        .display-4 data
-                        .display-4 metro
-                .row
-                    p.col-12 fascinated with app creation
-                
-                .mouse
-                    .mouse-wheel
-        section
-            .display-1 My skills n little project
-            .container
-            .row
-                .col-sm-12.col-md-4.folder
-                    h3.card vue - mvbox
-                    .card mp3 player
-                    .card firebase
-                    .card youtube api
-                .col-sm-12.col-md-4.folder
-                    h3.card react - chatroom
-                    .card node.js
-                    .card sqlite
-                    .card socket.io
-                    .card next
-                .col-sm-12.col-md-4.folder
-                    h3.card python - crawler
-                    .card pandas
-                    .card tkinter
-                    .card tensorflow
-        section
-            .display-3 How I apply IT to life
-            p linebot
-            h3 transcriber
-            p everytime when transcribing from meeting is too trivial
-            p path finder
-            p optimizer
-        section
-            .display-2 data analyst
+            nav.navbar(style="display:none")
+                .container
+                    a.navbar-brand(href='#') chuboy
+                    input.navbar-toggler(type='checkbox')
+                    .hamburger.bg-cyan
+                        div
+                    ul.navbar-menu
+                        li
+                            a(href='#') home
+                        li
+                            a(href='#') portfolios
+                        li
+                            a(href='#') articles
+                        li
+                            a(href='#') about
+        section.vh-100.position-relative.overflow-hidden
             canvas#chart
-        section
+            .h-100.d-flex.flex-column.justify-content-center.align-items-center
+                .row
+                    .col-sm-12.col-md-7
+                        .display-1#chuboy ChuBoy
+                    .col-sm-12.col-md-5
+                        .display-4#web-dev web developer
+                        .display-4#data-analyst data analyst
+                        .display-4#metro metro planner
+                p.text-center#description fascinated with app creation
+                .d-flex.justify-content-center
+                    .mouse
+                        .mouse-wheel
+        section(style="transform:skewY(-5deg)").bg-secondary.mt-5.py-5
+            .container-fluid
+                .row
+                    .col-sm-12.col-md-6.d-flex.flex-column
+                        #my-skills.display-1 My skills n little project
+                        .folder
+                            h3 vue - mvbox
+                            p mp3 player
+                            p firebase
+                            p youtube api
+                        .folder
+                            h3 react - chatroom
+                            p node.js
+                            p sqlite
+                            p socket.io
+                            p next SSR
+                        .folder
+                            h3 python - crawler
+                            p pandas
+                            p tkinter
+                            p tensorflow
+                    .col-sm-12.col-md-6
+                        .display-4.pt-5(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單
+                        img(style="max-width:100%;margin:auto;margin-top:-100px" src="../static/image/pomodoro.gif", alt="")
+        section#application.vh-100.overflow-hidden.w-100
+            .display-3 How I apply IT to life
+            .vw-100.bg-dark.text-light.px-3.py-3(data-top="transform:translateX(100%)" data-bottom="transform:translate(-100%)")
+                h1 linebot
+                span.badge.badge-info line API
+                span.badge.badge-info node
+                span.badge.badge-info mongodb
+                p line開放開發者使用messaging api的服務，可以新增機器人的頻道，將channelId、channelSecret、channelAccessToken 透過安全應用層https以post的方式和後端伺服器安全地連結，同時後端node.js套件npm中有一個linebot套件包，結合免費的Heroku---提供免費後端平台的服務PaaS，就能客製化自動彙整班兵回報的機器人
+                .bg-img(style="height:300px;background:url(../static/image/pomodoro.gif)")
+            .vw-100.bg-dark.text-light.px-3.py-3(data-top="transform:translateX(-100%)" data-bottom="transform:translate(100%)")
+                h1 transcriber
+                span.badge.badge-info rich text editor
+                span.badge.badge-info web audio
+                span.badge.badge-info media
+                span.badge.badge-info SRT file IO
+                p everytime when transcribing from meeting is too trivial
+            .vw-100.bg-dark.text-light(data-top="transform:translateX(100%)" data-bottom="transform:translate(-100%)")
+                h3 optimizer
+                p path finder
+        section.vh-100
+            .display-2 data analyst
+        section.vh-100
             .display-2 metro plan
             p traffic
             p network
@@ -67,29 +97,71 @@ html(lang="en")
             .container
                 .row
                     .col-sm-12.col-md-6.col-lg-4
-                        .rounded.bg-dark.text-light.px-3.py-3
+                        .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                             .hover-mask
                                 .bg-img(style="height:300px;background:url(../static/image/pomodoro.gif)")
                                 .mask visit site
                             .px-2.py-2
                                 h3 Pomodoro
                                 p stay focus
+                        .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                            .hover-mask
+                                .bg-img(style="height:300px;background:url(../static/image/tetris.gif)")
+                                .mask visit site
+                            .px-2.py-2
+                                h3 Pomodoro
+                                p stay focus
                     .col-sm-12.col-md-6.col-lg-4
+                        .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                            .hover-mask
+                                .bg-img(style="height:400px;background:url(../static/image/agario.gif)")
+                                .mask visit site
+                            .px-2.py-2
+                                h3 Pomodoro
+                                p stay focus
+                        .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                            .hover-mask
+                                .bg-img(style="height:300px;background:url(../static/image/draggableTetris.gif)")
+                                .mask visit site
+                            .px-2.py-2
+                                h3 Pomodoro
+                                p stay focus
                     .col-sm-12.col-md-6.col-lg-4
-        footer
+                        .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                            .hover-mask
+                                .bg-img(style="height:250px;background:url(../static/image/freecell.gif)")
+                                .mask visit site
+                            .px-2.py-2
+                                h3 Pomodoro
+                                p stay focus
+                        .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                            .hover-mask
+                                .bg-img(style="height:250px;background:url(../static/image/greenband.gif)")
+                                .mask visit site
+                            .px-2.py-2
+                                h3 Pomodoro
+                                p stay focus
+        footer.vh-100.w-100.d-flex.flex-column.justify-content-between
             svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320")
                 path(fill="#0099ff" fill-opacity="1" d="M0,192L34.3,165.3C68.6,139,137,85,206,101.3C274.3,117,343,203,411,240C480,277,549,267,617,234.7C685.7,203,754,149,823,117.3C891.4,85,960,75,1029,90.7C1097.1,107,1166,149,1234,176C1302.9,203,1371,213,1406,218.7L1440,224L1440,0L1405.7,0C1371.4,0,1303,0,1234,0C1165.7,0,1097,0,1029,0C960,0,891,0,823,0C754.3,0,686,0,617,0C548.6,0,480,0,411,0C342.9,0,274,0,206,0C137.1,0,69,0,34,0L0,0Z")
                 path(fill="#0099ff" fill-opacity="0.6" d="M0,224L40,197.3C80,171,160,117,240,117.3C320,117,400,171,480,176C560,181,640,139,720,133.3C800,128,880,160,960,154.7C1040,149,1120,107,1200,85.3C1280,64,1360,64,1400,64L1440,64L1440,0L1400,0C1360,0,1280,0,1200,0C1120,0,1040,0,960,0C880,0,800,0,720,0C640,0,560,0,480,0C400,0,320,0,240,0C160,0,80,0,40,0L0,0Z")
-            
-            canvas#fractal-tree
-            .display-1 contact me
-            p my skill tree is really skewed
-            img(src="../static/image/facebook.png")
-            img(src="../static/image/gmail.png")
-            img(src="../static/image/github.png")
-            img(src="../static/image/codepen.png")
+            .container
+                .row
+                    .col-sm-12.col-md-6
+                        canvas#fractal-tree
+                        p my skill tree is really skewed
+                    .col-sm-12.col-md-6
+                        .display-3 contact me
+                        .d-flex.justify-content-around
+                            img(src="../static/image/facebook.png")
+                            img(src="../static/image/gmail.png")
+                            img(src="../static/image/github.png")
+                            img(src="../static/image/codepen.png")
             svg(xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320")
                 path(fill="#0099ff" fill-opacity="1" d="M0,224L240,224L480,160L720,64L960,96L1200,32L1440,160L1440,320L1200,320L960,320L720,320L480,320L240,320L0,320Z")
                 path(fill="#0099ff" fill-opacity="0.6" d="M0,256L240,128L480,128L720,64L960,160L1200,128L1440,32L1440,320L1200,320L960,320L720,320L480,320L240,320L0,320Z")
+        script(src="textFx.js")
         script(src="chart.js")
+        script(src="skr.js")
         script(src="main.js")
+        

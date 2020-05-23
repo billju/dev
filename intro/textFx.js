@@ -59,7 +59,7 @@ function hoppingText(element){
         },i*200)
     }
 }
-function typingText(element){
+function typingText(element,delay=200){
     let cursor = document.createElement('span')
     let span = document.createElement('span')
     let text = element.textContent
@@ -87,7 +87,7 @@ function typingText(element){
                 idx++
                 randomDelay()
             }
-        },Math.random()*200+200)
+        },Math.random()*delay+delay)
     }
     randomDelay()
 }
