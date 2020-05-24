@@ -64,7 +64,17 @@ function getLength(coords){
     }
 }
 function getArea(coords){
-    var r = 6371008.8
+    var radius = 6371008.8, area = 0
+    let x1 = coords[coords.length-1][0]
+    let y1 = coords[coords.length-1][1]
+    for(let i=0;i<coords.length;i++){
+        let x2 = coords[i][0]
+        let y2 = coords[i][1]
+        area+= (x2-x1)*Math.PI/180*(2+Math.sin(y1*Math.PI/180)+Math.sin(y2*Math.PI/180))
+        x1 = x2
+        y1 = y2
+    }
+    return Math.abs(area*radius*radius/2.0)
     return coords.reduce((acc,cur,i)=>{
         if(i==0) return acc
         let dx = cur[0]-coords[i-1][0]
@@ -162,40 +172,36 @@ class GisMap{
         this.canvas.height = rect.height
         this.canvas.width = rect.width
         this.ctx = canvas.getContext('2d')
-        this.zoomEvent = {x:0,y:0,before:this.view.zoom,after:this.view.zoom,t:0,frames:25,delta:0.5,zStep:1}
-        this.moveEvent = {x:0,y:0,active:false,moved:false}
-        this.panEvent = {before:[0,0],after:[0,0],t:0,frames:60}
-        this.drawEvent = {path:[],active:false}
-        this.momentum = {x:0,y:0,t:0}
+        let xyz = {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom}
+        this.zoomEvent = {before:xyz,after:xyz,t:0,frames:25,delta:0.5,zStep:1}
+        this.moveEvent = {x:0,y:0,vx:0,vy:0,active:false,moved:false}
+        this.panEvent = {before:xyz,after:xyz,t:0,frames:60}
+        this.drawEvent = {path:[],active:false,snap:false}
         this.animationFrame = null
         this.selectedFeature = null
         this.render = ()=>{
-            this.animationFrame = window.requestAnimationFrame(this.render)
             // update parameters
-            if(this.momentum.t>0){
+            if(this.moveEvent.t>0){
                 var fricion = 0.1
-                var x = this.momentum.x*(1-fricion)
-                var y = this.momentum.y*(1-fricion)
-                var t = this.momentum.t-1
-                this.momentum = {x,y,t}
+                var vx = this.moveEvent.vx*(1-fricion)
+                var vy = this.moveEvent.vy*(1-fricion)
+                var t = this.moveEvent.t-1
+                Object.assign(this.moveEvent,{vx,vy,t})
                 if(this.moveEvent.active==false){
-                    this.setView({x,y})
+                    this.setView([vx,vy])
                 }
             }
             if(this.zoomEvent.t>0){
-                var t = (this.zoomEvent.frames-this.zoomEvent.t)/this.zoomEvent.frames
+                var t = (this.zoomEvent.t-1)/this.zoomEvent.frames
                 // ease function = { easeOutQuad: t => t*(2-t) }
-                var dt = (2-2*t)/this.zoomEvent.frames
-                this.zoomEvent.t--
-                var dz = (this.zoomEvent.after-this.zoomEvent.before)*dt
-                var coord = this.client2coord([this.zoomEvent.x, this.zoomEvent.y])
+                var dt = 1/this.zoomEvent.frames
+                var dz = (this.zoomEvent.after.z-this.zoomEvent.before.z)*dt
                 var scale = Math.pow(2,dz)
-                var view = this.view
-                view.center.x+= (coord[0]-view.center.x)*(1-1/scale)
-                view.center.y+= (coord[1]-view.center.y)*(1-1/scale)
-                view.zoom+= dz
-                if(this.zoomEvent.t==0){this.zoomEvent.before = this.zoomEvent.after}
+                this.view.center.x+= (this.zoomEvent.after.x-this.view.center.x)*(1-1/scale)
+                this.view.center.y+= (this.zoomEvent.after.y-this.view.center.y)*(1-1/scale)
+                this.view.zoom = this.zoomEvent.before.z*t+this.zoomEvent.after.z*(1-t)
                 this.updateView()
+                this.zoomEvent.t--
             }
             if(this.panEvent.t>0){
                 let t = (this.panEvent.t-1)/this.panEvent.frames
@@ -203,7 +209,7 @@ class GisMap{
                 let x = this.panEvent.before.x*t+this.panEvent.after.x*(1-t)
                 let y = this.panEvent.before.y*t+this.panEvent.after.y*(1-t)
                 let z = this.panEvent.before.z*t+this.panEvent.after.z*(1-t)
-                this.zoomEvent.after = z
+                this.zoomEvent.after = {x,y,z}
                 this.view.center = {x,y}
                 this.view.zoom = z
                 this.updateView()
@@ -220,18 +226,35 @@ class GisMap{
             for(let feature of this.vector){
                 this.renderVector(feature)
             }
-            this.renderDraw()
+            if(this.drawEvent.active){
+                this.renderDraw()
+            }
             this.canvas.dispatchEvent(new CustomEvent('render',{}))
+            this.animationFrame = window.requestAnimationFrame(this.render)
         }
         this.render()
     }
     renderDraw(){
         // draw polygon
         let path = this.drawEvent.path.map(coord=>this.coord2client(coord))
+        if(path.length>2){
+            let dx = this.moveEvent.x-path[0][0]
+            let dy = this.moveEvent.y-path[0][1]
+            if(Math.sqrt(dx*dx+dy*dy)<10){
+                path.push(path[0])
+                this.drawEvent.snap = true
+            }else{
+                this.drawEvent.snap = false
+            }
+        }
+        if(!this.drawEvent.snap){
+            path.push([this.moveEvent.x,this.moveEvent.y])
+        }
         this.ctx.beginPath()
         this.ctx.lineCap = 'round'
         this.ctx.lineWidth = 2
         this.ctx.strokeStyle = 'dodgerblue'
+        this.ctx.fillStyle = 'rgba(0,0,255,0.3)'
         path.map((client,i)=>{
             if(i>0){
                 this.ctx.lineTo(client[0],client[1])
@@ -239,6 +262,7 @@ class GisMap{
                 this.ctx.moveTo(client[0],client[1])
             }
         })
+        this.ctx.fill()
         this.ctx.stroke()
         this.ctx.closePath()
         // draw dots
@@ -247,7 +271,7 @@ class GisMap{
             this.ctx.lineWidth = 2
             this.ctx.strokeStyle = 'white'
             this.ctx.fillStyle = 'dodgerblue'
-            this.ctx.arc(client[0],client[1],10,0,2*Math.PI,false)
+            this.ctx.arc(client[0],client[1],5,0,2*Math.PI,false)
             this.ctx.stroke()
             this.ctx.fill()
             this.ctx.closePath()
@@ -279,21 +303,19 @@ class GisMap{
     }
     handleMousemove(e){
         if(this.moveEvent.active){
-            var x = - e.clientX + this.moveEvent.x
-            var y = e.clientY - this.moveEvent.y
+            var vx = - e.clientX + this.moveEvent.x
+            var vy = e.clientY - this.moveEvent.y
             if(!this.zoomEvent.moved){
-                var tolerance = Math.sqrt(x*x+y*y)
-                if(tolerance>2){
-                    this.setView({x,y})
+                var tolerance = Math.sqrt(vx*vx+vy*vy)
+                if(tolerance>3){
+                    this.setView([vx,vy])
                     this.moveEvent.moved = true
                 }
             }
-            this.moveEvent.x = e.clientX
-            this.moveEvent.y = e.clientY
-            this.momentum = {x,y,t:90}
+            Object.assign(this.moveEvent,{vx, vy, t:90})
         }
-        var lineStringLength = getLength([...this.drawEvent.path,this.client2coord([e.clientX,e.clientY])].map(this.toLnglat))
-        console.log(lineStringLength)
+        this.moveEvent.x = e.clientX
+        this.moveEvent.y = e.clientY
     }
     handleMouseup(e){
         if(this.drawEvent.active&&!this.moveEvent.moved){
@@ -301,7 +323,7 @@ class GisMap{
             // let path = this.drawEvent.path
             // if(path.length>2){
             //     let i = path.length-1
-            //     let c = circleDefinedBy3Points(path[i-2].x,path[i-2].y,path[i-1].x,path[i-1].y,path[i].x,path[i].y)
+            //     let c = circleDefinedBy3Points(...path[i-2],...path[i-1],...path[i])
             //     console.log(c)
             // }
         }
@@ -310,8 +332,27 @@ class GisMap{
         e.target.style.cursor = 'grab'
     }
     handleDblclick(e){
-        this.drawEvent.path.pop()
-        this.drawEvent.active = false
+        if(this.drawEvent.active){
+            let path = this.drawEvent.path.slice(0,-1)
+            let geomType = 'LineString'
+            let properties = {
+                '周長': getLength(path.map(this.toLnglat)).toFixed(0)+'公尺'
+            }
+            if(this.drawEvent.snap==true){
+                path[path.length-1] = path[0].slice()
+                geomType = 'Polygon'
+                properties['面積'] = getArea(path.map(this.toLnglat)).toFixed(0)+'平方公尺'
+                path = [path]
+            }
+            if(path.length==3){
+                let R = circleDefinedBy3Points(...path[0],...path[1],...path[2]).r
+                properties.R = R
+            }
+            this.addVector(geomType,path,properties, true)
+            this.drawEvent.path = []
+            this.drawEvent.active = false
+            this.drawEvent.snap = false
+        }
     }
     handleMouseleave(e){
         this.moveEvent.active = false
@@ -319,16 +360,15 @@ class GisMap{
     }
     handleWheel(e){
         e.preventDefault()
+        var coord = this.client2coord([e.clientX,e.clientY])
         var view = this.view
         var delta = this.zoomEvent.delta
         var frames = this.zoomEvent.frames
-        var newZoom = this.zoomEvent.after - Math.sign(e.deltaY)*delta
+        var newZoom = this.zoomEvent.after.z - Math.sign(e.deltaY)*delta
         newZoom = this.minmax(newZoom,view.minZoom,view.maxZoom)
         this.zoomEvent = {
-            x: e.clientX,
-            y: e.clientY,
-            before: view.zoom,
-            after: newZoom,
+            before: {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom},
+            after: {x:coord[0],y:coord[1],z:newZoom},
             t: frames,
             frames, 
             delta,
@@ -359,8 +399,8 @@ class GisMap{
         var view = this.view,
             tp = this.tilePixel,
             squ = Math.pow(2,view.zoom)
-        view.center.x += offset.x*this.world.w/tp.w/squ
-        view.center.y += offset.y*this.world.h/tp.h/squ
+        view.center.x += offset[0]*this.world.w/tp.w/squ
+        view.center.y += offset[1]*this.world.h/tp.h/squ
         this.updateView()
     }
     client2coord(client){
@@ -518,12 +558,12 @@ class GisMap{
         }
         return isInside;
     }
-    geojson(geojson){
+    geojson(geojson, projected=false){
         geojson.features.map(feature=>{
             let geom = feature.geometry
             geom.bbox = [Infinity,Infinity,-Infinity,-Infinity]
             const project = lnglat=>{
-                let [x,y] = this.toCoord(lnglat)
+                let [x,y] = projected?lnglat:this.toCoord(lnglat)
                 geom.bbox[0] = Math.min(geom.bbox[0],x)
                 geom.bbox[1] = Math.min(geom.bbox[1],y)
                 geom.bbox[2] = Math.max(geom.bbox[2],x)
@@ -598,6 +638,26 @@ class GisMap{
         let fill = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
         let radius = feature.properties.radius||5
         this.ctx.globalAlpha = 1
+        
+        const drawPath = (coords,stroke,fill)=>{
+            this.ctx.beginPath()
+            coords.map((coord,i)=>{
+                let c = this.coord2client(coord)
+                if(i==0)
+                    this.ctx.moveTo(c[0],c[1])
+                else
+                    this.ctx.lineTo(c[0],c[1])
+            })
+            if(stroke){
+                this.ctx.strokeStyle = stroke
+                this.ctx.stroke()
+            }
+            if(fill){
+                this.ctx.fillStyle = fill
+                this.ctx.fill()
+            }
+            this.ctx.closePath()
+        }
         switch(feature.geometry.type.toUpperCase()){
             case 'POINT':
                 let c = this.coord2client(feature.geometry.coordinates)
@@ -622,70 +682,45 @@ class GisMap{
                 this.ctx.closePath()
                 break
             case 'LINESTRING':
-                this.ctx.beginPath()
-                feature.geometry.coordinates.map((coord,i)=>{
-                    let c = this.coord2client(coord)
-                    if(i==0)
-                        this.ctx.moveTo(c[0],c[1])
-                    else
-                        this.ctx.lineTo(c[0],c[1])
-                })
-                this.ctx.strokeStyle = style.stroke
-                this.ctx.stroke()
-                this.ctx.closePath()
+                drawPath(
+                    feature.geometry.coordinates,
+                    style.stroke||'orange',
+                    undefined
+                )
                 break
             case 'MULTILINESTRING':
                 for(let coords of feature.geometry.coordinates){
-                    this.ctx.beginPath()
-                    DouglasPeucker(coords,tolerance).map((coord,i)=>{
-                        let c = this.coord2client(coord)
-                        if(i==0)
-                            this.ctx.moveTo(c[0],c[1])
-                        else
-                            this.ctx.lineTo(c[0],c[1])
-                    })
-                    this.ctx.strokeStyle = style.stroke||'orange'
-                    this.ctx.stroke()
-                    this.ctx.closePath()
+                    drawPath(
+                        DouglasPeucker(coords,tolerance),
+                        style.stroke||'orange',
+                        undefined
+                    )
                 }
                 break
             case 'POLYGON':
                 this.ctx.beginPath()
                 for(let coords of feature.geometry.coordinates){
-                    coords.map((c,i)=>{
-                        if(i==0)
-                            this.ctx.moveTo(c[0],c[1])
-                        else
-                            this.ctx.lineTo(c[0],c[1])
-                    })    
+                    drawPath(
+                        coords,
+                        style.stroke||'dodgerblue',
+                        style.fill||'rgba(0,0,255,0.3)'
+                    ) 
                 }
-                this.ctx.fill()
-                this.ctx.closePath()
                 break
             case 'MULTIPOLYGON':
                 for(let coordinates of feature.geometry.coordinates){
-                    this.ctx.beginPath()
-                    for(let coords of coordinates){     
-                        DouglasPeucker(coords,tolerance).map((coord,i)=>{
-                            let c = this.coord2client(coord)
-                            if(i==0)
-                                this.ctx.moveTo(c[0],c[1])
-                            else
-                                this.ctx.lineTo(c[0],c[1])
-                        })
-                        
+                    for(let coords of coordinates){
+                        drawPath(
+                            DouglasPeucker(coords,tolerance),
+                            style.stroke||'dodgerblue',
+                            style.fill||fill
+                        )
                     }
-                    this.ctx.globalAlpha = 1
-                    this.ctx.strokeStyle = style.stroke||'dodgerblue'
-                    this.ctx.fillStyle = style.fill||fill
-                    this.ctx.stroke()
-                    this.ctx.fill()
-                    this.ctx.closePath()
                 }
                 break
         }
     }
-    addVector(geomType, coords, properties={}){
+    addVector(geomType, coords, properties={}, projected){
         let geojson = {features:[{
             geometry: {
                 type: geomType,
@@ -693,7 +728,7 @@ class GisMap{
             },
             properties: properties
         }]}
-        this.geojson(geojson)
+        this.geojson(geojson, projected)
     }
     WKT(wkt,properties){
         let type = wkt.match(/\w+/)[0]

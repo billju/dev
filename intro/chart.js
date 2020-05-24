@@ -108,13 +108,12 @@ class Chart{
     }
     drawLine(data=this.data, styles={}){
         let coords = this.getCoords(data)
-        let checkInBound = this.checkInBound
         const rate = styles.smoothRate||0
         this.ctx.beginPath()
         this.ctx.strokeStyle = styles.stroke||'red'
         this.ctx.lineWidth = styles.strokeWith||2
         if(rate||data.length<3){
-            coords.filter(c=>checkInBound(c)).map((c,i)=>{
+            coords.filter(c=>{return this.checkInBound(c)}).map((c,i)=>{
                 if(i==0)
                     this.ctx.moveTo(c[0],c[1])
                 else
@@ -427,9 +426,8 @@ class Dataset{
         this.length = this.xy.length
     }
     random(length=this.length){
-        this.b = new Matrix().random(length).sub(0.5).mul(100).add(250)
-        this.x = new Matrix().random(length).mul(500)
-        this.y = this.x.mul(Math.random()-0.5).add(this.x.mul(this.x).mul((Math.random()-0.5)/1000)).add(this.b)
+        this.x = new Matrix().random(length).mul(500*Math.random())
+        this.y = new Matrix().random(length).mul(500*Math.random())
         this.xy = this.x.hstack(this.y)
         return this
     }

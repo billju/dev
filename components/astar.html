@@ -123,16 +123,6 @@ class Maze{
         this.container.innerHTML = ''
         for(let i=0;i<this.columns;i++){
             for(let j=0;j<this.rows;j++){
-                // let rect = document.createElement('div')
-                // rect.className = 'rect'
-                
-                // Object.assign(rect.style,{
-                //     left: i*this.size+'px',
-                //     top: j*this.size+'px',
-                //     width: this.size+'px',
-                //     height: this.size+'px',
-                //     lineHeight: this.size+'px',
-                // })
                 let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
                 rect.dataset.fill = 'white'
                 rect.setAttribute('x',i*this.size)

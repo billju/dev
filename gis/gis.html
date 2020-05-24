@@ -129,6 +129,7 @@
             imageShape.handleKeyup(e)
         if(e.code=='Delete'){
             imageShapes = imageShapes.filter(x=>!x.editing)
+            gm.vector = gm.vector.filter(x=>x!=gm.selectedFeature)
         }
     })
     canvas.addEventListener('wheel',e=>{
@@ -175,14 +176,6 @@
         checkbox.onchange = e=>{
             let idx = gm.raster.findIndex(x=>x.name==raster.name)
             gm.raster[idx].active = e.target.checked
-        }
-        if(raster.name=='通用'){
-            setTimeout(()=>{
-                checkbox.checked=true
-            },2000)
-            setTimeout(()=>{
-                raster.active = true
-            },3000)
         }
         rE.querySelector('label').setAttribute('for',raster.name)
         let range = rE.querySelector('input[type="range"')

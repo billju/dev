@@ -2,23 +2,26 @@ function skr(node=document.body){
     let datas = Object.entries(node.dataset)
     let rect = node.getBoundingClientRect()
     let keyPoints = []
-    for(let data of datas){
-        let key = data[0]
-        let y = undefined
-        if(key=='center')
-            y = Math.round((rect.bottom-rect.top)/2)
-        if(key=='top')
-            y = node.offsetTop-window.innerHeight
-        if(key=='bottom')
-        y = node.offsetTop+node.clientHeight
-        let numeric = key.match(/^(\d+)$/)
-        if(numeric)
-            y = parseInt(numeric[1])
-        if(y!=undefined)
-            keyPoints.push({y, cssText:node.dataset[key]})
+    function findKeyPoints(){
+        keyPoints = []
+        for(let data of datas){
+            let key = data[0]
+            let y = undefined
+            if(key=='center')
+                y = Math.round((rect.bottom-rect.top)/2)
+            if(key=='top')
+                y = node.offsetTop-window.innerHeight
+            if(key=='bottom')
+            y = node.offsetTop+node.clientHeight
+            let numeric = key.match(/^(\d+)$/)
+            if(numeric)
+                y = parseInt(numeric[1])
+            if(y!=undefined)
+                keyPoints.push({y, cssText:node.dataset[key]})
+        }
     }
+    findKeyPoints()
     if(datas.length){
-        console.log(datas)
         keyPoints.sort((a,b)=>a.y-b.y)
         function getMatchArray(string,regexp){
             return Array.from(string.matchAll(regexp),x=>x[0])
@@ -45,6 +48,7 @@ function skr(node=document.body){
             node.style.cssText = cssText
         }
         window.addEventListener('scroll',handleScroll)
+        window.addEventListener('resize',findKeyPoints)
         handleScroll()
     }
     for(let child of node.children){

@@ -25,7 +25,7 @@
         <div class="blob" style="left:100px"></div>
         <div class="blob" style="left:200px"></div>
     </div>
-    
+    <div class="rotate-text" style="font-size:20px;margin:50px"></div>
     <div class="hidden-text" style="font-size:100px;display:inline-block;">烏日文心北屯線</div>
     <div class="hopping-text" style="transform:skewY(-5deg);font-size:100px;display:inline-block;">烏日文心北屯線</div>
     <div class="count-up" style="font-size: 100px;"></div>
@@ -43,21 +43,19 @@ html,body{
     height: 100%;
 }
 .textClip{
-    background-image: url(/static/image/tetris.gif);
+    background-image: url(/static/image/wave.png);
     -webkit-text-fill-color: transparent;
     -webkit-background-clip: text;
     font-size: 50px;
-    font-weight: 900;
-    animation: bg-pos 5s ease infinite;
+    font-weight: bold;
+    animation: bg-pos 3s linear infinite;
 }
 @keyframes bg-pos{
-    0%,100%{
-        background-position: center 0;
-        background-size: 100%;
+    from{
+        background-position: 0 0;
     }
-    50%{
-        background-position: center 10px;
-        background-size: 80%;
+    to{
+        background-position: 300px 0;
     }
 }
 .clipPath{
@@ -82,6 +80,48 @@ html,body{
 }
 </style>
 <script>
+function rotateText(element,texts,height=30){
+    Object.assign(element.style,{
+        position: 'relative',
+        overflow: 'hidden',
+        height: height+'px'
+    })
+    function createSpan(text){
+        let span = document.createElement('span')
+        span.textContent = text
+        Object.assign(span.style,{
+            position: 'absolute',
+            top: 0,
+            lineHeight: height+'px',
+            transition: '1s',
+            // background: 'grey',
+            transform: `translateY(${height/2}px) rotate3d(1,0,0,-60deg)`,
+            opacity: 0
+        })
+        element.appendChild(span)
+        return span
+    }
+    let idx = 2, top = undefined
+    let mid = createSpan(texts[0]), bottom = createSpan(texts[1])
+    mid.style.transform = `translateY(0px) rotate3d(1,0,0,0deg)`
+    mid.style.opacity = 1
+    setInterval(()=>{
+        if(top){top.remove()}
+        top = mid
+        top.style.transform = `translateY(${-height/2}px) rotate3d(1,0,0,60deg)`
+        top.style.opacity = 0
+        mid = bottom
+        mid.style.transform = `translateY(0) rotate3d(1,0,0,0deg)`
+        mid.style.opacity = 1
+        bottom = createSpan(texts[idx])
+        idx = idx==texts.length-1?0:idx+1
+    },2000)
+}
+rotateText(document.querySelector('.rotate-text'),[
+    '烏日文心北屯線1',
+    '烏日文心北屯線2',
+    '烏日文心北屯線3',
+])
 function imageGlitch(img, src){
     img.parentNode.style.position = 'relative'
     img.src = src

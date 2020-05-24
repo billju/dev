@@ -313,13 +313,12 @@
         }
         drawLine(data=this.data, styles={}){
             let coords = this.getCoords(data)
-            let checkInBound = this.checkInBound
             const rate = styles.smoothRate||0
             this.ctx.beginPath()
             this.ctx.strokeStyle = styles.stroke||'red'
             this.ctx.lineWidth = styles.strokeWith||2
             if(rate||data.length<3){
-                coords.filter(c=>checkInBound(c)).map((c,i)=>{
+                coords.filter(c=>{return this.checkInBound(c)}).map((c,i)=>{
                     if(i==0)
                         this.ctx.moveTo(c[0],c[1])
                     else

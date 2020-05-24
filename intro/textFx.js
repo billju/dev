@@ -51,12 +51,19 @@ function hoppingText(element){
         element.appendChild(div)
         Object.assign(div.style,{
             display: 'inline-block',
-            transition: 'transform 1s',
             transform: 'translateY(100%)'
         })
-        setTimeout(()=>{
-            div.style.transform = 'translateY(0%)'
-        },i*200)
+        div.animate([
+            {transform: 'translateY(100%)'},
+            {transform: 'translateY(0%)',offset:0.1},
+            {transform: 'translateY(0%)',offset:0.9},
+            {transform: 'translateY(100%)'},
+        ],{
+            duration: 10000,
+            delay: i*100,
+            iterations: Infinity,
+            easing: 'ease-out'
+        })
     }
 }
 function typingText(element,delay=200){
@@ -91,8 +98,43 @@ function typingText(element,delay=200){
     }
     randomDelay()
 }
-function roateText(){
-    
+function rotateText(element,texts,height=30){
+    if(texts.length<3){texts=[...texts,...texts,...texts]}
+    Object.assign(element.style,{
+        position: 'relative',
+        overflow: 'hidden',
+        height: height+'px'
+    })
+    function createSpan(text){
+        let span = document.createElement('span')
+        span.textContent = text
+        Object.assign(span.style,{
+            position: 'absolute',
+            top: 0,
+            fontSize: height+'px',
+            lineHeight: height+'px',
+            transition: '1s',
+            transform: `translateY(${height/2}px) rotate3d(1,0,0,-90deg)`,
+            opacity: 0
+        })
+        element.appendChild(span)
+        return span
+    }
+    let idx = 2, top = undefined
+    let mid = createSpan(texts[0]), bottom = createSpan(texts[1])
+    mid.style.transform = `translateY(0px) rotate3d(1,0,0,0deg)`
+    mid.style.opacity = 1
+    setInterval(()=>{
+        if(top){top.remove()}
+        top = mid
+        top.style.transform = `translateY(${-height/2}px) rotate3d(1,0,0,90deg)`
+        top.style.opacity = 0
+        mid = bottom
+        mid.style.transform = `translateY(0) rotate3d(1,0,0,0deg)`
+        mid.style.opacity = 1
+        bottom = createSpan(texts[idx])
+        idx = idx==texts.length-1?0:idx+1
+    },2000)
 }
 class CountingText{
     constructor(el){

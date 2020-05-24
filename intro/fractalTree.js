@@ -2,6 +2,7 @@ class FractalTree{
     constructor(canvas){
         this.canvas = canvas
         this.ctx = this.canvas.getContext('2d')
+        this.resize()
         this.args = {
             radian: 20*Math.PI/180,
             skew: 5*Math.PI/180,
@@ -57,34 +58,43 @@ class FractalTree{
         Object.assign(this.args, args)
         this.branch(this.args.point,this.args.vector)
     }
+    resize(){
+        this.canvas.width = this.canvas.clientWidth
+        this.canvas.height = this.canvas.clientHeight
+    }
 }
-const canvas = document.getElementById('fractal-tree')
-canvas.width = window.innerWidth
-canvas.height = window.innerHeight
-var ft = new FractalTree(canvas)
-var me = {x:0,y:0}
-window.addEventListener('mousemove',e=>{
-    me.x = e.clientX
-    me.y = e.clientY
-    ft.update({
-        skew: (20*e.clientX/window.innerWidth-10)*Math.PI/180,
-        trim: 10+20*e.clientY/window.innerHeight,
-        vector: {x:0,y:-50-50*(1-e.clientY/window.innerHeight)}
+var ftree = new FractalTree(document.getElementById('fractal-tree'))
+var me = {x:0,y:0,animationFrame:null}
+ftree.canvas.addEventListener('mousemove',e=>{
+    let rect = ftree.canvas.getBoundingClientRect()
+    me.x = e.clientX-rect.left
+    me.y = e.clientY-rect.top
+    ftree.update({
+        skew: (50*me.x/ftree.canvas.clientWidth-25)*Math.PI/180,
+        trim: 12+10*me.y/ftree.canvas.clientHeight,
+        vector: {x:0,y:-75-25*(1-me.y/ftree.canvas.clientHeight)}
     })
 })
-function draw(){
-    let ctx = canvas.getContext('2d')
+ftree.canvas.addEventListener('mouseenter',e=>{
+    ftDraw()
+})
+ftree.canvas.addEventListener('mouseleave',e=>{
+    cancelAnimationFrame(me.animationFrame)
+})
+function ftDraw(){
+    let ctx = ftree.canvas.getContext('2d')
     let r1 = 20
-    let r2 = Math.max(canvas.width,canvas.height)
-    let pct = me.y/canvas.height
-    pct = pct>1?1:pct
+    let r2 = Math.max(ftree.canvas.width,ftree.canvas.height)
+    let pct = me.y/ftree.canvas.height
+    pct = pct>1?1:pct<0?0:pct
     let gd = ctx.createRadialGradient(me.x,me.y,r1,me.x,me.y,r2)
     gd.addColorStop(0,'yellow')
     gd.addColorStop(1-pct,'darkorange')
     gd.addColorStop(1,'black')
     ctx.fillStyle = gd
-    ctx.fillRect(0,0,canvas.width,canvas.height)
-    ft.draw()
-    requestAnimationFrame(draw)
+    ctx.fillRect(0,0,ftree.canvas.width,ftree.canvas.height)
+    ftree.draw()
+    ctx.fillStyle = 'black'
+    me.animationFrame = requestAnimationFrame(ftDraw)
 }
-draw()
+window.addEventListener('resize',()=>{ftree.resize()})
