@@ -6,6 +6,13 @@
     <title>Motion Graphic</title>
 </head>
 <body>
+    <a href="#" class="neon-btn">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        Neon Button
+    </a>
     <svg width="0" height="0">
         <defs><clipPath id="clipPath">
             <circle cx="100" cy="100" r="50"/>
@@ -41,6 +48,76 @@
 html,body{
     margin: 0;
     height: 100%;
+    background: #031321;
+}
+.neon-btn{
+    position: relative;
+    display: inline-block;
+    padding: 15px 30px;
+    color: #2196f3;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-size: 24px;
+    overflow: hidden;
+    transition: 0.2s;
+}
+.neon-btn:hover{
+    color: #255784;
+    background: #2196f3;
+    box-shadow: 0 0 10px #2196f3, 0 0 40px #2196f3, 0 0 80px #2196f3;
+    transition-delay: 1s;
+}
+.neon-btn span{
+    position: absolute;
+    display: block;
+}
+.neon-btn span:nth-child(1){
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(1){
+    left: 100%;
+    transition: 1s;
+}
+.neon-btn span:nth-child(2){
+    top: -100%;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(2){
+    top: 100%;
+    transition: 1s;
+    transition-delay: 0.25s;
+}
+.neon-btn span:nth-child(3){
+    bottom: 0;
+    right: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(270deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(3){
+    right: 100%;
+    transition: 1s;
+    transition-delay: 0.5s;
+}
+
+.neon-btn span:nth-child(4){
+    bottom: -100%;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(0deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(4){
+    bottom: 100%;
+    transition: 1s;
+    transition-delay: 0.75s;
 }
 .textClip{
     background-image: url(/static/image/wave.png);
@@ -324,7 +401,46 @@ class CountUp{
     }
 }
 new CountUp(document.querySelector('.count-up')).countTo(3396,60)
-
+function pumpingConcentricCircle(el){
+    let div, bpm = 128, duration = Math.round(60/bpm*1000)
+    for(let i=8;i>0;i--){
+        div = document.createElement('div')
+        Object.assign(div.style,{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%,-50%)',
+            padding: `${50+5*i}px`,
+            transition: '0.5s',
+            background: `rgba(${240-i*30},100,100,1)`,
+            borderRadius: '50%'
+        })
+        el.appendChild(div)
+        let keyframes = []
+        if(i==1){
+            div.animate([
+                {padding: `${50}px`},
+                {padding: `${30}px`},
+                {padding: `${50}px`},
+            ],{
+                duration: duration,
+                iterations: Infinity,
+                easing: 'ease'
+            })
+        }else{
+            for(let j=0;j<=8;j++){
+                let mul = j>i?i:j
+                keyframes.push({padding: `${50+20*mul+5*i}px`,easing:'ease-out'})
+            }
+            keyframes.push({padding: `${50+5*i}px`,easing:'ease-out'})
+            div.animate(keyframes,{
+                duration: duration*9,
+                iterations: Infinity,
+            })
+        }
+    }
+    return div
+}
 function svgAnimation(container,style={}){
     xhr = new XMLHttpRequest();
     xhr.open("GET","logo.svg",false);
