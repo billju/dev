@@ -2,6 +2,7 @@ class Chart{
     constructor(canvas,args){
         this.canvas = canvas
         this.ctx = canvas.getContext('2d')
+        window.addEventListener('resize',()=>{this.resize()})
         this.resize()
         this.data = args.data||[]
         this.padding = args.padding||[30,30,30,30]//[N,E,S,W]

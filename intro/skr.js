@@ -12,8 +12,8 @@ function skr(node=document.body){
             if(key=='top')
                 y = node.offsetTop-window.innerHeight
             if(key=='bottom')
-            y = node.offsetTop+node.clientHeight
-            let numeric = key.match(/^(\d+)$/)
+                y = node.offsetTop+node.clientHeight
+            let numeric = key.match(/^(\d+)$/g)
             if(numeric)
                 y = parseInt(numeric[1])
             if(y!=undefined)
@@ -22,7 +22,9 @@ function skr(node=document.body){
     }
     findKeyPoints()
     if(datas.length){
+        
         keyPoints.sort((a,b)=>a.y-b.y)
+        console.log(keyPoints)
         function getMatchArray(string,regexp){
             return Array.from(string.matchAll(regexp),x=>x[0])
         }
@@ -33,6 +35,7 @@ function skr(node=document.body){
                     let prev = keyPoints[i-1]
                     let next = keyPoints[i]
                     let ratio = (window.scrollY-prev.y)/(next.y-prev.y)
+                    ratio = ratio<0?0:ratio>1?1:ratio
                     cssText = cssText.replace(/[-\d]+/g, '{}')
                     let prevs = getMatchArray(prev.cssText, /([-\d]+)/g)
                     let nexts = getMatchArray(next.cssText, /([-\d]+)/g)

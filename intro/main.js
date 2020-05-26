@@ -25,7 +25,7 @@ function pumpingConcentricCircle(el){
                 easing: 'ease'
             })
         }else{
-            for(let j=0;j<=8;j++){
+            for(let j=0;j<8;j++){
                 let mul = j>i?i:j
                 keyframes.push({padding: `${50+20*mul+5*i}px`,easing:'ease-out'})
             }
@@ -48,12 +48,12 @@ function draw(){
     chart.clear()    
     chart.animateTo(dataset.xy)
     chart.drawGrid()
-    // chart.drawDots()
+    chart.drawDots()
     // chart.drawLine(Array.from(Array(window.innerWidth).keys(),x=>([x,wave.f(x+i)*30+100])))
     window.requestAnimationFrame(draw)
 }
 draw()
-// setInterval(()=>{dataset.random(50)},2000)
+setInterval(()=>{dataset.random(50)},2000)
 hiddenText(document.getElementById('chuboy'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'top')
 hiddenText(document.getElementById('web-dev'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
 hiddenText(document.getElementById('data-analyst'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'right')
@@ -65,7 +65,6 @@ rotateText(document.getElementById('how-i-apply'),[
     'Make and solve',
     'Make life better',
 ],100)
-hiddenText(document.getElementById('chart-title'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'top')
 // window.addEventListener('scroll',e=>{
 //     chart.canvas.style.top = window.scrollY+'px'
 // })

@@ -28,7 +28,7 @@ html(lang="en")
         section.vh-100.position-relative.overflow-hidden
             .h-100.d-flex.flex-column.justify-content-center.align-items-center
                 .row
-                    .col-sm-12.col-md-7
+                    .col-sm-12.col-md-7.d-flex.align-items-center.justify-content-center
                         #loading.position-relative
                         .display-1#chuboy ChuBoy
                     .col-sm-12.col-md-5
@@ -42,7 +42,7 @@ html(lang="en")
         section.bg-dark.py-5
             #my-skills.display-1.text-light My skills n little project
             .container-fluid(style="transform:skewY(-5deg);padding:0").overflow-hidden
-                .row.bg-info.w-100.py-3.border-bottom(data-top="transform:translateX(200%)" data-bottom="transform:translateX(0%)")
+                .row.bg-info.w-100.py-3(data-top="transform:translateX(200%)" data-bottom="transform:translateX(0%)")
                     .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center
                         .folder
                             h3 vue - mvbox
@@ -51,11 +51,9 @@ html(lang="en")
                             p youtube api
                     .col-sm-12.col-md-6
                         .display-4.pt-5(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單
-                        img(style="max-width:100%;margin-top:-100px" src="../static/image/pomodoro.gif", alt="")
-                .row.bg-primary.w-100.py-3.border-bottom(data-top="transform:translateX(-200%)" data-bottom="transform:translateX(0%)")
-                    .col-sm-12.col-md-6.d-flex.flex-column.align-items-end
-                        .display-4.pt-5.text-right(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單
-                        img(style="max-width:100%;margin-top:-100px" src="../static/image/pomodoro.gif", alt="")
+                        img(style="max-width:100%;margin-top:-100px" src="../static/image/mvbox.min.gif", alt="")
+                .py-5
+                .row.flex-row-reverse.bg-primary.w-100.py-3(data-top="transform:translateX(-200%)" data-bottom="transform:translateX(0%)")
                     .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center
                         .folder
                             h3 react - chatroom
@@ -63,7 +61,11 @@ html(lang="en")
                             p sqlite
                             p socket.io
                             p next SSR
-                .row.bg-danger.w-100.py-3.border-bottom(data-top="transform:translateX(200%)" data-bottom="transform:translateX(0%)")
+                    .col-sm-12.col-md-6.d-flex.flex-column.align-items-end
+                        .display-4.pt-5.text-right(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片
+                        img(style="max-width:100%;margin-top:-100px" src="../static/image/chatroom.gif", alt="")
+                .py-5
+                .row.bg-danger.w-100.py-3(data-top="transform:translateX(200%)" data-bottom="transform:translateX(0%)")
                     .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center
                         .folder
                             h3 python - crawler
@@ -89,9 +91,8 @@ html(lang="en")
                 span.badge.badge-info media
                 span.badge.badge-info SRT file IO
                 p everytime when transcribing from meeting is too trivial
-        section.vh-100.position-relative
-            canvas#chart
-            #chart-title.display-2 data analyst
+        section
+            canvas#chart.position-relative(data-top="transform:translateY(0)" data-bottom="transform:translateY(1000px)")
         section.vh-100
             .display-2 metro plan
             p traffic
@@ -100,9 +101,10 @@ html(lang="en")
             p environment
             p land owner
             p engineering
-        section.overflow-hidden.w-100
-            .w-100.display-2(data-top="transform:translateX(100%)" data-bottom="transform:translateX(-100%)") more projects
-            .container
+        section
+            .w-100.overflow-hidden.text-light.bg-dark
+                .w-100.display-2(data-top="transform:translateX(100%)" data-bottom="transform:translateX(-100%)") more projects
+            .container-lg
                 .row
                     .col-sm-12.col-md-4
                         .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
@@ -155,10 +157,14 @@ html(lang="en")
                 img(src="", alt="" style="max-width: 100%")
                 h1
                 p Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis dolorum eius inventore officia qui quisquam, aspernatur quaerat sint, assumenda nobis architecto corporis excepturi atque asperiores tempora non quibusdam aperiam vitae.
-        footer.position-relative(style="height:500px").bg-warning
+        footer.position-relative(style="height:500px").bg-primary
             canvas#fractal-tree.w-100.h-100.position-absolute
             .position-absolute(style="bottom:0;left:0").px-3.py-3.text-light
-                .display-3 contact me
+                .display-3.neon-btn.my-3 contact me
+                    span
+                    span
+                    span
+                    span
                 .d-flex.justify-content-around
                     img(src="../static/image/facebook.png")
                     img(src="../static/image/gmail.png")

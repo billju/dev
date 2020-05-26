@@ -51,18 +51,18 @@ function hoppingText(element){
         element.appendChild(div)
         Object.assign(div.style,{
             display: 'inline-block',
-            transform: 'translateY(100%)'
+            transform: 'translateY(100%)',
+            opacity: 1
         })
         div.animate([
-            {transform: 'translateY(100%)'},
-            {transform: 'translateY(0%)',offset:0.1},
-            {transform: 'translateY(0%)',offset:0.9},
-            {transform: 'translateY(100%)'},
+            {transform: 'translateY(100%)',opacity: 1,easing:'ease-out'},
+            {transform: 'translateY(0%)',opacity: 1,offset:0.1},
+            {transform: 'translateY(0%)',opacity: 0,offset:0.9,easing:'ease-out'},
+            {transform: 'translateY(100%)',opacity: 0},
         ],{
-            duration: 10000,
+            duration: 6000,
             delay: i*100,
             iterations: Infinity,
-            easing: 'ease-out'
         })
     }
 }

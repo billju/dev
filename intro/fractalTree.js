@@ -89,8 +89,8 @@ function ftDraw(){
     pct = pct>1?1:pct<0?0:pct
     let gd = ctx.createRadialGradient(me.x,me.y,r1,me.x,me.y,r2)
     gd.addColorStop(0,'yellow')
-    gd.addColorStop(1-pct,'darkorange')
-    gd.addColorStop(1,'black')
+    gd.addColorStop(1-pct,'dodgerblue')
+    gd.addColorStop(1,'grey')
     ctx.fillStyle = gd
     ctx.fillRect(0,0,ftree.canvas.width,ftree.canvas.height)
     ftree.draw()

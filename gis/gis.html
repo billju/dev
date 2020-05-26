@@ -96,23 +96,23 @@
         }
         gm.handleMousemove(e)
     })
-    canvas.addEventListener('mouseup',e=>{
-        for(let imageShape of imageShapes)
-            imageShape.handleMouseup(e)
-        let feature = gm.detectClient(e)
-        if(feature){
+    canvas.addEventListener('select',e=>{
+        if(e.detail.features.length==1){
             propsTable.innerHTML = ''
-            Object.entries(feature.properties).map(([key,val])=>{
+            Object.entries(e.detail.features[0].properties).map(([key,val])=>{
                 if(val&&val!='null'){
                     let tr = propsTable.insertRow()
                     tr.insertCell().textContent = key
                     tr.insertCell().textContent = val
                 }
             })
-        }else if(!gm.moveEvent.moved){
+        }else{
             propsTable.innerHTML = ''
-            gm.selectedFeature = null
         }
+    })
+    canvas.addEventListener('mouseup',e=>{
+        for(let imageShape of imageShapes)
+            imageShape.handleMouseup(e)
         gm.handleMouseup(e)
     })
     canvas.addEventListener('mouseleave',e=>{
@@ -123,14 +123,34 @@
     window.addEventListener('keydown',e=>{
         for(let imageShape of imageShapes)
             imageShape.handleKeydown(e)
+        gm.selectEvent.ctrlKey = e.ctrlKey
     })
+    var recycle = []
     window.addEventListener('keyup',e=>{
         for(let imageShape of imageShapes)
             imageShape.handleKeyup(e)
         if(e.code=='Delete'){
             imageShapes = imageShapes.filter(x=>!x.editing)
-            gm.vector = gm.vector.filter(x=>x!=gm.selectedFeature)
+            if(gm.modifyEvent.feature&&gm.modifyEvent.anchor!=-1){
+                gm.modifyEvent.coords.splice(gm.modifyEvent.anchor,1)
+                gm.modifyEvent.anchor = -1
+            }else if(gm.selectEvent.features.length){
+                gm.vector = gm.vector.filter(feature=>!gm.selectEvent.features.includes(feature))
+                recycle.push(gm.selectEvent.features)
+                gm.selectEvent.features = []
+            }
         }
+        if(e.ctrlKey&&e.code=='KeyZ'){
+            recycle.pop().map(feature=>{gm.vector.push(feature)})
+        }
+        if(e.code=='KeyM'){
+            if(gm.selectEvent.features.length==1){
+                gm.modifyEvent.feature = gm.selectEvent.features[0]
+            }else{
+                gm.modifyEvent.feature = null
+            }
+        }
+        gm.selectEvent.ctrlKey = e.ctrlKey
     })
     canvas.addEventListener('wheel',e=>{
         gm.handleWheel(e)
@@ -149,7 +169,7 @@
         {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_geo/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'地質敏感',opacity:0.8,active:false},
         {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_environment/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'環保與汙染',opacity:0.8,active:false},
         {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/SlopeTW3857_fix/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'坡度示意圖',opacity:0.8,active:false},
-        {url:'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OSM',opacity:0.8,active:false},
+        {url:'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OSM',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}',name:'通用',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/EMAP01/default/EPSG:3857/{z}/{y}/{x}',name:'灰階',opacity:0.8,active:false},
         {url:'https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/EPSG:3857/{z}/{y}/{x}',name:'航照',opacity:0.8,active:false},

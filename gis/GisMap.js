@@ -75,13 +75,6 @@ function getArea(coords){
         y1 = y2
     }
     return Math.abs(area*radius*radius/2.0)
-    return coords.reduce((acc,cur,i)=>{
-        if(i==0) return acc
-        let dx = cur[0]-coords[i-1][0]
-        let y2 = cur[1]
-        let y1 = coords[i-1][1]
-        return acc+Math.sin(dx*Math.PI/180)*(2+Math.sin(y1*Math.PI/180))+Math.sin(y2*Math.PI/180)
-    },0)
 }
 function circleDefinedBy3Points(x1,y1,x2,y2,x3,y3){
     let A = x1*(y2-y3)-y1*(x2-x3)+x2*y3-x3*y2
@@ -177,8 +170,9 @@ class GisMap{
         this.moveEvent = {x:0,y:0,vx:0,vy:0,active:false,moved:false}
         this.panEvent = {before:xyz,after:xyz,t:0,frames:60}
         this.drawEvent = {path:[],active:false,snap:false}
+        this.selectEvent = {x:0,y:0,bbox:[0,0,0,0],features:[],ctrlKey:false,active:false}
+        this.modifyEvent = {feature:null,anchor:-1,coords:[],geomType:null}
         this.animationFrame = null
-        this.selectedFeature = null
         this.render = ()=>{
             // update parameters
             if(this.moveEvent.t>0){
@@ -192,23 +186,24 @@ class GisMap{
                 }
             }
             if(this.zoomEvent.t>0){
-                var t = (this.zoomEvent.t-1)/this.zoomEvent.frames
+                var t = 1-(this.zoomEvent.t-1)/this.zoomEvent.frames
                 // ease function = { easeOutQuad: t => t*(2-t) }
-                var dt = 1/this.zoomEvent.frames
+                var dt = (2-2*t)/this.zoomEvent.frames
+                t = t*(2-t)
                 var dz = (this.zoomEvent.after.z-this.zoomEvent.before.z)*dt
                 var scale = Math.pow(2,dz)
                 this.view.center.x+= (this.zoomEvent.after.x-this.view.center.x)*(1-1/scale)
                 this.view.center.y+= (this.zoomEvent.after.y-this.view.center.y)*(1-1/scale)
-                this.view.zoom = this.zoomEvent.before.z*t+this.zoomEvent.after.z*(1-t)
+                this.view.zoom = this.zoomEvent.before.z*(1-t)+this.zoomEvent.after.z*t
                 this.updateView()
                 this.zoomEvent.t--
             }
             if(this.panEvent.t>0){
-                let t = (this.panEvent.t-1)/this.panEvent.frames
+                let t = 1-(this.panEvent.t-1)/this.panEvent.frames
                 t = t<.5 ? 2*t*t : -1+(4-2*t)*t
-                let x = this.panEvent.before.x*t+this.panEvent.after.x*(1-t)
-                let y = this.panEvent.before.y*t+this.panEvent.after.y*(1-t)
-                let z = this.panEvent.before.z*t+this.panEvent.after.z*(1-t)
+                let x = this.panEvent.before.x*(1-t)+this.panEvent.after.x*t
+                let y = this.panEvent.before.y*(1-t)+this.panEvent.after.y*t
+                let z = this.panEvent.before.z*(1-t)+this.panEvent.after.z*t
                 this.zoomEvent.after = {x,y,z}
                 this.view.center = {x,y}
                 this.view.zoom = z
@@ -229,10 +224,34 @@ class GisMap{
             if(this.drawEvent.active){
                 this.renderDraw()
             }
+            if(this.modifyEvent.feature){
+                this.renderModify()
+            }
+            if(this.selectEvent.active){
+                let lb = this.coord2client([this.selectEvent.bbox[0],this.selectEvent.bbox[3]])
+                let ub = this.coord2client([this.selectEvent.bbox[2],this.selectEvent.bbox[1]])
+                this.ctx.strokeStyle = 'dodgerblue'
+                this.ctx.strokeRect(lb[0],lb[1],ub[0]-lb[0],ub[1]-lb[1])
+            }
             this.canvas.dispatchEvent(new CustomEvent('render',{}))
             this.animationFrame = window.requestAnimationFrame(this.render)
         }
         this.render()
+    }
+    renderModify(){
+        let coords = this.modifyEvent.feature.geometry.coordinates
+        let geomType = this.modifyEvent.feature.geometry.type.toUpperCase()
+        coords = geomType=='POINTS'?[coords]:geomType=='LINESTRING'?coords:geomType=='POLYGON'?coords[0]:[]
+        coords.map(coord=>this.coord2client(coord)).map((client,i)=>{    
+            this.ctx.beginPath()
+            this.ctx.lineWidth = 2
+            this.ctx.strokeStyle = 'white'
+            this.ctx.fillStyle = 'dodgerblue'
+            this.ctx.arc(client[0],client[1],3,0,2*Math.PI,false)
+            this.ctx.stroke()
+            this.ctx.fill()
+            this.ctx.closePath()
+        })
     }
     renderDraw(){
         // draw polygon
@@ -293,42 +312,124 @@ class GisMap{
         this.panTo([bx,by],newZoom,duration)
     }
     handleMousedown(e){
-        this.moveEvent.x = e.clientX
-        this.moveEvent.y = e.clientY
-        this.moveEvent.active = true
-        e.target.style.cursor = 'grabbing'
-        if(e.button==2){
-            this.drawEvent.active = true
+        if(this.modifyEvent.feature){
+            let coords = this.modifyEvent.feature.geometry.coordinates
+            let geomType = this.modifyEvent.feature.geometry.type.toUpperCase()
+            coords = geomType=='POINTS'?[coords]:geomType=='LINESTRING'?coords:geomType=='POLYGON'?coords[0]:[]
+            this.modifyEvent.coords = coords // assign by reference
+            this.modifyEvent.geomType = geomType
+            let clients = coords.map(coord=>this.coord2client(coord))
+            const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2))
+            this.modifyEvent.anchor = -1
+            for(let i=0;i<clients.length;i++){
+                if(Euclidean([e.clientX,e.clientY],clients[i]) < 10){
+                    this.modifyEvent.anchor = i; break;
+                }
+                if(i>0){
+                    let perpendicular = this.perpendicular([e.clientX,e.clientY],clients[i-1],clients[i])
+                    if(perpendicular.distance < 5){
+                        coords.splice(i,0,this.client2coord(perpendicular.closest))
+                        this.modifyEvent.anchor = i; break;
+                    }
+                }
+            }
         }
+        if(this.selectEvent.ctrlKey){
+            this.selectEvent.active = true
+            this.selectEvent.x = e.clientX
+            this.selectEvent.y = e.clientY
+            let coord = this.client2coord([e.clientX,e.clientY])
+            this.selectEvent.bbox = [coord[0],coord[1],coord[0],coord[1]]
+        }else{
+            this.moveEvent.active = true
+            this.moveEvent.x = e.clientX
+            this.moveEvent.y = e.clientY
+            e.target.style.cursor = 'grabbing'
+            if(e.button==2){
+                this.drawEvent.active = true
+            }
+        }   
     }
     handleMousemove(e){
-        if(this.moveEvent.active){
-            var vx = - e.clientX + this.moveEvent.x
-            var vy = e.clientY - this.moveEvent.y
-            if(!this.zoomEvent.moved){
-                var tolerance = Math.sqrt(vx*vx+vy*vy)
-                if(tolerance>3){
+        if(this.modifyEvent.anchor!=-1){
+            let i = this.modifyEvent.anchor
+            this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
+        }else{
+            if(this.moveEvent.active){
+                var vx = - e.clientX + this.moveEvent.x
+                var vy = e.clientY - this.moveEvent.y
+                if(Math.sqrt(vx*vx+vy*vy)>3){
                     this.setView([vx,vy])
                     this.moveEvent.moved = true
                 }
+                Object.assign(this.moveEvent,{vx, vy, t:90})
             }
-            Object.assign(this.moveEvent,{vx, vy, t:90})
+            if(this.selectEvent.active){
+                var vx = - e.clientX + this.selectEvent.x
+                var vy = e.clientY - this.selectEvent.y
+                if(Math.sqrt(vx*vx+vy*vy)>3){
+                    this.selectEvent.moved = true
+                }
+                let coord = this.client2coord([e.clientX,e.clientY])
+                this.selectEvent.bbox[2] = coord[0]
+                this.selectEvent.bbox[1] = coord[1]
+            }
         }
         this.moveEvent.x = e.clientX
         this.moveEvent.y = e.clientY
     }
     handleMouseup(e){
+        if(this.modifyEvent.anchor!=-1){
+            let coords = this.modifyEvent.coords
+            let bbox = this.modifyEvent.feature.geometry.bbox // update bbox
+            bbox[0] = Math.min(...coords.map(c=>c[0])); bbox[1] = Math.min(...coords.map(c=>c[1]))
+            bbox[2] = Math.max(...coords.map(c=>c[0])); bbox[3] = Math.max(...coords.map(c=>c[1]))
+            let lnglats = coords.map(coord=>this.toLnglat(coord)) // update properties
+            if(this.modifyEvent.geomType=='LINESTRING')
+                this.modifyEvent.feature.properties['周長'] = getLength(lnglats).toFixed(0)+'公尺'
+            if(this.modifyEvent.geomType=='POLYGON'){
+                this.modifyEvent.feature.properties['周長'] = getLength(lnglats).toFixed(0)+'公尺'
+                this.modifyEvent.feature.properties['面積'] = getArea(lnglats).toFixed(0)+'平方公尺'
+            }
+        }
         if(this.drawEvent.active&&!this.moveEvent.moved){
             this.drawEvent.path.push(this.client2coord([e.clientX,e.clientY])) 
-            // let path = this.drawEvent.path
-            // if(path.length>2){
-            //     let i = path.length-1
-            //     let c = circleDefinedBy3Points(...path[i-2],...path[i-1],...path[i])
-            //     console.log(c)
-            // }
+        }
+        if(this.selectEvent.active){
+            if(this.selectEvent.moved){
+                const swap = (a,b)=>{b=[a,a=b][0]}
+                let bbox = this.selectEvent.bbox
+                if(bbox[0]>bbox[2])
+                    swap(bbox[0],bbox[2])
+                if(bbox[1]>bbox[3])
+                    swap(bbox[1],bbox[3])
+                const isInBbox = feature=>{
+                    let fgb = feature.geometry.bbox
+                    return fgb[0]>=bbox[0]&&fgb[1]>=bbox[1]&&fgb[2]<=bbox[2]&&fgb[3]<=bbox[3]
+                }
+                this.selectEvent.features = this.vector.filter(feature=>isInBbox(feature))
+                this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features:this.selectEvent.features}}))
+            }else{
+                let feature = this.detectClient([e.clientX,e.clientY])
+                if(feature){
+                    if(this.selectEvent.features.includes(feature)){
+                        this.selectEvent.features = this.selectEvent.features.filter(x=>x!=feature)
+                    }else{
+                        this.selectEvent.features.push(feature)
+                    }
+                    this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features:this.selectEvent.features}}))
+                }
+            }
+        }else if(!this.moveEvent.moved){
+            let feature = this.detectClient([e.clientX,e.clientY])
+            this.selectEvent.features = feature?[feature]:[]
+            this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features:this.selectEvent.features}}))
         }
         this.moveEvent.active = false
         this.moveEvent.moved = false
+        this.selectEvent.active = false
+        this.selectEvent.moved = false
+        this.modifyEvent.anchor = -1
         e.target.style.cursor = 'grab'
     }
     handleDblclick(e){
@@ -338,7 +439,7 @@ class GisMap{
             let properties = {
                 '周長': getLength(path.map(this.toLnglat)).toFixed(0)+'公尺'
             }
-            if(this.drawEvent.snap==true){
+            if(this.drawEvent.snap==true&&path.length>3){
                 path[path.length-1] = path[0].slice()
                 geomType = 'Polygon'
                 properties['面積'] = getArea(path.map(this.toLnglat)).toFixed(0)+'平方公尺'
@@ -453,9 +554,16 @@ class GisMap{
         if(!(url in this.tiles)){
             this.tiles[url] = {}
         }
+        var subDomain = url.match(/\{([a-z])-([a-z])\}/)
         tiles.map(tile=>{
             let xyz = [tile.x,tile.y,tile.z]
             let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
+            if(subDomain){
+                let charStart = subDomain[1].charCodeAt(0)
+                let chartEnd = subDomain[2].charCodeAt(0)
+                let domain = String.fromCharCode(charStart+Math.floor(Math.random()*(chartEnd-charStart)))
+                src = src.replace(subDomain[0],domain)
+            }
             if(!(xyz in this.tiles[url])){
                 var img = new Image()
                 img.src = src
@@ -588,40 +696,38 @@ class GisMap{
             this.vector.push(feature)
         })   
     }
-    detectClient(e){
+    detectClient(client){
         const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2))
         const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
         const isInBbox = (p,bbox)=>p[0]>=bbox[0]&&p[0]<=bbox[2]&&p[1]>=bbox[1]&&p[1]<=bbox[3]
-        let point = this.client2coord([e.clientX,e.clientY])
+        let point = this.client2coord(client)
         let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox)).filter(feature=>feature.geometry.type.includes('Point')?true:isInBbox(point,feature.geometry.bbox))
         for(let feature of features){
             let geom = feature.geometry
             let isInGeometry = false
             switch(geom.type.toUpperCase()){
                 case 'POINT':
-                    isInGeometry = Euclidean([e.clientX,e.clientY],this.coord2client(geom.coordinates)) < (feature.properties.radius||5);break;
+                    isInGeometry = Euclidean(client,this.coord2client(geom.coordinates)) < (feature.properties.radius||5);break;
                 case 'MULTIPOINT':
-                    isInGeometry = geom.coordinates.some(coord=>Euclidean([e.clientX,e.clientY],this.coord2client(coord)) < 5);break;
+                    isInGeometry = geom.coordinates.some(coord=>Euclidean(client,this.coord2client(coord)) < 5);break;
                 case 'LINESTRING':
-                    isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance([e.clientX,e.clientY],coords[i-1],coord)<5);break;
+                    isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance(client,coords[i-1],coord)<5);break;
                 case 'MULTILINESTRING':
-                    isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance([e.clientX,e.clientY],coords[i-1],coord)<5));break;
+                    isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance(client,coords[i-1],coord)<5));break;
                 case 'POLYGON':
                     isInGeometry = geom.coordinates.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr));break;
                 case 'MULTIPOLYGON':
                     isInGeometry = geom.coordinates.some(arr2d=>arr2d.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr)));break;
             }
-            if(isInGeometry){
-                this.selectedFeature = feature
+            if(isInGeometry)
                 return feature
-            }
         }
         return false
     }
     renderVector(feature,style={}){
         let tolerance = Math.pow(2,18-this.view.zoom)
         tolerance = tolerance<1?0:tolerance
-        if(feature==this.selectedFeature){
+        if(this.selectEvent.features.includes(feature)){
             Object.assign(style,{
                 stroke: 'red',
                 fill: 'rgba(255,0,0,0.3)'
@@ -735,5 +841,27 @@ class GisMap{
         let jsonString = wkt.slice(type.length).replace(/[\d.]+\s[\d.]+/g,'[$&]').replace(/\s/g,',').replace(/\(/g,'[').replace(/\)/g,']')
         let coordinates = JSON.parse(jsonString)
         this.addVector(type,coordinates,properties)
+    }
+    perpendicular(p,p1,p2){
+        var x = p1[0],
+            y = p1[1],
+            dx = p2[0]-p1[0],
+            dy = p2[1]-p1[1]
+        if(dx!==0||dy!==0){
+            var t = ((p[0]-x)*dx+(p[1]-y)*dy)/(dx*dx+dy*dy) //scale of projection
+            if(t>1){
+                x = p2[0]
+                y = p2[1]
+            }else if(t>0){
+                x+= dx*t
+                y+= dy*t
+            }
+        }
+        dx = p[0]-x
+        dy = p[1]-y
+        return {
+            distance: Math.sqrt(dx*dx + dy*dy),
+            closest: [x,y]
+        }
     }
 }
