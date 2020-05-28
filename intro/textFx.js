@@ -66,10 +66,9 @@ function hoppingText(element){
         })
     }
 }
-function typingText(element,delay=200){
+function typingText(element,texts=[''],delay=200){
     let cursor = document.createElement('span')
     let span = document.createElement('span')
-    let text = element.textContent
     element.textContent = ''
     Object.assign(cursor.style,{
         margin: '2px',
@@ -86,15 +85,20 @@ function typingText(element,delay=200){
     })
     element.appendChild(span)
     element.appendChild(cursor)
-    let idx = 0
+    let curIdx = 0, txtIdx = 0
     function randomDelay(){
-        setTimeout(()=>{
-            if(idx<=text.length){
-                span.textContent = text.slice(0,idx)
-                idx++
-                randomDelay()
-            }
-        },Math.random()*delay+delay)
+        let DELAY = Math.random()*delay+delay
+        if(curIdx<=texts[txtIdx].length){
+            span.textContent = texts[txtIdx].slice(0,curIdx)
+            curIdx++
+        }else{
+            curIdx = 0
+            txtIdx = txtIdx<texts.length-1?txtIdx+1:0
+            DELAY = 1500
+        }
+        setTimeout(()=>{   
+            randomDelay()
+        },DELAY)
     }
     randomDelay()
 }

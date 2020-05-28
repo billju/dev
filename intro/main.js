@@ -58,16 +58,17 @@ hiddenText(document.getElementById('chuboy'),{padding:'25px',fontWeight:'bold'},
 hiddenText(document.getElementById('web-dev'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
 hiddenText(document.getElementById('data-analyst'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'right')
 hiddenText(document.getElementById('metro'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
-typingText(document.getElementById('description'),100)
-hoppingText(document.getElementById('my-skills'))
-rotateText(document.getElementById('how-i-apply'),[
-    'How I apply IT to life',
-    'Make and solve',
-    'Make life better',
+typingText(document.getElementById('typing-text'),[
+    'fascinated with app creation',
+    'explore any opportunity every day',
+    'get awesome idea and just do it'
 ],100)
-// window.addEventListener('scroll',e=>{
-//     chart.canvas.style.top = window.scrollY+'px'
-// })
+hoppingText(document.getElementById('my-skills'))
+// rotateText(document.getElementById('how-i-apply'),[
+//     '技術結合生活',
+//     'Tech and Life',
+//     '增添便利性',
+// ],100)
 skr()
 
 class Wave{
@@ -142,7 +143,7 @@ document.querySelectorAll('.shaker').forEach(el=>{
             Object.assign(fs.style,{
                 transform: 'scale(1) translateY(0%)',
                 opacity: 1,
-                transition: '1s',
+                transition: '0.5s',
             })
             document.querySelector('#fullscreen img').src = '../static/image/greenband.gif'
             document.querySelector('#fullscreen h1').textContent = 'bang'
@@ -158,3 +159,4 @@ function closeFS(){
     })
     // document.getElementById('fullscreen').classList.remove('active')
 }
+smoothScroll(document.querySelector('.smooth-scroll-container'))

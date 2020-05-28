@@ -179,11 +179,11 @@ class GisMap{
                 var fricion = 0.1
                 var vx = this.moveEvent.vx*(1-fricion)
                 var vy = this.moveEvent.vy*(1-fricion)
-                var t = this.moveEvent.t-1
-                Object.assign(this.moveEvent,{vx,vy,t})
+                Object.assign(this.moveEvent,{vx,vy})
                 if(this.moveEvent.active==false){
                     this.setView([vx,vy])
                 }
+                this.moveEvent.t--
             }
             if(this.zoomEvent.t>0){
                 var t = 1-(this.zoomEvent.t-1)/this.zoomEvent.frames
@@ -354,6 +354,12 @@ class GisMap{
         if(this.modifyEvent.anchor!=-1){
             let i = this.modifyEvent.anchor
             this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
+            if(this.modifyEvent.geomType=='POLYGON'){
+                if(i==0)
+                    this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[i]
+                else if(i==this.modifyEvent.coords.length-1)
+                    this.modifyEvent.coords[0] = this.modifyEvent.coords[i]
+            }
         }else{
             if(this.moveEvent.active){
                 var vx = - e.clientX + this.moveEvent.x
@@ -440,7 +446,7 @@ class GisMap{
                 '周長': getLength(path.map(this.toLnglat)).toFixed(0)+'公尺'
             }
             if(this.drawEvent.snap==true&&path.length>3){
-                path[path.length-1] = path[0].slice()
+                path[path.length-1] = path[0]
                 geomType = 'Polygon'
                 properties['面積'] = getArea(path.map(this.toLnglat)).toFixed(0)+'平方公尺'
                 path = [path]

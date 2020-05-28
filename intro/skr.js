@@ -1,18 +1,43 @@
 function skr(node=document.body){
-    let datas = Object.entries(node.dataset)
     let rect = node.getBoundingClientRect()
     let keyPoints = []
+    let animation = undefined
+    const animations = {
+        'fade-up':{from:{transform:'translateY(50%)',opacity:0},to:{transform:'translateY(0)',opacity:1}},
+        'fade-down':{from:{transform:'translateY(-50%)',opacity:0},to:{transform:'translateY(0)',opacity:1}},
+        'fade-left':{from:{transform:'translateX(50%)',opacity:0},to:{transform:'translateX(0)',opacity:1}},
+        'fade-right':{from:{transform:'translateX(-50%)',opacity:0},to:{transform:'translateX(0)',opacity:1}},
+    }
     function findKeyPoints(){
         keyPoints = []
-        for(let data of datas){
-            let key = data[0]
+        for(let key in node.dataset){
             let y = undefined
-            if(key=='center')
-                y = Math.round((rect.bottom-rect.top)/2)
-            if(key=='top')
-                y = node.offsetTop-window.innerHeight
-            if(key=='bottom')
-                y = node.offsetTop+node.clientHeight
+            switch(key){
+                case 'above':
+                    y = node.offsetTop-window.innerHeight;break;
+                case 'top':
+                    y = node.offsetTop;break;
+                case 'center': 
+                    y = Math.round((rect.bottom-rect.top)/2);break;
+                case 'bottom':
+                    y = node.offsetTop+node.clientHeight;break;
+                case 'once':
+                    
+                    let offset = parseFloat(node.dataset['onceOffset'])||1
+                    console.log(node.dataset)
+                    animation = {
+                        y: node.offsetTop-window.innerHeight+node.clientHeight*offset,
+                        fromStyle: animations[node.dataset[key]].from,
+                        toStyle: animations[node.dataset[key]].to,
+                        active: false,
+                        transitionDuration: node.dataset['once-duration']||1000,
+                        transitionDelay: node.dataset['once-delay']||0,
+                        transitionTimingFunction: node.dataset['once-timing-function']||'ease'
+                    }
+                default: break;
+            }   
+            if(key.match(/top(\d+)/))
+                y = node.offsetTop+parseInt(key.match(/top(\d+)/)[1])   
             let numeric = key.match(/^(\d+)$/g)
             if(numeric)
                 y = parseInt(numeric[1])
@@ -21,10 +46,24 @@ function skr(node=document.body){
         }
     }
     findKeyPoints()
-    if(datas.length){
-        
+    if(animation){
+        node.style.transitionDuration = animation.transitionDuration+'ms'
+        node.style.transitionDelay = animation.transitionDelay
+        node.style.transitionTimingFunction = animation.transitionTimingFunction
+        function handleScroll(){
+            if(window.scrollY>animation.y!=animation.active){
+                Object.keys(animation.fromStyle).map(key=>{
+                    node.style[key] = animation.active?animation.fromStyle[key]:animation.toStyle[key]
+                })
+                animation.active = !animation.active
+            }
+        }
+        window.addEventListener('scroll',handleScroll)
+        window.addEventListener('resize',findKeyPoints)
+        handleScroll()
+    }else if(keyPoints.length){
+        let initStyle = node.getAttribute('style')?node.getAttribute('style'):''
         keyPoints.sort((a,b)=>a.y-b.y)
-        console.log(keyPoints)
         function getMatchArray(string,regexp){
             return Array.from(string.matchAll(regexp),x=>x[0])
         }
@@ -48,7 +87,7 @@ function skr(node=document.body){
                     break
                 }
             }
-            node.style.cssText = cssText
+            node.style.cssText = cssText+';'+initStyle
         }
         window.addEventListener('scroll',handleScroll)
         window.addEventListener('resize',findKeyPoints)
@@ -59,25 +98,26 @@ function skr(node=document.body){
     }
 }
 
-function smoothScroll(){
-    const main = document.getElementById('main');
-    var dy=0, sy=0
-    // Bind a scroll function
-    window.addEventListener('scroll', e=>{
-        console.log(e)
-        dy = window.pageYOffset-sy
-        sy = window.pageYOffset;
-    });
-
-    function render(){
-    //   dy*= 0.99
-    //   dy = Math.floor(dy * 100) / 100;
-    main.style.transform = `translate3d(0, ${-dy}px, 0)`;
-    window.requestAnimationFrame(render);
-    }
-    render()
-
-    function interpolate(a, b, n) {
-        return (1 - n) * a + n * b;
-    }
+function smoothScroll(container){
+    document.addEventListener('DOMContentLoaded', () => { 
+        container.style.overflow = 'hidden'
+        container.style.position = 'fixed'
+        container.style.height = '100vh'
+        const duration = 1000
+        const timingFunction = 'cubic-bezier(0.23, 1, 0.32, 1)'
+        const translator = container.firstElementChild
+        translator.style.transform = `translateY(${-window.scrollY}px)`
+        translator.style.transition = `transform ${duration}ms ${timingFunction}`
+        const hitbox = container.nextElementSibling
+        hitbox.style.height = translator.offsetHeight+'px'
+        setTimeout(()=>{
+            hitbox.style.height = translator.offsetHeight+'px'
+        },1000)
+        window.addEventListener('scroll',()=>{
+            translator.style.transform = `translateY(${-window.scrollY}px)`
+        })
+        window.addEventListener('resize',()=>{
+            hitbox.style.height = translator.offsetHeight+'px'
+        })
+    })
 }
