@@ -33,6 +33,9 @@ html,body{
         background-position: 300px 0;
     }
 }
+.bg-light-white{
+    background: rgba(255,255,255,0.7);
+}
 .mouse{
     display: inline-block;
     margin: auto;
@@ -73,7 +76,7 @@ html,body{
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,255,0.8);
+    background: rgba(0,0,0,0.5);
     transform: translateY(50%);
     opacity: 0;
     transition: 0.5s;
@@ -103,6 +106,9 @@ html,body{
         margin: auto;
         margin: 10px;
     }
+}
+svg{
+    cursor: pointer;
 }
 .shaker{
     transition-duration: 1s;
@@ -164,6 +170,10 @@ html,body{
 }
 .close::after{
     transform: rotate(-45deg);
+}
+a.neon-btn{
+    text-decoration: none;
+    color: #fff;
 }
 .neon-btn{
     position: relative;

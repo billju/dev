@@ -66,7 +66,7 @@ function hoppingText(element){
         })
     }
 }
-function typingText(element,texts=[''],delay=200){
+function typingText(element,texts=[''],delay=50){
     let cursor = document.createElement('span')
     let span = document.createElement('span')
     element.textContent = ''

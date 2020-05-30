@@ -61,73 +61,219 @@ typingText(document.getElementById('typing-text'),[
     'Hi, my name is chuboy.',
     'I am a developer and data analyst.',
     "Let's scroll down and explore what I created."
-],100)
+],50)
 hoppingText(document.getElementById('my-skills'))
 rotateText(document.getElementById('how-i-apply'),[
-    '技術結合生活',
-    'Tech and Life',
-    '增添便利性',
+    '我的生活記錄',
+    '構想的啟發',
+    '讓繁瑣工作變得有趣',
 ],100)
 skr()
 
-// class Wave{
-//     constructor(){
+class Pulse{
+    constructor(){
 
-//     }    
-//     set(len){
-//         this.coefs = Array.from(Array(len),()=>Math.random())
-//         // 公倍數
-//         this.mul = 1
-//         const gcd = (a,b)=>!b?a:gcd(b,a%b)
-//         const lcm = (a,b)=>(a*b)/gcd(a,b)
-//         for(let i=1;i<=len;i++){
-//             this.mul = lcm(this.mul,i)
-//         }
-//         let peak = this.coefs.reduce((acc,cur)=>acc+cur,0)
-//         this.coefs = this.coefs.map(x=>x/peak)
-//     }
-//     f(x){
-//         return this.coefs.reduce((acc,cur,i)=>acc+cur*Math.sin(x/(i+1)),0)
-//     }
-//     getPathD(bins,width,height){
-//         let w = width/bins
-//         let points = Array.from(Array(bins).keys(),i=>{
-//             let x = Math.round(i*w)
-//             let y = Math.round(Math.random()*height)
-//             return {x,y}
-//         })
-//         return this.getSmoothSvgPath(points,0.2)
-//     }
-//     getPath(bins,width,height){
-//         let path = document.createElementNS('http://www.w3.org/2000/svg','path')
-//         path.setAttribute('d',this.getPathD(bins,width,height))
-//         return path
-//     }
-//     getSmoothSvgPath(points,smooth){
-//         let cp = [] //control point
-//         for(let i=0;i<points.length-2;i++){
-//             cp.push({
-//                 x: Math.round((points[i+2].x-points[i].x)*smooth),
-//                 y: Math.round((points[i+2].y-points[i].y)*smooth)
-//             })
-//         }
-//         return points.reduce((acc,cur,i,arr)=>{
-//             switch(i){
-//                 case 0:
-//                     return acc+`L${cur.x} ${cur.y}`
-//                 case 1:
-//                     return acc+`C${arr[0].x} ${arr[0].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
-//                 case arr.length-1:
-//                     return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x} ${cur.y},${cur.x} ${cur.y}`+`L${cur.x} 0`
-//                 default: 
-//                     return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
-//             }
-//         },'M0 0')
-//     }
-// }
-// let wave = new Wave()
+    }
+    lcm(len){
+        this.coefs = Array.from(Array(len),()=>Math.random())
+        // 公倍數
+        this.mul = 1
+        const gcd = (a,b)=>!b?a:gcd(b,a%b)
+        const lcm = (a,b)=>(a*b)/gcd(a,b)
+        for(let i=1;i<=len;i++){
+            this.mul = lcm(this.mul,i)
+        }
+        let peak = this.coefs.reduce((acc,cur)=>acc+cur,0)
+        this.coefs = this.coefs.map(x=>x/peak)
+    }
+    f(x){
+        return this.coefs.reduce((acc,cur,i)=>acc+cur*Math.sin(x/(i+1)),0)
+    }
+}
+class Wave{
+    constructor(svg){
+        this.svg = svg
+        this.resize()
+    }
+    clear(){
+        while(this.svg.lastChild)
+            this.svg.removeChild(this.svg.lastChild)
+    }
+    resize(){
+        this.W = this.svg.clientWidth
+        this.H = this.svg.clientHeight
+        this.svg.setAttribute('viewBox',`0 0 ${this.W} ${this.H}`)
+    }
+    add(shape='wave',styles={},from=1,to=0,bins=10){
+        shape = ['wave','pulse','triangle'].includes(shape)?shape:'wave'
+        let child = this.getPath(shape,from,to,bins)
+        for(let key in styles){
+            child.setAttribute(key,styles[key])
+        }
+        this.svg.appendChild(child)
+    }
+    getPath(shape,from,to,bins){
+        let path = document.createElementNS('http://www.w3.org/2000/svg','path')
+        let w = Math.floor(this.W/bins)
+        let h = this.H*Math.abs(from-to)
+        let points = Array.from(Array(bins+1).keys(),i=>{
+            let x = Math.round(i*w)
+            let y = Math.round(Math.random()*h)
+            return {x,y}
+        })
+        let d, startY = this.H*from
+        switch(shape){
+            case 'wave': 
+                d = this.getSmoothSvgPath(points,startY)
+                break;
+            case 'pulse':
+                d = this.getPulse(points,startY)
+                break;
+            case 'triangle': 
+                d = this.getTriangle(points,startY)
+                break;
+            default: break;
+        }
+        path.setAttribute('d',d);
+        return path
+    }
+    getPulse(points,startY=0){
+        return points.reduce((acc,cur,i,arr)=>{
+            switch(i){
+                case 0:
+                    return acc+`L${cur.x} ${cur.y}`
+                case arr.length-1:
+                    return acc+`L${cur.x} ${arr[i-1].y},${cur.x} ${startY}`
+                default: 
+                    return acc+`L${cur.x} ${arr[i-1].y},${cur.x} ${cur.y}`
+            }
+        },`M0 ${startY}`)
+    }
+    getTriangle(points,startY=0){
+        return points.reduce((acc,cur,i,arr)=>{
+            switch(i){
+                case 0:
+                    return acc
+                case arr.length-1:
+                    return acc+`L${cur.x} ${cur.y},${cur.x} ${startY}`
+                default: 
+                    return acc+`L${cur.x} ${cur.y}`
+            }
+        },`M0 ${startY}`)
+    }
+    getSmoothSvgPath(points,startY=0,smooth=0.2){
+        let cp = [] //control point
+        for(let i=0;i<points.length-2;i++){
+            cp.push({
+                x: Math.round((points[i+2].x-points[i].x)*smooth),
+                y: Math.round((points[i+2].y-points[i].y)*smooth)
+            })
+        }
+        return points.reduce((acc,cur,i,arr)=>{
+            switch(i){
+                case 0:
+                    return acc+`L${cur.x} ${cur.y}`
+                case 1:
+                    return acc+`C${arr[0].x} ${arr[0].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
+                case arr.length-1:
+                    return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x} ${cur.y},${cur.x} ${cur.y}`+`L${cur.x} ${startY}`
+                default: 
+                    return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
+            }
+        },`M0 ${startY}`)
+    }
+}
+let waveTop = new Wave(document.getElementById('wave-top'))
+waveTop.init = ()=>{
+    waveTop.clear()
+    waveTop.add('pulse',{
+        fill: '#343a40',
+    },0,0.5,10)
+    waveTop.add('pulse',{
+        fill: '#343a40',
+        opacity: 0.7,
+    },0,0.7,10)
+    waveTop.add('pulse',{
+        fill: '#343a40',
+        opacity: 0.5,
+    },0,1,10)
+}
+waveTop.init()
+waveTop.svg.onclick = e=>{waveTop.init()}
 
-document.querySelectorAll('.shaker').forEach(el=>{
+let waveBottom = new Wave(document.getElementById('wave-bottom'))
+waveBottom.init = ()=>{
+    waveBottom.clear()
+    waveBottom.add('wave',{
+        fill: '#007bff',
+    },1,0,10)
+    waveBottom.add('wave',{
+        fill: '#007bff',
+        opacity: 0.7,
+    },1,0.7,10)
+    waveBottom.add('wave',{
+        fill: '#007bff',
+        opacity: 0.5,
+    },1,0.5,10)
+}
+waveBottom.init()
+waveBottom.svg.onclick = e=>{waveBottom.init()}
+let pulseBottom = new Wave(document.getElementById('pulse'))
+pulseBottom.init = ()=>{
+    pulseBottom.clear()
+    pulseBottom.add('triangle',{
+        fill: 'yellowgreen',
+    },1,0,10)
+    pulseBottom.add('triangle',{
+        fill: 'yellowgreen',
+        opacity: 0.7,
+    },1,0.7,10)
+    pulseBottom.add('triangle',{
+        fill: 'dodgerblue',
+        opacity: 0.5,
+    },1,0.5,10)
+}
+pulseBottom.init()
+pulseBottom.svg.onclick = e=>{pulseBottom.init()}
+const shakers = [
+    {
+        src:'../static/image/pomodoro.gif',
+        href: 'https://codepen.io/HandsomeChuBoy/full/agMBRX',
+        title: '',
+        description: ''
+    },
+    {
+        src:'../static/image/tetris.gif',
+        href: 'https://codepen.io/HandsomeChuBoy/full/YoVNoW',
+        title: '',
+        description: ''
+    },
+    {
+        src:'../static/image/agario.gif',
+        href: 'https://codepen.io/HandsomeChuBoy/full/dzNxQO',
+        title: '',
+        description: ''
+    },
+    {
+        src:'../static/image/draggabletetris.gif',
+        href: 'https://codepen.io/HandsomeChuBoy/full/RXxdVd',
+        title: 'Draggable Tetris',
+        description: ''
+    },
+    {
+        src:'../static/image/freecell.gif',
+        href: 'https://codepen.io/HandsomeChuBoy/full/NZQwLR',
+        title: '',
+        description: ''
+    },
+    {
+        src:'../static/image/greenband.gif',
+        href: 'https://codepen.io/HandsomeChuBoy/full/mQvxPV',
+        title: '',
+        description: ''
+    },
+]
+document.querySelectorAll('.shaker').forEach((el,i)=>{
     el.onclick = e=>{
         let rect = el.getBoundingClientRect()
         let fs = document.getElementById('fullscreen')
@@ -144,9 +290,10 @@ document.querySelectorAll('.shaker').forEach(el=>{
                 opacity: 1,
                 transition: '0.5s',
             })
-            document.querySelector('#fullscreen img').src = '../static/image/greenband.gif'
-            document.querySelector('#fullscreen h1').textContent = 'bang'
-            document.querySelector('#fullscreen p').textContent
+            document.querySelector('#fullscreen a').href = shakers[i].href
+            document.querySelector('#fullscreen img').src = shakers[i].src
+            document.querySelector('#fullscreen h1').textContent = shakers[i].title
+            document.querySelector('#fullscreen p').textContent = shakers[i].description
         },100)
     }
 })

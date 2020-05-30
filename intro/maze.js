@@ -1,56 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A*</title>
-</head>
-<body>
-    <svg id="maze"></svg>
-    <!-- <canvas id="maze"></canvas> -->
-    <div id="control-panel" style="position:fixed;top:0;right:0">
-        <button onclick="nextStep()">start</button>
-        <button onclick="resetMaze()">reset</button>
-    </div>
-</body>
-<style>
-    *{
-        font-family: sans-serif;
-    }
-    html,body{
-        margin: 0;
-        height: 100%;
-    }
-    #maze{
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        position: relative;
-    }
-    .rect{
-        position: absolute;
-        background: #fff;
-        border: 1px solid #000;
-        box-shadow: 5px 5px 5px 0 #000;
-        text-align: center;
-        transform-origin: center;
-        transition: transform 0.1s;
-        font-size: 12px;
-        user-select: none;
-    }
-    #control-panel{
-        padding: 15px;
-        border-radius: 5px;
-        background: rgba(0,0,0,0.3);
-        user-select: none;
-    }
-    text{
-        user-select: none;
-        font-size: 12px;
-        font-family: sans-serif;
-    }
-</style>
-<script>
 class Node{
     constructor(point=[0,0]){
         this.point = point
@@ -223,9 +170,10 @@ class Maze{
         })
     }
     render(e){
+        let rect = this.container.getBoundingClientRect()
         if(this.event.active){
-            let dx = Math.floor((e.clientX-this.container.clientLeft)/this.size)
-            let dy = Math.floor((e.clientY-this.container.clientTop)/this.size)
+            let dx = Math.floor((e.clientX-rect.left)/this.size)
+            let dy = Math.floor((e.clientY-rect.top)/this.size)
             let idx = dx*this.rows+dy
             if(this.event.index!=idx){
                 let scale = 1.1, coef = this.size*(scale-1), pad = 5
@@ -307,8 +255,17 @@ const color = {
     lime: '#5DE2BF'
 }
 const maze = new Maze(document.getElementById('maze'))
+maze.waiting = false
 var startNode, endNode, timeout, astar
 resetMaze()
+maze.container.onclick = e=>{
+    if(maze.waiting){
+        resetMaze()
+        maze.waiting = false
+    }else{
+        nextStep()
+    }
+}
 function nextStep(){
     let msg = astar.nextStep()
     astar.unvisited.map(node=>{
@@ -331,11 +288,12 @@ function nextStep(){
         })
         maze.setNodeFill(startNode,color.blue)
         maze.setNodeFill(endNode,color.red)
+        maze.waiting = true
     }else{
-        alert('no feasible path')
+        maze.waiting = true
+        // alert('no feasible path')
     }
 }
-
 function resetMaze(){
     clearTimeout(timeout)
     astar = new Astar(maze.nodes,startNode,endNode)
@@ -350,44 +308,3 @@ function resetMaze(){
 window.addEventListener('resize',()=>{
     resetMaze()
 })
-function makeElementMovable(element){
-    // do not assign top,left,right,bottom in css class
-    element.addEventListener('mousedown', e=>{
-        element.dataset.dragging = true
-        element.dataset.x = e.clientX
-        element.dataset.y = e.clientY
-    })
-    window.addEventListener('mousemove', e=>{
-        if(element.dataset.dragging=='true'){
-            let left = element.offsetLeft+e.clientX-element.dataset.x
-            let top = element.offsetTop+e.clientY-element.dataset.y
-            if(left+element.clientWidth/2>=window.innerWidth/2){
-                let right = window.innerWidth-left-element.clientWidth
-                element.style.left = ''
-                element.style.right = right+'px'
-            }else{
-                element.style.right = ''
-                element.style.left = left+'px'
-            }
-            if(top+element.clientHeight/2>window.innerHeight/2){
-                let bottom = window.innerHeight-top-element.clientHeight
-                element.style.top = ''
-                element.style.bottom = bottom+'px'
-            }else{
-                element.style.bottom = ''
-                element.style.top = top+'px'
-            }
-            element.dataset.x = e.clientX
-            element.dataset.y = e.clientY
-        }
-    })
-    window.addEventListener('mouseup', e=>{
-        element.dataset.dragging = false
-    })
-    window.addEventListener('mouseleave', e=>{
-        element.dataset.dragging = false
-    })
-}
-makeElementMovable(document.getElementById('control-panel'))
-</script>
-</html>

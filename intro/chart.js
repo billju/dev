@@ -77,9 +77,11 @@ class Chart{
             den /= terms[termIndex]
             termIndex = termIndex==terms.length-1?0:termIndex+1
         }
+        let fixed = -Math.floor(Math.log10(den))
         return {
             bins: bins,
-            step: range/bins
+            step: range/bins,
+            fixed: fixed>0?fixed:0
         }
     }
     getCoords(data=this.data){
@@ -202,7 +204,7 @@ class Chart{
             let y = yStart-offsetY-i*sizeY
             this.ctx.moveTo(xStart,y)
             this.ctx.lineTo(xEnd,y)
-            let value = Math.round(stepY*(offsetY/sizeY+i))
+            let value = (stepY*(offsetY/sizeY+i)).toFixed(binsY.fixed)
             let {textWidth, lineHeight} = this.measureText(value)
             this.ctx.fillText(value,xStart-textWidth-5,y+lineHeight/2)
         }
@@ -218,7 +220,7 @@ class Chart{
             let x = xStart+offsetX+i*sizeX
             this.ctx.moveTo(x,yStart)
             this.ctx.lineTo(x,yEnd)
-            let value = Math.round(stepX*(offsetX/sizeX+i))
+            let value = (stepX*(offsetX/sizeX+i)).toFixed(binsX.fixed)
             let {textWidth, lineHeight} = this.measureText(value)
             this.ctx.fillText(value,x-textWidth/2,yStart+lineHeight+5)
         }

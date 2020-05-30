@@ -1,5 +1,4 @@
 function skr(node=document.body){
-    let rect = node.getBoundingClientRect()
     let keyPoints = []
     let animation = undefined
     const animations = {
@@ -13,18 +12,12 @@ function skr(node=document.body){
         for(let key in node.dataset){
             let y = undefined
             switch(key){
-                case 'above':
-                    y = node.offsetTop-window.innerHeight;break;
                 case 'top':
                     y = node.offsetTop;break;
-                case 'center': 
-                    y = Math.round((rect.bottom-rect.top)/2);break;
                 case 'bottom':
                     y = node.offsetTop+node.clientHeight;break;
-                case 'once':
-                    
+                case 'once':                    
                     let offset = parseFloat(node.dataset['onceOffset'])||1
-                    console.log(node.dataset)
                     animation = {
                         y: node.offsetTop-window.innerHeight+node.clientHeight*offset,
                         fromStyle: animations[node.dataset[key]].from,
@@ -41,6 +34,7 @@ function skr(node=document.body){
             let numeric = key.match(/^(\d+)$/g)
             if(numeric)
                 y = parseInt(numeric[1])
+            // warp up if matched
             if(y!=undefined)
                 keyPoints.push({y, cssText:node.dataset[key]})
         }
@@ -120,5 +114,6 @@ function smoothScroll(container){
         window.addEventListener('resize',()=>{
             hitbox.style.height = translator.offsetHeight+'px'
         })
+        window.dispatchEvent(new Event('resize'))
     })
 }
