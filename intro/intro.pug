@@ -35,7 +35,6 @@ html(lang="en")
                         .col-sm-12.col-md-5
                             .display-4#web-dev web developer
                             .display-4#data-analyst data analyst
-                            .display-4#metro metro planner
                     p.text-center#typing-text
                     .d-flex.justify-content-center
                         .mouse
@@ -69,7 +68,7 @@ html(lang="en")
                                     span.badge.badge-light.mx-1 socket.io
                                     span.badge.badge-light.mx-1 Next.js SSR
                             .col-sm-12.col-md-6.px-3.py-3
-                                h1.heading(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片
+                                h1.text-light.heading(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片
                                 img(style="max-width:100%;margin-top:-100px" src="../static/image/chatroom.gif", alt="")
                         .py-5
                         .w-100.d-flex.justify-content-around.bg-danger.py-3
@@ -142,7 +141,7 @@ html(lang="en")
                                         .bg-img(style="height:300px;background:url(../static/image/tetris.gif)")
                                         .mask visit site
                                     .px-2.py-2
-                                        h3 Pomodoro
+                                        h3 Tetris
                                         p stay focus
                             .col-sm-12.col-md-4
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
@@ -150,14 +149,14 @@ html(lang="en")
                                         .bg-img(style="height:400px;background:url(../static/image/agario.gif)")
                                         .mask visit site
                                     .px-2.py-2
-                                        h3 Pomodoro
+                                        h3 Agar.io
                                         p stay focus
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                                     .hover-mask
                                         .bg-img(style="height:300px;background:url(../static/image/draggableTetris.gif)")
                                         .mask visit site
                                     .px-2.py-2
-                                        h3 Pomodoro
+                                        h3 Draggable Tetris
                                         p stay focus
                             .col-sm-12.col-md-4
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
@@ -165,19 +164,19 @@ html(lang="en")
                                         .bg-img(style="height:250px;background:url(../static/image/freecell.gif)")
                                         .mask visit site
                                     .px-2.py-2
-                                        h3 Pomodoro
+                                        h3 Freecell
                                         p stay focus
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                                     .hover-mask
                                         .bg-img(style="height:250px;background:url(../static/image/greenband.gif)")
                                         .mask visit site
                                     .px-2.py-2
-                                        h3 Pomodoro
+                                        h3 Greenband
                                         p stay focus
                 footer.position-relative(style="height:500px").bg-primary
                     canvas#fractal-tree.w-100.h-100.position-absolute
                     .position-absolute(style="bottom:0;left:0").px-3.py-3.text-light
-                        h3.display-4.neon-btn.my-3 contact me
+                        h3.display-4.neon-btn.my-3 contact
                             span
                             span
                             span
@@ -188,8 +187,7 @@ html(lang="en")
                             img(src="../static/image/github.png")
                             img(src="../static/image/codepen.png")
         .smooth-scroll-hitbox
-        #fullscreen.bg-dark.text-light
-            .close(onclick="closeFS()")
+        #fullscreen.bg-dark.text-light(onclick="closeFS()")
             .container.h-100.d-flex.flex-column.justify-content-center.align-items-center
                 img(src="", alt="" style="max-width: 100%")
                 h1

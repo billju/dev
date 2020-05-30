@@ -103,6 +103,7 @@ function smoothScroll(container){
         container.style.overflow = 'hidden'
         container.style.position = 'fixed'
         container.style.height = '100vh'
+        container.style.width = '100vw'
         const duration = 1000
         const timingFunction = 'cubic-bezier(0.23, 1, 0.32, 1)'
         const translator = container.firstElementChild

@@ -57,76 +57,75 @@ setInterval(()=>{dataset.random(50)},2000)
 hiddenText(document.getElementById('chuboy'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'top')
 hiddenText(document.getElementById('web-dev'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
 hiddenText(document.getElementById('data-analyst'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'right')
-hiddenText(document.getElementById('metro'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
 typingText(document.getElementById('typing-text'),[
-    'fascinated with app creation',
-    'explore any opportunity every day',
-    'get awesome idea and just do it'
+    'Hi, my name is chuboy.',
+    'I am a developer and data analyst.',
+    "Let's scroll down and explore what I created."
 ],100)
 hoppingText(document.getElementById('my-skills'))
-// rotateText(document.getElementById('how-i-apply'),[
-//     '技術結合生活',
-//     'Tech and Life',
-//     '增添便利性',
-// ],100)
+rotateText(document.getElementById('how-i-apply'),[
+    '技術結合生活',
+    'Tech and Life',
+    '增添便利性',
+],100)
 skr()
 
-class Wave{
-    constructor(){
+// class Wave{
+//     constructor(){
 
-    }    
-    set(len){
-        this.coefs = Array.from(Array(len),()=>Math.random())
-        // 公倍數
-        this.mul = 1
-        const gcd = (a,b)=>!b?a:gcd(b,a%b)
-        const lcm = (a,b)=>(a*b)/gcd(a,b)
-        for(let i=1;i<=len;i++){
-            this.mul = lcm(this.mul,i)
-        }
-        let peak = this.coefs.reduce((acc,cur)=>acc+cur,0)
-        this.coefs = this.coefs.map(x=>x/peak)
-    }
-    f(x){
-        return this.coefs.reduce((acc,cur,i)=>acc+cur*Math.sin(x/(i+1)),0)
-    }
-    getPathD(bins,width,height){
-        let w = width/bins
-        let points = Array.from(Array(bins).keys(),i=>{
-            let x = Math.round(i*w)
-            let y = Math.round(Math.random()*height)
-            return {x,y}
-        })
-        return this.getSmoothSvgPath(points,0.2)
-    }
-    getPath(bins,width,height){
-        let path = document.createElementNS('http://www.w3.org/2000/svg','path')
-        path.setAttribute('d',this.getPathD(bins,width,height))
-        return path
-    }
-    getSmoothSvgPath(points,smooth){
-        let cp = [] //control point
-        for(let i=0;i<points.length-2;i++){
-            cp.push({
-                x: Math.round((points[i+2].x-points[i].x)*smooth),
-                y: Math.round((points[i+2].y-points[i].y)*smooth)
-            })
-        }
-        return points.reduce((acc,cur,i,arr)=>{
-            switch(i){
-                case 0:
-                    return acc+`L${cur.x} ${cur.y}`
-                case 1:
-                    return acc+`C${arr[0].x} ${arr[0].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
-                case arr.length-1:
-                    return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x} ${cur.y},${cur.x} ${cur.y}`+`L${cur.x} 0`
-                default: 
-                    return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
-            }
-        },'M0 0')
-    }
-}
-let wave = new Wave()
+//     }    
+//     set(len){
+//         this.coefs = Array.from(Array(len),()=>Math.random())
+//         // 公倍數
+//         this.mul = 1
+//         const gcd = (a,b)=>!b?a:gcd(b,a%b)
+//         const lcm = (a,b)=>(a*b)/gcd(a,b)
+//         for(let i=1;i<=len;i++){
+//             this.mul = lcm(this.mul,i)
+//         }
+//         let peak = this.coefs.reduce((acc,cur)=>acc+cur,0)
+//         this.coefs = this.coefs.map(x=>x/peak)
+//     }
+//     f(x){
+//         return this.coefs.reduce((acc,cur,i)=>acc+cur*Math.sin(x/(i+1)),0)
+//     }
+//     getPathD(bins,width,height){
+//         let w = width/bins
+//         let points = Array.from(Array(bins).keys(),i=>{
+//             let x = Math.round(i*w)
+//             let y = Math.round(Math.random()*height)
+//             return {x,y}
+//         })
+//         return this.getSmoothSvgPath(points,0.2)
+//     }
+//     getPath(bins,width,height){
+//         let path = document.createElementNS('http://www.w3.org/2000/svg','path')
+//         path.setAttribute('d',this.getPathD(bins,width,height))
+//         return path
+//     }
+//     getSmoothSvgPath(points,smooth){
+//         let cp = [] //control point
+//         for(let i=0;i<points.length-2;i++){
+//             cp.push({
+//                 x: Math.round((points[i+2].x-points[i].x)*smooth),
+//                 y: Math.round((points[i+2].y-points[i].y)*smooth)
+//             })
+//         }
+//         return points.reduce((acc,cur,i,arr)=>{
+//             switch(i){
+//                 case 0:
+//                     return acc+`L${cur.x} ${cur.y}`
+//                 case 1:
+//                     return acc+`C${arr[0].x} ${arr[0].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
+//                 case arr.length-1:
+//                     return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x} ${cur.y},${cur.x} ${cur.y}`+`L${cur.x} 0`
+//                 default: 
+//                     return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
+//             }
+//         },'M0 0')
+//     }
+// }
+// let wave = new Wave()
 
 document.querySelectorAll('.shaker').forEach(el=>{
     el.onclick = e=>{
@@ -138,7 +137,7 @@ document.querySelectorAll('.shaker').forEach(el=>{
             transform: 'scale(0) translateY(0%)',
             opacity: 0,
             transition: '0s',
-        })        
+        })
         setTimeout(()=>{
             Object.assign(fs.style,{
                 transform: 'scale(1) translateY(0%)',

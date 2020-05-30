@@ -7,6 +7,7 @@
 </head>
 <body>
     <svg id="maze"></svg>
+    <!-- <canvas id="maze"></canvas> -->
     <div id="control-panel" style="position:fixed;top:0;right:0">
         <button onclick="nextStep()">start</button>
         <button onclick="clearMaze()">clear</button>
@@ -60,6 +61,8 @@ class Node{
         this.g = 0
         this.h = 0
         this.f = 0
+        //styles
+        this.fill = 'white'
     }
     isEqual(node){
         return this.point[0]==node.point[0]&&this.point[1]==node.point[1]
@@ -92,12 +95,15 @@ class Node{
 class Maze{
     constructor(container){
         this.container = container
+        this.type = container.tagName
+        if(this.type=='canvas')
+            this.ctx = this.container.getContext('2d')
         this.size = 30
         this.event = {active: false, fill: undefined, index: -1}
         this.nodes = []
         this.resize()
-        this.createRects()
         this.createNodes()
+        this.createRects()
         this.container.addEventListener('mousedown',e=>{
             this.event.active = true            
             this.render(e)
@@ -113,37 +119,16 @@ class Maze{
         })
     }
     resize(){
-        let W = this.container.clientWidth
-        let H = this.container.clientHeight
+        const W = this.container.clientWidth
+        const H = this.container.clientHeight
         this.rows = Math.ceil(H/this.size)
         this.columns = Math.ceil(W/this.size)
-        this.container.setAttribute('viewBox',`0 0 ${W} ${H}`)
-    }
-    createRects(){
-        this.container.innerHTML = ''
-        for(let i=0;i<this.columns;i++){
-            for(let j=0;j<this.rows;j++){
-                let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
-                rect.dataset.fill = 'white'
-                rect.setAttribute('x',i*this.size)
-                rect.setAttribute('y',j*this.size)
-                rect.setAttribute('width',this.size)
-                rect.setAttribute('height',this.size)
-                rect.setAttribute('stroke','black')
-                rect.setAttribute('fill','white')
-                rect.style.transition = 'transform 0.2s'
-                this.container.appendChild(rect)
-            }
+        if(this.type=='svg'){
+            this.container.setAttribute('viewBox',`0 0 ${W} ${H}`)
+        }else if(this.type=='canvas'){
+            this.container.width = W
+            this.container.height = H
         }
-    }
-    createText(node){
-        let text = document.createElementNS('http://www.w3.org/2000/svg','text')
-        text.setAttribute('x',node.point[0]*this.size+this.size/2)
-        text.setAttribute('y',node.point[1]*this.size+this.size/2) 
-        text.setAttribute('text-anchor','middle')
-        text.setAttribute('dominant-baseline','middle')
-        this.container.appendChild(text)
-        return text
     }
     createNodes(){
         let dirs = [[0,1],[0,-1],[1,0],[-1,0]]
@@ -155,6 +140,48 @@ class Maze{
             this.nodes.push(row)
         }
     }
+    createRects(){
+        this.container.innerHTML = ''
+        if(this.type=='canvas')
+            this.ctx.clearRect(0,0,this.container.width,this.container.height)
+        for(let i=0;i<this.columns;i++){
+            for(let j=0;j<this.rows;j++){
+                if(this.type=='svg'){
+                    let rect = document.createElementNS('http://www.w3.org/2000/svg','rect')
+                    rect.dataset.fill = 'white'
+                    rect.setAttribute('x',i*this.size)
+                    rect.setAttribute('y',j*this.size)
+                    rect.setAttribute('width',this.size)
+                    rect.setAttribute('height',this.size)
+                    rect.setAttribute('stroke','black')
+                    rect.setAttribute('fill','white')
+                    rect.style.transition = 'transform 0.2s'
+                    this.container.appendChild(rect)
+                }else if(this.type=='canvas'){
+                    this.strokeStyle = 'black'
+                    this.ctx.strokeRect(i*this.size,j*this.size,this.size,this.size)
+                }
+            }
+        }
+    }
+    createText(node,text){
+        if(this.type=='svg'){
+            let text = document.createElementNS('http://www.w3.org/2000/svg','text')
+            text.setAttribute('x',node.point[0]*this.size+this.size/2)
+            text.setAttribute('y',node.point[1]*this.size+this.size/2) 
+            text.setAttribute('text-anchor','middle')
+            text.setAttribute('dominant-baseline','middle')
+            this.container.appendChild(text)
+            return text
+        }else if(this.type=='canvas'){
+            this.ctx.font = '12px Sans-Serif'
+            let metric = this.ctx.measureText(text)
+            let x = node.point[0]*this.size-metric.width/2
+            let y = node.point[1]*this.size+6
+            this.ctx.fillText(node,x,y)
+        }
+        
+    }
     getElementOfNode(node){
         let idx = node.point[0]*this.rows+node.point[1]
         return this.container.children[idx]
@@ -164,18 +191,26 @@ class Maze{
             let dx = Math.floor((e.clientX-this.container.clientLeft)/this.size)
             let dy = Math.floor((e.clientY-this.container.clientTop)/this.size)
             let idx = dx*this.rows+dy
-            let children = this.container.children
-            let scale = 1.1, coef = this.size*(scale-1), pad = 5
-            if(children[idx]&&this.event.index!=idx){
+            if(this.event.index!=idx){
+                let scale = 1.1, coef = this.size*(scale-1), pad = 5
+                let children = this.container.children
                 if(this.event.fill===undefined)
-                    this.event.fill = children[idx].dataset.fill=='white'?color.grey:'white'
+                    this.event.fill = this.nodes[dx][dy].fill=='white'?color.grey:'white'
                 this.nodes[dx][dy].isWall = this.event.fill==color.grey
-                children[idx].dataset.fill = this.event.fill
-                children[idx].style.fill = children[idx].dataset.fill
-                children[idx].style.transform = `matrix(${scale},0,0,${scale},${-dx*coef-pad},${-dy*coef-pad})`
-                setTimeout(()=>{
-                    children[idx].style.transform = 'matrix(1,0,0,1,0,0)'
-                },200)
+                this.nodes[dx][dy].fill = this.event.fill
+                // render
+                if(this.type=='svg'){
+                    children[idx].style.fill = this.event.fill
+                    children[idx].style.transform = `matrix(${scale},0,0,${scale},${-dx*coef-pad},${-dy*coef-pad})`
+                    setTimeout(()=>{
+                        children[idx].style.transform = 'matrix(1,0,0,1,0,0)'
+                    },200)
+                }else if(this.type=='canvas'){
+                    let p = this.nodes[dx][dy].point
+                    this.ctx.fillStyle = this.event.fill
+                    this.ctx.fillRect(p[0]*this.size,p[1]*this.size,this.size,this.size)
+                    this.ctx.strokeRect(p[0]*this.size,p[1]*this.size,this.size,this.size)
+                }
                 this.event.index = idx
             }
         }
