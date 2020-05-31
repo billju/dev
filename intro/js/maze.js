@@ -1,4 +1,12 @@
-class Node{
+const color = {
+    blue: '#5DC3E2',
+    green: '#D5F5E3',
+    darkgreen: '#58D68D',
+    red: '#F5B7B1',
+    grey: '#5D6D7E',
+    lime: '#5DE2BF'
+}
+export class Node{
     constructor(point=[0,0]){
         this.point = point
         this.neighbors = []
@@ -38,7 +46,7 @@ class Node{
         return this.neighbors
     }
 }
-class Maze{
+export class Maze{
     constructor(container){
         this.container = container
         this.type = container.tagName
@@ -197,7 +205,7 @@ class Maze{
         }
     }
 }
-class Astar{
+export class Astar{
     constructor(nodes=[],start=Node,end=Node){
         this.nodes = nodes
         this.curNode = start
@@ -246,65 +254,59 @@ class Astar{
         return msg
     }
 }
-const color = {
-    blue: '#5DC3E2',
-    green: '#D5F5E3',
-    darkgreen: '#58D68D',
-    red: '#F5B7B1',
-    grey: '#5D6D7E',
-    lime: '#5DE2BF'
-}
-const maze = new Maze(document.getElementById('maze'))
-maze.waiting = false
-var startNode, endNode, timeout, astar
-resetMaze()
-maze.container.onclick = e=>{
-    if(maze.waiting){
-        resetMaze()
-        maze.waiting = false
-    }else{
-        nextStep()
-    }
-}
-function nextStep(){
-    let msg = astar.nextStep()
-    astar.unvisited.map(node=>{
-        maze.setNodeFill(node,color.green)
-        maze.setNodeText(node,node.f)
-    })
-    astar.visited.map(node=>{
-        maze.setNodeFill(node,color.darkgreen)
-    })
-    maze.setNodeFill(startNode,color.blue)
-    maze.setNodeFill(endNode,color.red)
-    maze.setNodeFill(astar.curNode,color.blue)
-    if(msg=='not yet'){
-        timeout = setTimeout(()=>{
+export function defaultMazeInteraction(mazeContainer){
+    const maze = new Maze(mazeContainer)
+    maze.waiting = false
+    var startNode, endNode, timeout, astar
+    resetMaze()
+    maze.container.onclick = e=>{
+        if(maze.waiting){
+            resetMaze()
+            maze.waiting = false
+        }else{
             nextStep()
-        }, 50)
-    }else if(msg=='finished'){
-        astar.getPath().map(node=>{
-            maze.setNodeFill(node,color.lime)
+        }
+    }
+    function nextStep(){
+        let msg = astar.nextStep()
+        astar.unvisited.map(node=>{
+            maze.setNodeFill(node,color.green)
+            maze.setNodeText(node,node.f)
+        })
+        astar.visited.map(node=>{
+            maze.setNodeFill(node,color.darkgreen)
         })
         maze.setNodeFill(startNode,color.blue)
         maze.setNodeFill(endNode,color.red)
-        maze.waiting = true
-    }else{
-        maze.waiting = true
-        // alert('no feasible path')
+        maze.setNodeFill(astar.curNode,color.blue)
+        if(msg=='not yet'){
+            timeout = setTimeout(()=>{
+                nextStep()
+            }, 50)
+        }else if(msg=='finished'){
+            astar.getPath().map(node=>{
+                maze.setNodeFill(node,color.lime)
+            })
+            maze.setNodeFill(startNode,color.blue)
+            maze.setNodeFill(endNode,color.red)
+            maze.waiting = true
+        }else{
+            maze.waiting = true
+            // alert('no feasible path')
+        }
     }
+    function resetMaze(){
+        clearTimeout(timeout)
+        astar = new Astar(maze.nodes,startNode,endNode)
+        maze.init()
+        startNode = maze.getRandomNode()
+        endNode = maze.getRandomNode([startNode])
+        astar = new Astar(maze.nodes,startNode,endNode)
+        maze.randomWall([startNode,endNode],0.7)
+        maze.setNodeFill(startNode,color.blue)
+        maze.setNodeFill(endNode,color.red)
+    }
+    window.addEventListener('resize',()=>{
+        resetMaze()
+    })
 }
-function resetMaze(){
-    clearTimeout(timeout)
-    astar = new Astar(maze.nodes,startNode,endNode)
-    maze.init()
-    startNode = maze.getRandomNode()
-    endNode = maze.getRandomNode([startNode])
-    astar = new Astar(maze.nodes,startNode,endNode)
-    maze.randomWall([startNode,endNode],0.7)
-    maze.setNodeFill(startNode,color.blue)
-    maze.setNodeFill(endNode,color.red)
-}
-window.addEventListener('resize',()=>{
-    resetMaze()
-})

@@ -1,4 +1,4 @@
-class FractalTree{
+export class FractalTree{
     constructor(canvas){
         this.canvas = canvas
         this.ctx = this.canvas.getContext('2d')
@@ -63,38 +63,40 @@ class FractalTree{
         this.canvas.height = this.canvas.clientHeight
     }
 }
-var ftree = new FractalTree(document.getElementById('fractal-tree'))
-var me = {x:0,y:0,animationFrame:null}
-ftree.canvas.addEventListener('mousemove',e=>{
-    let rect = ftree.canvas.getBoundingClientRect()
-    me.x = e.clientX-rect.left
-    me.y = e.clientY-rect.top
-    ftree.update({
-        skew: (50*me.x/ftree.canvas.clientWidth-25)*Math.PI/180,
-        trim: 12+10*me.y/ftree.canvas.clientHeight,
-        vector: {x:0,y:-75-25*(1-me.y/ftree.canvas.clientHeight)}
+export function defaultFractalTreeInteraction(ftreeContainer){
+    var ftree = new FractalTree(ftreeContainer)
+    var me = {x:0,y:0,animationFrame:null}
+    ftree.canvas.addEventListener('mousemove',e=>{
+        let rect = ftree.canvas.getBoundingClientRect()
+        me.x = e.clientX-rect.left
+        me.y = e.clientY-rect.top
+        ftree.update({
+            skew: (50*me.x/ftree.canvas.clientWidth-25)*Math.PI/180,
+            trim: 12+10*me.y/ftree.canvas.clientHeight,
+            vector: {x:0,y:-75-25*(1-me.y/ftree.canvas.clientHeight)}
+        })
     })
-})
-ftree.canvas.addEventListener('mouseenter',e=>{
-    ftDraw()
-})
-ftree.canvas.addEventListener('mouseleave',e=>{
-    cancelAnimationFrame(me.animationFrame)
-})
-function ftDraw(){
-    let ctx = ftree.canvas.getContext('2d')
-    let r1 = 20
-    let r2 = Math.max(ftree.canvas.width,ftree.canvas.height)
-    let pct = me.y/ftree.canvas.height
-    pct = pct>1?1:pct<0?0:pct
-    let gd = ctx.createRadialGradient(me.x,me.y,r1,me.x,me.y,r2)
-    gd.addColorStop(0,'yellow')
-    gd.addColorStop(1-pct,'dodgerblue')
-    gd.addColorStop(1,'grey')
-    ctx.fillStyle = gd
-    ctx.fillRect(0,0,ftree.canvas.width,ftree.canvas.height)
-    ftree.draw()
-    ctx.fillStyle = 'black'
-    me.animationFrame = requestAnimationFrame(ftDraw)
+    ftree.canvas.addEventListener('mouseenter',e=>{
+        ftDraw()
+    })
+    ftree.canvas.addEventListener('mouseleave',e=>{
+        cancelAnimationFrame(me.animationFrame)
+    })
+    function ftDraw(){
+        let ctx = ftree.canvas.getContext('2d')
+        let r1 = 20
+        let r2 = Math.max(ftree.canvas.width,ftree.canvas.height)
+        let pct = me.y/ftree.canvas.height
+        pct = pct>1?1:pct<0?0:pct
+        let gd = ctx.createRadialGradient(me.x,me.y,r1,me.x,me.y,r2)
+        gd.addColorStop(0,'yellow')
+        gd.addColorStop(1-pct,'dodgerblue')
+        gd.addColorStop(1,'grey')
+        ctx.fillStyle = gd
+        ctx.fillRect(0,0,ftree.canvas.width,ftree.canvas.height)
+        ftree.draw()
+        ctx.fillStyle = 'black'
+        me.animationFrame = requestAnimationFrame(ftDraw)
+    }
+    window.addEventListener('resize',()=>{ftree.resize()})
 }
-window.addEventListener('resize',()=>{ftree.resize()})

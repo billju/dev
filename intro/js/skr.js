@@ -1,4 +1,4 @@
-function skr(node=document.body){
+export function skr(node=document.body){
     let keyPoints = []
     let animation = undefined
     const animations = {
@@ -92,7 +92,7 @@ function skr(node=document.body){
     }
 }
 
-function smoothScroll(container){
+export function smoothScroll(container){
     document.addEventListener('DOMContentLoaded', () => { 
         container.style.overflow = 'hidden'
         container.style.position = 'fixed'

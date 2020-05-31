@@ -1,4 +1,4 @@
-function hiddenText(element,textStyle={},maskStyle={},dir='top'){
+export function HiddenText(element,textStyle={},maskStyle={},dir='top'){
     let axis = dir=='top'||dir=='bottom'?'Y':'X'
     let sign = dir=='top'||dir=='left'?1:-1
     let textDiv = document.createElement('div')
@@ -38,7 +38,7 @@ function hiddenText(element,textStyle={},maskStyle={},dir='top'){
         maskDiv.style.transform = `translate${axis}(0%)`
     },100)
 }
-function hoppingText(element){
+export function HoppingText(element){
     let chars = element.textContent
     element.textContent = ''
     Object.assign(element.style,{
@@ -66,7 +66,7 @@ function hoppingText(element){
         })
     }
 }
-function typingText(element,texts=[''],delay=50){
+export function TypingText(element,texts=[''],delay=50){
     let cursor = document.createElement('span')
     let span = document.createElement('span')
     element.textContent = ''
@@ -102,7 +102,7 @@ function typingText(element,texts=[''],delay=50){
     }
     randomDelay()
 }
-function rotateText(element,texts,height=30){
+export function FlipText(element,texts,height=30){
     if(texts.length<3){texts=[...texts,...texts,...texts]}
     Object.assign(element.style,{
         position: 'relative',
@@ -140,7 +140,7 @@ function rotateText(element,texts,height=30){
         idx = idx==texts.length-1?0:idx+1
     },2000)
 }
-class CountingText{
+export class CountingText{
     constructor(el){
         this.el = el
         this.denominator = 30
@@ -166,7 +166,7 @@ class CountingText{
         }
     }
 }
-function svgAnimation(container,style={}){
+export function svgAnimation(container,style={}){
     xhr = new XMLHttpRequest();
     xhr.open("GET","logo.svg",false);
     xhr.overrideMimeType("image/svg+xml");

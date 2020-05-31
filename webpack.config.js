@@ -1,10 +1,10 @@
-const path = require("path");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const {CleanWebpackPlugin} = require("clean-webpack-plugin");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 module.exports = {
-    entry: ['@babel/polyfill','./src/js/index.js'],
+    entry: ['@babel/polyfill','./intro/js/index.js'],
     module: {
         rules: [
             {
@@ -57,32 +57,31 @@ module.exports = {
         new MiniCssExtractPlugin({ filename: '[name].css' }),
         new TerserPlugin(),
         new HtmlWebpackPlugin({
-            filename: 'index.html', //default index.html
-            template: "./src/index.pug",
-            inlineSource: '.(js|css)$',
+            template: './intro/index.pug',
+            filename: 'index.html',
             minify: {
-            //     collapseBooleanAttributes: true,
+                collapseBooleanAttributes: true,
                 collapseWhitespace: true,
-            //     removeAttributeQuotes: true,
+                removeAttributeQuotes: true,
                 removeComments: true,
-            //     removeEmptyAttributes: true,
-            //     removeRedundantAttributes: true,
-            //     removeScriptTypeAttributes: true,
-            //     removeStyleLinkTypeAttributes: true,
-            //     minifyCSS: true,
-            //     minifyJS: true,
-            //     sortAttributes: true,
-            //     useShortDoctype: true
+                removeEmptyAttributes: true,
+                removeRedundantAttributes: true,
+                removeScriptTypeAttributes: true,
+                removeStyleLinkTypeAttributes: true,
+                minifyCSS: true,
+                minifyJS: true,
+                sortAttributes: true,
+                useShortDoctype: true
             },
         }),
     ],
+    output: {
+        path: path.resolve(__dirname, 'dist'),
+        filename: '[name].min.js',
+    },
     devServer: {
         contentBase: path.join(__dirname, 'dist'),
         compress: true,
         port: 9000
     },
-    output: {
-        path: path.resolve(__dirname, 'dist'),
-        filename: "[name].min.js",
-    }
 }

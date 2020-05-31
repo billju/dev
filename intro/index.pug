@@ -3,11 +3,8 @@ html(lang="en")
     head
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        meta(name="description", content="bang")
-        title Intro
-        link(rel="stylesheet" href="css/bootstrap.css")
-        link(rel="stylesheet", href="css/navbar.css")
-        link(rel="stylesheet", href="css/index.css")
+        meta(name="description", content="chuboy's portfolio")
+        title ChuBoy
     body
         header
             nav.navbar(style="display:none")
@@ -46,7 +43,7 @@ html(lang="en")
                             h1 FRONTEND
                             h1.d-none.d-md-block FRONTEND
                             h1.d-none.d-sm-block FRONTEND
-                        .row.bg-info.w-100.py-3(data-once="fade-up" data-once-offset="2")
+                        .row.bg-info.w-100.py-3(data-once="fade-up" data-once-offset="1.5")
                             .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
                                 a.neon-btn(href="https://musicplayer-666.web.app/")
                                     .d-flex.flex-column.justify-content-center
@@ -62,9 +59,10 @@ html(lang="en")
                                     span
                             .col-sm-12.col-md-6.px-3.py-3
                                 h1.heading(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單
-                                img(style="max-width:100%;margin-top:-100px" src="assets/mvbox.min.gif", alt="")
+                                a(href="https://musicplayer-666.web.app/")
+                                    img(style="max-width:100%" src="assets/mvbox.min.gif", alt="")
                         .py-5
-                        .row.flex-row-reverse.bg-primary.w-100.py-3(data-once="fade-up" data-once-offset="2")
+                        .row.flex-row-reverse.bg-primary.w-100.py-3(data-once="fade-up" data-once-offset="1.5")
                             .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
                                 a.neon-btn(href="http://chatroom-websocket.com/")
                                     .d-flex.flex-column.justify-content-center
@@ -81,7 +79,8 @@ html(lang="en")
                                     span
                             .col-sm-12.col-md-6.px-3.py-3
                                 h1.text-light.heading(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片
-                                img(style="max-width:100%;margin-top:-100px" src="assets/chatroom.gif", alt="")
+                                a(href="http://chatroom-websocket.com/")
+                                    img(style="max-width:100%" src="assets/chatroom.gif", alt="")
                         .py-5
                         .w-100.d-flex.justify-content-around.bg-danger.py-3
                             h1 BACKEND
@@ -222,7 +221,7 @@ html(lang="en")
                             img(src="assets/github.png")
                             img(src="assets/codepen.png")
         .smooth-scroll-hitbox
-        footer#fullscreen.bg-dark.text-light(onclick="closeFS()")
+        footer#fullscreen.bg-dark.text-light
             .container.h-100.d-flex.flex-column.justify-content-center.align-items-center
                 a(href="#" target="_blank")
                     img(src="assets/pomodoro.gif", alt="" style="max-width: 100%")

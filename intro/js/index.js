@@ -1,44 +1,17 @@
-function pumpingConcentricCircle(el){
-    let div, bpm = 128, duration = Math.round(60/bpm*1000)
-    for(let i=8;i>0;i--){
-        div = document.createElement('div')
-        Object.assign(div.style,{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%,-50%)',
-            padding: `${50+5*i}px`,
-            transition: '0.5s',
-            background: `rgba(${240-i*30},100,100,1)`,
-            borderRadius: '50%'
-        })
-        el.appendChild(div)
-        let keyframes = []
-        if(i==1){
-            div.animate([
-                {padding: `${50}px`},
-                {padding: `${30}px`},
-                {padding: `${50}px`},
-            ],{
-                duration: duration,
-                iterations: Infinity,
-                easing: 'ease'
-            })
-        }else{
-            for(let j=0;j<8;j++){
-                let mul = j>i?i:j
-                keyframes.push({padding: `${50+20*mul+5*i}px`,easing:'ease-out'})
-            }
-            keyframes.push({padding: `${50+5*i}px`,easing:'ease-out'})
-            div.animate(keyframes,{
-                duration: duration*9,
-                iterations: Infinity,
-            })
-        }
-    }
-    return div
-}
+import '../css/bootstrap.css'
+import '../css/index.css'
+import '../css/navbar.css'
+import pumpingConcentricCircle from './pumpingCircle.js'
+import {Chart, Matrix, Dataset} from './chart.js'
+import {Wave} from './wave.js'
+import {HiddenText, TypingText, HoppingText, FlipText} from './textFx.js'
+import {Node, Maze, Astar, defaultMazeInteraction} from './maze.js'
+import {FractalTree, defaultFractalTreeInteraction} from './fractalTree.js'
+import {skr, smoothScroll} from './skr.js'
+// pumping animation
 pumpingConcentricCircle(document.getElementById('loading'))
+
+// chart
 const dataset = new Dataset().random(50)
 const chart = new Chart(document.getElementById('chart'),{
     data: dataset.xy,
@@ -54,135 +27,24 @@ function draw(){
 }
 draw()
 setInterval(()=>{dataset.random(50)},2000)
-hiddenText(document.getElementById('chuboy'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'top')
-hiddenText(document.getElementById('web-dev'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
-hiddenText(document.getElementById('data-analyst'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'right')
-typingText(document.getElementById('typing-text'),[
+
+// text fx
+HiddenText(document.getElementById('chuboy'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'top')
+HiddenText(document.getElementById('web-dev'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
+HiddenText(document.getElementById('data-analyst'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'right')
+TypingText(document.getElementById('typing-text'),[
     'Hi, my name is chuboy.',
     'I am a developer and data analyst.',
     "Let's scroll down and explore what I created."
 ],50)
-hoppingText(document.getElementById('my-skills'))
-rotateText(document.getElementById('how-i-apply'),[
+HoppingText(document.getElementById('my-skills'))
+FlipText(document.getElementById('how-i-apply'),[
     '我的生活記錄',
     '構想的啟發',
     '讓繁瑣工作變得有趣',
 ],100)
-skr()
 
-class Pulse{
-    constructor(){
-
-    }
-    lcm(len){
-        this.coefs = Array.from(Array(len),()=>Math.random())
-        // 公倍數
-        this.mul = 1
-        const gcd = (a,b)=>!b?a:gcd(b,a%b)
-        const lcm = (a,b)=>(a*b)/gcd(a,b)
-        for(let i=1;i<=len;i++){
-            this.mul = lcm(this.mul,i)
-        }
-        let peak = this.coefs.reduce((acc,cur)=>acc+cur,0)
-        this.coefs = this.coefs.map(x=>x/peak)
-    }
-    f(x){
-        return this.coefs.reduce((acc,cur,i)=>acc+cur*Math.sin(x/(i+1)),0)
-    }
-}
-class Wave{
-    constructor(svg){
-        this.svg = svg
-        this.resize()
-    }
-    clear(){
-        while(this.svg.lastChild)
-            this.svg.removeChild(this.svg.lastChild)
-    }
-    resize(){
-        this.W = this.svg.clientWidth
-        this.H = this.svg.clientHeight
-        this.svg.setAttribute('viewBox',`0 0 ${this.W} ${this.H}`)
-    }
-    add(shape='wave',styles={},from=1,to=0,bins=10){
-        shape = ['wave','pulse','triangle'].includes(shape)?shape:'wave'
-        let child = this.getPath(shape,from,to,bins)
-        for(let key in styles){
-            child.setAttribute(key,styles[key])
-        }
-        this.svg.appendChild(child)
-    }
-    getPath(shape,from,to,bins){
-        let path = document.createElementNS('http://www.w3.org/2000/svg','path')
-        let w = Math.floor(this.W/bins)
-        let h = this.H*Math.abs(from-to)
-        let points = Array.from(Array(bins+1).keys(),i=>{
-            let x = Math.round(i*w)
-            let y = Math.round(Math.random()*h)
-            return {x,y}
-        })
-        let d, startY = this.H*from
-        switch(shape){
-            case 'wave': 
-                d = this.getSmoothSvgPath(points,startY)
-                break;
-            case 'pulse':
-                d = this.getPulse(points,startY)
-                break;
-            case 'triangle': 
-                d = this.getTriangle(points,startY)
-                break;
-            default: break;
-        }
-        path.setAttribute('d',d);
-        return path
-    }
-    getPulse(points,startY=0){
-        return points.reduce((acc,cur,i,arr)=>{
-            switch(i){
-                case 0:
-                    return acc+`L${cur.x} ${cur.y}`
-                case arr.length-1:
-                    return acc+`L${cur.x} ${arr[i-1].y},${cur.x} ${startY}`
-                default: 
-                    return acc+`L${cur.x} ${arr[i-1].y},${cur.x} ${cur.y}`
-            }
-        },`M0 ${startY}`)
-    }
-    getTriangle(points,startY=0){
-        return points.reduce((acc,cur,i,arr)=>{
-            switch(i){
-                case 0:
-                    return acc
-                case arr.length-1:
-                    return acc+`L${cur.x} ${cur.y},${cur.x} ${startY}`
-                default: 
-                    return acc+`L${cur.x} ${cur.y}`
-            }
-        },`M0 ${startY}`)
-    }
-    getSmoothSvgPath(points,startY=0,smooth=0.2){
-        let cp = [] //control point
-        for(let i=0;i<points.length-2;i++){
-            cp.push({
-                x: Math.round((points[i+2].x-points[i].x)*smooth),
-                y: Math.round((points[i+2].y-points[i].y)*smooth)
-            })
-        }
-        return points.reduce((acc,cur,i,arr)=>{
-            switch(i){
-                case 0:
-                    return acc+`L${cur.x} ${cur.y}`
-                case 1:
-                    return acc+`C${arr[0].x} ${arr[0].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
-                case arr.length-1:
-                    return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x} ${cur.y},${cur.x} ${cur.y}`+`L${cur.x} ${startY}`
-                default: 
-                    return acc+`C${arr[i-1].x+cp[i-2].x} ${arr[i-1].y+cp[i-2].y},${cur.x-cp[i-1].x} ${cur.y-cp[i-1].y},${cur.x} ${cur.y}`
-            }
-        },`M0 ${startY}`)
-    }
-}
+// svg wave
 let waveTop = new Wave(document.getElementById('wave-top'))
 waveTop.init = ()=>{
     waveTop.clear()
@@ -218,6 +80,7 @@ waveBottom.init = ()=>{
 }
 waveBottom.init()
 waveBottom.svg.onclick = e=>{waveBottom.init()}
+
 let pulseBottom = new Wave(document.getElementById('pulse'))
 pulseBottom.init = ()=>{
     pulseBottom.clear()
@@ -235,6 +98,11 @@ pulseBottom.init = ()=>{
 }
 pulseBottom.init()
 pulseBottom.svg.onclick = e=>{pulseBottom.init()}
+
+// maze
+defaultMazeInteraction(document.getElementById('maze'))
+
+// fullscreen cards
 const shakers = [
     {
         src:'assets/pomodoro.gif',
@@ -297,12 +165,17 @@ document.querySelectorAll('.shaker').forEach((el,i)=>{
         },100)
     }
 })
-function closeFS(){
-    let fs = document.getElementById('fullscreen')
-    Object.assign(fs.style,{
+const fullscreen = document.getElementById('fullscreen')
+fullscreen.onclick = e=>{
+    Object.assign(fullscreen.style,{
         transform: 'scale(1) translateY(100%)',
         opacity: 0,
     })
-    // document.getElementById('fullscreen').classList.remove('active')
 }
+
+// fractal tree
+defaultFractalTreeInteraction(document.getElementById('fractal-tree'))
+
+// scroll fx
+skr()
 smoothScroll(document.querySelector('.smooth-scroll-container'))

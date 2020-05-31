@@ -1,4 +1,4 @@
-class Chart{
+export class Chart{
     constructor(canvas,args){
         this.canvas = canvas
         this.ctx = canvas.getContext('2d')
@@ -325,7 +325,7 @@ class Matrix{
         return this.v.map((x,i)=>( [x,y.v[i]] ))
     }
 }
-class Regressor{
+export class Regressor{
     constructor(kernal='linear'){
         function norm(){ //return a number between -1 and 1
             function boxMuller(){
@@ -415,7 +415,7 @@ class Regressor{
         return {loss, ...params}
     }
 }
-class Dataset{
+export class Dataset{
     constructor(length=10){
         this.length = length
         this.x = new Matrix()
