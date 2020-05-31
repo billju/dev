@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motion Graphic</title>
+</head>
+<body>
+    <div class="neon-btn">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        Neon Button
+    </div>
+    <svg width="0" height="0">
+        <defs><clipPath id="clipPath">
+            <circle cx="100" cy="100" r="50"/>
+        </clipPath></defs>
+        <defs><filter id="gooey">
+            <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="10" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo" />
+            <feGaussianBlur in="goo" stdDeviation="3" result="shadow" />
+            <feColorMatrix in="shadow" mode="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 -0.2" result="shadow" />
+            <feOffset in="shadow" dx="1" dy="1" result="shadow" />
+            <feComposite in2="shadow" in="goo" result="goo" />
+            <feComposite in2="goo" in="SourceGraphic" result="mix" />
+        </filter></defs>
+    </svg>
+    <div class="blobs">
+        <div class="blob"></div>
+        <div class="blob" style="left:100px"></div>
+        <div class="blob" style="left:200px"></div>
+    </div>
+    <div class="rotate-text" style="font-size:20px;margin:50px"></div>
+    <div class="hidden-text" style="font-size:100px;display:inline-block;">烏日文心北屯線</div>
+    <div class="hopping-text" style="transform:skewY(-5deg);font-size:100px;display:inline-block;">烏日文心北屯線</div>
+    <div class="count-up" style="font-size: 100px;"></div>
+    <div class="textClip">烏日文心北屯線</div>
+    <div id="typing-text" style="font-size: 20px;">烏日文心北屯線</div>
+    <div id="spinner" style="position: relative;"></div>
+    <div id="svgContainer"></div>
+</body>
+<style>
+*{
+    font-family: 微軟正黑體;   
+}
+html,body{
+    margin: 0;
+    height: 100%;
+    background: #031321;
+}
+.neon-btn{
+    position: relative;
+    display: inline-block;
+    padding: 15px 30px;
+    color: #2196f3;
+    text-transform: uppercase;
+    text-decoration: none;
+    font-size: 24px;
+    overflow: hidden;
+    transition: 0.2s;
+}
+.neon-btn:hover{
+    color: #255784;
+    background: #2196f3;
+    box-shadow: 0 0 10px #2196f3, 0 0 40px #2196f3, 0 0 80px #2196f3;
+    transition-delay: 1s;
+}
+.neon-btn span{
+    position: absolute;
+    display: block;
+}
+.neon-btn span:nth-child(1){
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(1){
+    left: 100%;
+    transition: 1s;
+}
+.neon-btn span:nth-child(2){
+    top: -100%;
+    right: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(2){
+    top: 100%;
+    transition: 1s;
+    transition-delay: 0.25s;
+}
+.neon-btn span:nth-child(3){
+    bottom: 0;
+    right: -100%;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(270deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(3){
+    right: 100%;
+    transition: 1s;
+    transition-delay: 0.5s;
+}
+
+.neon-btn span:nth-child(4){
+    bottom: -100%;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(0deg,transparent,#2196f3);
+}
+.neon-btn:hover span:nth-child(4){
+    bottom: 100%;
+    transition: 1s;
+    transition-delay: 0.75s;
+}
+.textClip{
+    background-image: url(/static/image/wave.png);
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    font-size: 50px;
+    font-weight: bold;
+    animation: bg-pos 3s linear infinite;
+}
+@keyframes bg-pos{
+    from{
+        background-position: 0 0;
+    }
+    to{
+        background-position: 300px 0;
+    }
+}
+.clipPath{
+    clip-path: url(#clipPath);
+}
+.blobs{
+    background: #fff;
+    position: relative;
+    filter:url(#gooey);
+}
+.blob{
+    position: absolute;
+    background: dodgerblue;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+}
+#svgContainer{
+    stroke: black;
+    stroke-dashoffset: 0;
+    stroke-dasharray: 200;
+}
+</style>
+<script>
+function rotateText(element,texts,height=30){
+    Object.assign(element.style,{
+        position: 'relative',
+        overflow: 'hidden',
+        height: height+'px'
+    })
+    function createSpan(text){
+        let span = document.createElement('span')
+        span.textContent = text
+        Object.assign(span.style,{
+            position: 'absolute',
+            top: 0,
+            lineHeight: height+'px',
+            transition: '1s',
+            // background: 'grey',
+            transform: `translateY(${height/2}px) rotate3d(1,0,0,-60deg)`,
+            opacity: 0
+        })
+        element.appendChild(span)
+        return span
+    }
+    let idx = 2, top = undefined
+    let mid = createSpan(texts[0]), bottom = createSpan(texts[1])
+    mid.style.transform = `translateY(0px) rotate3d(1,0,0,0deg)`
+    mid.style.opacity = 1
+    setInterval(()=>{
+        if(top){top.remove()}
+        top = mid
+        top.style.transform = `translateY(${-height/2}px) rotate3d(1,0,0,60deg)`
+        top.style.opacity = 0
+        mid = bottom
+        mid.style.transform = `translateY(0) rotate3d(1,0,0,0deg)`
+        mid.style.opacity = 1
+        bottom = createSpan(texts[idx])
+        idx = idx==texts.length-1?0:idx+1
+    },2000)
+}
+rotateText(document.querySelector('.rotate-text'),[
+    '烏日文心北屯線1',
+    '烏日文心北屯線2',
+    '烏日文心北屯線3',
+])
+function imageGlitch(img, src){
+    img.parentNode.style.position = 'relative'
+    img.src = src
+    if(img.complete){
+        animate()
+    }else{
+        img.onload = animate
+    }
+    function animate(){
+        let W = img.width
+        let H = img.height
+        let boxes = Array.from(Array(10),()=>{
+            let box = document.createElement('div')
+            Object.assign(box.style,{
+                position: 'absolute',
+                top: 0,
+                width: `${W}px`,
+                height: `${H}px`,
+                backgroundImage: `url(${src})`,
+            })
+            img.parentNode.appendChild(box)
+            return box
+        })
+        boxes.map(box=>{
+            box.animate(
+                Array.from(Array(20),()=>{
+                    let left = Math.floor(W*Math.random())
+                    let px = -left+W/10*(Math.random()-0.5)
+                    let top = Math.floor(H*Math.random())
+                    let width = Math.floor(W/5*Math.random())
+                    let height = Math.floor(H/10*Math.random())
+                    width = left+width>W?W-left:width
+                    height = top+height>H?H-top:height
+                    let py = -top
+                    return {
+                        left: `${left}px`,
+                        top: `${top}px`,
+                        width: width+'px',
+                        height: height+'px',
+                        backgroundPosition: `${px}px ${py}px`,
+                    }
+                }),{
+                    duration: 5000,
+                    iterations: Infinity,
+                    easing: 'steps(20,start)',
+                }
+            )
+        })
+        
+    }
+}
+// imageGlitch(document.getElementById('glitch-image'),'/static/image/crowd.jpg')
+function fadeIn(element){
+    element
+}
+function createTicks(element){
+    let len = 20, delay = 0.1, radius= 100
+    for(let i=0;i<len;i++){
+        let circle = document.createElement('div')
+        Object.assign(circle.style,{
+            position: 'fixed',
+            left: radius*(1+Math.cos(i*Math.PI*2/len))+'px',
+            top: radius*(1+Math.sin(i*Math.PI*2/len))+'px',
+            width: '20px',
+            height: '2px',
+            background: 'violet',
+            // borderRadius: '50%',
+            transform: `rotate(${360*i/len}deg)`,
+            transitionOrigin: 'center',
+            animationName: 'scale',
+            animationDuration: `${delay*len}s`,
+            animationDelay: `${delay*i}s`,
+            animationTimingFunction: 'ease',
+            animationIterationCount: 'infinite'
+        })
+        element.appendChild(circle)
+    }
+}
+createTicks(document.getElementById('spinner'))
+function hiddenText(element,textStyle={},maskStyle={},dir='top'){
+    let axis = dir=='top'||dir=='bottom'?'Y':'X'
+    let sign = dir=='top'||dir=='left'?1:-1
+    let textDiv = document.createElement('div')
+    let maskDiv = document.createElement('div')
+    textDiv.textContent = element.textContent
+    element.textContent = ''
+    element.appendChild(textDiv)
+    element.appendChild(maskDiv)
+    Object.assign(element.style,{
+        position: 'relative',
+        textAlign: 'center',
+        overflow: 'hidden'
+    })
+    Object.assign(textDiv.style,{
+        ...textStyle,
+        width: '100%',
+        height: '100%',
+        transform: `translate${axis}(${sign*100}%)`,
+        transition: `transform ${1}s`
+    })
+    Object.assign(maskDiv.style,{
+        ...maskStyle,
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        transform: `translate${axis}(${sign*100}%)`,
+        transition: `transform ${0.5}s`
+    })
+    setTimeout(()=>{
+        textDiv.style.transform = `translate${axis}(0%)`
+    },1500)
+    setTimeout(()=>{
+        maskDiv.style.transform = `translate${axis}(${sign*-100}%)`
+    },1000)
+    setTimeout(()=>{
+        maskDiv.style.transform = `translate${axis}(0%)`
+    },100)
+}
+hiddenText(document.querySelector('.hidden-text'),{padding:'10px',fontWeight:'bold'},{background:'dodgerblue'},'bottom')
+function hoppingText(element){
+    let chars = element.textContent
+    element.textContent = ''
+    Object.assign(element.style,{
+        position: 'relative',
+        overflow: 'hidden',
+    })
+    for(let i=0;i<chars.length;i++){
+        let div = document.createElement('div')
+        div.textContent = chars[i]
+        element.appendChild(div)
+        Object.assign(div.style,{
+            display: 'inline-block',
+            transition: 'transform 1s',
+            transform: 'translateY(100%)'
+        })
+        setTimeout(()=>{
+            div.style.transform = 'translateY(0%)'
+        },i*200)
+    }
+}
+hoppingText(document.querySelector('.hopping-text'))
+function typingText(element){
+    let cursor = document.createElement('span')
+    let span = document.createElement('span')
+    let text = element.textContent
+    element.textContent = ''
+    Object.assign(cursor.style,{
+        margin: '2px',
+        border: '1px solid black'
+    })
+    cursor.animate([
+        {opacity: 0},
+        {opacity: 1},
+        {opacity: 0},
+    ],{
+        duration: 1000,
+        iterations: Infinity,
+        easing: 'steps(2,end)',
+    })
+    element.appendChild(span)
+    element.appendChild(cursor)
+    let idx = 0
+    function randomDelay(){
+        setTimeout(()=>{
+            if(idx<=text.length){
+                span.textContent = text.slice(0,idx)
+                idx++
+                randomDelay()
+            }
+        },Math.random()*200+200)
+    }
+    randomDelay()
+}
+typingText(document.getElementById('typing-text'))
+class CountUp{
+    constructor(el){
+        this.el = el
+        this.denominator = 30
+        this.paused = true
+    }
+    countTo(num,step=30,interval=40){
+        if(this.paused){
+            this.denominator=step
+            this.paused = false
+        }
+        const EasingFunctions = {
+            linear: t => t,
+            easeIn: t => t*t,
+            easeOut: t => t*(2-t),
+            easeInOut: t => t<.5 ? 2*t*t : -1+(4-2*t)*t,
+        }
+        let t = (this.denominator-step)/this.denominator
+        this.el.innerText = parseInt(num*EasingFunctions['easeOut'](t))
+        if(step==0){
+            this.paused=true
+        }else{    
+            setTimeout(()=>{this.countTo(num,step-1,interval)},interval)
+        }
+    }
+}
+new CountUp(document.querySelector('.count-up')).countTo(3396,60)
+function pumpingConcentricCircle(el){
+    let div, bpm = 128, duration = Math.round(60/bpm*1000)
+    for(let i=8;i>0;i--){
+        div = document.createElement('div')
+        Object.assign(div.style,{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%,-50%)',
+            padding: `${50+5*i}px`,
+            transition: '0.5s',
+            background: `rgba(${240-i*30},100,100,1)`,
+            borderRadius: '50%'
+        })
+        el.appendChild(div)
+        let keyframes = []
+        if(i==1){
+            div.animate([
+                {padding: `${50}px`},
+                {padding: `${30}px`},
+                {padding: `${50}px`},
+            ],{
+                duration: duration,
+                iterations: Infinity,
+                easing: 'ease'
+            })
+        }else{
+            for(let j=0;j<=8;j++){
+                let mul = j>i?i:j
+                keyframes.push({padding: `${50+20*mul+5*i}px`,easing:'ease-out'})
+            }
+            keyframes.push({padding: `${50+5*i}px`,easing:'ease-out'})
+            div.animate(keyframes,{
+                duration: duration*9,
+                iterations: Infinity,
+            })
+        }
+    }
+    return div
+}
+function svgAnimation(container,style={}){
+    xhr = new XMLHttpRequest();
+    xhr.open("GET","logo.svg",false);
+    xhr.overrideMimeType("image/svg+xml");
+    xhr.onload = function(e) {
+        let svg = xhr.responseXML.documentElement
+        Object.assign(svg.style,{
+            strokeDasharray: 500,
+            strokeDashoffset: 0,
+            ...style
+        })
+        container.appendChild(svg);
+        svg.animate([
+            {strokeDashoffset: 500},
+            {strokeDashoffset: 0}
+        ],{
+            duration: 5000
+        })
+    }
+    xhr.send();
+}
+svgAnimation(document.getElementById('svgContainer'))
+</script>
+</html>

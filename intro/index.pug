@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        meta(name="description", content="bang")
+        title Intro
+        link(rel="stylesheet" href="css/bootstrap.css")
+        link(rel="stylesheet", href="css/navbar.css")
+        link(rel="stylesheet", href="css/index.css")
+    body
+        header
+            nav.navbar(style="display:none")
+                .container
+                    a.navbar-brand(href='#') chuboy
+                    input.navbar-toggler(type='checkbox')
+                    .hamburger.bg-cyan
+                        div
+                    ul.navbar-menu
+                        li
+                            a(href='#') home
+                        li
+                            a(href='#') portfolios
+                        li
+                            a(href='#') articles
+                        li
+                            a(href='#') about
+        main.smooth-scroll-container
+            .smooth-scroll-translator
+                section.vh-100.position-relative.overflow-hidden.d-flex.flex-column.justify-content-center.align-items-center
+                    .row
+                        .col-sm-12.col-md-7.d-flex.align-items-center.justify-content-center
+                            #loading.position-relative
+                            .display-1#chuboy ChuBoy
+                        .col-sm-12.col-md-5
+                            .display-4#web-dev web developer
+                            .display-4#data-analyst data analyst
+                    p.text-center#typing-text
+                    .d-flex.justify-content-center
+                        .mouse
+                            .mouse-wheel
+                section.bg-dark.py-5
+                    #my-skills.display-1.text-light.mb-5 技能與專案
+                    .container-fluid(style="transform:skewY(-5deg);padding:0").overflow-hidden
+                        .w-100.d-flex.justify-content-around.bg-warning.py-3
+                            h1 FRONTEND
+                            h1.d-none.d-md-block FRONTEND
+                            h1.d-none.d-sm-block FRONTEND
+                        .row.bg-info.w-100.py-3(data-once="fade-up" data-once-offset="2")
+                            .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
+                                a.neon-btn(href="https://musicplayer-666.web.app/")
+                                    .d-flex.flex-column.justify-content-center
+                                        h1.display-1.border-bottom Vue
+                                        h3.display-3 音樂清單
+                                        .d-flex.justify-content-around
+                                            .badge.badge-light.mx-1 mp3 player
+                                            .badge.badge-light.mx-1 firebase
+                                            .badge.badge-light.mx-1 youtube api
+                                    span
+                                    span
+                                    span
+                                    span
+                            .col-sm-12.col-md-6.px-3.py-3
+                                h1.heading(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單
+                                img(style="max-width:100%;margin-top:-100px" src="assets/mvbox.min.gif", alt="")
+                        .py-5
+                        .row.flex-row-reverse.bg-primary.w-100.py-3(data-once="fade-up" data-once-offset="2")
+                            .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
+                                a.neon-btn(href="http://chatroom-websocket.com/")
+                                    .d-flex.flex-column.justify-content-center
+                                        h1.display-1.border-bottom React
+                                        h3.display-3 聊天室
+                                        .d-flex.justify-content-around
+                                            .badge.badge-light.mx-1 node server
+                                            .badge.badge-light.mx-1 sqlite
+                                            .badge.badge-light.mx-1 socket.io
+                                            .badge.badge-light.mx-1 Next.js SSR
+                                    span
+                                    span
+                                    span
+                                    span
+                            .col-sm-12.col-md-6.px-3.py-3
+                                h1.text-light.heading(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片
+                                img(style="max-width:100%;margin-top:-100px" src="assets/chatroom.gif", alt="")
+                        .py-5
+                        .w-100.d-flex.justify-content-around.bg-danger.py-3
+                            h1 BACKEND
+                            h1.d-none.d-md-block BACKEND
+                            h1.d-none.d-sm-block BACKEND
+                        .row.bg-warning.py-3(data-once="fade-up" data-once-offset="3")
+                            .col-sm-12.col-md-6.d-flex.flex-column.justify-content-center.align-items-center
+                                h1.display-1.border-bottom Python
+                                h3.display-3 文章點滴
+                                .d-flex.justify-content-around
+                                    span.badge.badge-light.mx-1 爬蟲
+                                    span.badge.badge-light.mx-1 數據分析
+                                    span.badge.badge-light.mx-1 後端框架
+                                    span.badge.badge-light.mx-1 資料庫
+                            .col-sm-12.col-md-6.d-flex.flex-wrap.align-items-center
+                                .list-group.w-100.text-center.py-3.px-3
+                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/2aiF1bNaQrOHnYpln9SxaQ" target="_blank") 爬蟲菜單
+                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/82tLFMonR1CNdVfN7RMJXQ" target="_blank") 資料庫筆記
+                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/Zx2flP23T4apmwSYcjBXxQ" target="_blank") 統計筆記
+                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/DaH8WZpgRR6A6UO_qIKPYw" target="_blank") 資料科學
+                section.overflow-hidden.w-100
+                    svg#wave-top.w-100
+                    #how-i-apply.display-4
+                    svg#wave-bottom.w-100
+                    .bg-primary
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1 linebot
+                                span.badge.badge-info.mx-1 line API
+                                span.badge.badge-info.mx-1 node
+                                span.badge.badge-info.mx-1 mongodb
+                                p line開放開發者使用messaging api的服務，可以新增機器人的頻道，將channelId、channelSecret、channelAccessToken 透過安全應用層https以post的方式和後端伺服器安全地連結，同時後端node.js套件npm中有一個linebot套件包，結合免費的Heroku---提供免費後端平台的服務PaaS，就能客製化自動彙整班兵回報的機器人
+                                a(href="https://github.com/billju/ninja-hattori" target="_blank") https://github.com/billju/ninja-hattori
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1 android
+                                span.badge.badge-info.mx-1 demos
+                                p 創客社的夥伴鼓吹大家多多參與競賽，在一次的ARM嵌入式系統開發競賽前，利用自上海交換學生回國的暑假期間，挑戰速學Android應用程式開發。
+                                a(href="https://github.com/billju/Android-source-code-demo" target="_blank") https://github.com/billju/Android-source-code-demo
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1 packing
+                                span.badge.badge-info.mx-1 operation research
+                                span.badge.badge-info.mx-1 optimizer
+                                span.badge.badge-info.mx-1 gurobi
+                                p
+                                a(href="https://github.com/billju/gurobi-packing" target="_blank") https://github.com/billju/gurobi-packing
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1 transcriber
+                                span.badge.badge-info.mx-1 rich text editor
+                                span.badge.badge-info.mx-1 web audio
+                                span.badge.badge-info.mx-1 media
+                                span.badge.badge-info.mx-1 SRT file IO
+                                p 逐字稿&amp;字幕編輯軟體
+                                p 工作上常常都需要撰寫會議記錄，需要一個工具能夠回播音檔同時能夠饌打文字，而且要有視覺化的音軌，因此自製了波峰取樣與文字編輯功能，不僅避開web audio的音樂解碼會佔據大量記憶體的問題，讓長達數小時的影音也能將波形視覺化，也能藉由格行標籤快速跳點。
+                                p everytime when transcribing from meeting is too trivial
+                section.bg-dark
+                    canvas#chart(data-top="transform:translateY(0px)" data-top2000="transform:translateY(2000px)" style="transition:transform 1s cubic-bezier(0.23, 1, 0.32, 1)")
+                    .position-relative.text-light(style="height:2000px")
+                        .position-absolute.w-100.px-3(style="top:0")
+                            .d-inline-block
+                                h1.display-1 Data Scientist
+                                h3.display-3.text-right Gradient Desecent
+                                h5.heading.float-right with custom chart
+                            p.text-right.mt-3.px-3 Here I'll show you how a regression model is trained.
+                section
+                    .container-lg
+                        h1 交通地圖
+                        span 讀運系卻搞資訊，做過票證分析、旅行時間預測模型、浮車法調查APP、客運評鑑系統
+                        p 我希望整合交通資訊，讓規劃者有更好的依據，讓用路人有更好的選擇
+                        p traffic
+                        p network
+                        p city plan
+                        p environment
+                        p land owner
+                        p engineering
+                section
+                    canvas#maze.w-100.vh-100(data-top="transform:translateY(0px)" data-top1500="transform:translateY(1500px)" style="transition:transform 1s cubic-bezier(0.23, 1, 0.32, 1)")
+                    .position-relative(style="height:1500px")
+                        .position-absolute.w-100.px-3(style="top:0")
+                            .d-inline-block.bg-light-white
+                                h1.display-1.bg-light-white Path Finder
+                                h3.display-3.text-right Route Optimization
+                                h5.heading.float-right.bg-light-white A* Algorithm
+                            p.text-right.my-3.px-3.py-3.bg-light-white Here I'll show you how to solve this maze.
+                section
+                    svg#pulse.w-100
+                    .display-2(data-once="fade-left") more projects
+                    .container-lg
+                        .row
+                            .col-sm-12.col-md-4
+                                .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3(data-once="fade-up")
+                                    .hover-mask
+                                        .bg-img(style="height:300px;background:url(assets/pomodoro.gif)")
+                                        .mask visit site
+                                    .px-2.py-2
+                                        h3 Pomodoro
+                                .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                                    .hover-mask
+                                        .bg-img(style="height:300px;background:url(assets/tetris.gif)")
+                                        .mask visit site
+                                    .px-2.py-2
+                                        h3 Tetris
+                            .col-sm-12.col-md-4
+                                .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                                    .hover-mask
+                                        .bg-img(style="height:400px;background:url(assets/agario.gif)")
+                                        .mask visit site
+                                    .px-2.py-2
+                                        h3 Agar.io
+                                .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                                    .hover-mask
+                                        .bg-img(style="height:300px;background:url(assets/draggableTetris.gif)")
+                                        .mask visit site
+                                    .px-2.py-2
+                                        h3 Draggable Tetris
+                            .col-sm-12.col-md-4
+                                .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                                    .hover-mask
+                                        .bg-img(style="height:250px;background:url(assets/freecell.gif)")
+                                        .mask visit site
+                                    .px-2.py-2
+                                        h3 Freecell
+                                .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
+                                    .hover-mask
+                                        .bg-img(style="height:250px;background:url(assets/greenband.gif)")
+                                        .mask visit site
+                                    .px-2.py-2
+                                        h3 Greenband
+                .position-relative.bg-primary(style="height:500px")
+                    canvas#fractal-tree.w-100.h-100.position-absolute
+                    .position-absolute(style="bottom:0;left:0").px-3.py-3.text-light
+                        h3.display-4 contact me
+                        .d-flex.flex-wrap.justify-content-around
+                            img(src="assets/facebook.png")
+                            img(src="assets/gmail.png")
+                            img(src="assets/github.png")
+                            img(src="assets/codepen.png")
+        .smooth-scroll-hitbox
+        footer#fullscreen.bg-dark.text-light(onclick="closeFS()")
+            .container.h-100.d-flex.flex-column.justify-content-center.align-items-center
+                a(href="#" target="_blank")
+                    img(src="assets/pomodoro.gif", alt="" style="max-width: 100%")
+                h1
+                p Lorem ipsum dolor sit amet consectetur `adipisicing elit. Perspiciatis dolorum eius inventore officia qui quisquam, aspernatur quaerat sint, assumenda nobis architecto corporis excepturi atque asperiores tempora non quibusdam aperiam vitae.
+        script(src="js/textFx.js")
+        script(src="js/chart.js")
+        script(src="js/skr.js")
+        script(src="js/fractalTree.js")
+        script(src="js/maze.js")
+        script(src="js/index.js")
+        
