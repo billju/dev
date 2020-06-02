@@ -259,7 +259,7 @@ export function defaultMazeInteraction(mazeContainer){
     maze.waiting = false
     var startNode, endNode, timeout, astar
     resetMaze()
-    maze.container.onclick = e=>{
+    function handleClick(e){
         if(maze.waiting){
             resetMaze()
             maze.waiting = false
@@ -309,4 +309,5 @@ export function defaultMazeInteraction(mazeContainer){
     window.addEventListener('resize',()=>{
         resetMaze()
     })
+    return handleClick
 }

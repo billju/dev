@@ -1,6 +1,6 @@
 import '../css/bootstrap.css'
 import '../css/index.css'
-import '../css/navbar.css'
+import '../css/animate.css'
 import pumpingConcentricCircle from './pumpingCircle.js'
 import {Chart, Matrix, Dataset} from './chart.js'
 import {Wave} from './wave.js'
@@ -9,7 +9,7 @@ import {Node, Maze, Astar, defaultMazeInteraction} from './maze.js'
 import {FractalTree, defaultFractalTreeInteraction} from './fractalTree.js'
 import {skr, smoothScroll} from './skr.js'
 // pumping animation
-pumpingConcentricCircle(document.getElementById('loading'))
+pumpingConcentricCircle(document.getElementById('pumping-circle'))
 
 // chart
 const dataset = new Dataset().random(50)
@@ -29,20 +29,17 @@ draw()
 setInterval(()=>{dataset.random(50)},2000)
 
 // text fx
-HiddenText(document.getElementById('chuboy'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'top')
-HiddenText(document.getElementById('web-dev'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left')
-HiddenText(document.getElementById('data-analyst'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'right')
 TypingText(document.getElementById('typing-text'),[
     'Hi, my name is chuboy.',
-    'I am a developer and data analyst.',
+    'I am a developer as well as a data analyst.',
     "Let's scroll down and explore what I created."
 ],50)
 HoppingText(document.getElementById('my-skills'))
 FlipText(document.getElementById('how-i-apply'),[
-    '我的生活記錄',
-    '構想的啟發',
-    '讓繁瑣工作變得有趣',
-],100)
+    'My little story about discovery.',
+    'All about how I make trivial work more intersting.',
+    'Even during the military service, I created linebot.',
+],32)
 
 // svg wave
 let waveTop = new Wave(document.getElementById('wave-top'))
@@ -100,45 +97,47 @@ pulseBottom.init()
 pulseBottom.svg.onclick = e=>{pulseBottom.init()}
 
 // maze
-defaultMazeInteraction(document.getElementById('maze'))
-
+const handleMazeClick = defaultMazeInteraction(document.getElementById('maze'))
+document.getElementById('maze-description').onclick = e=>{handleMazeClick()}
 // fullscreen cards
 const shakers = [
     {
         src:'assets/pomodoro.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/agMBRX',
-        title: '',
-        description: ''
+        title: 'Pomodoro番茄鐘',
+        description: '所謂番茄鐘工作法，每25分全神貫注後休息5分，可有效保持效率平衡，藉由小程式可以編排代辦事項、管控時間，(P.S.這個版面是RWD的)。'
     },
     {
         src:'assets/tetris.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/YoVNoW',
-        title: '',
-        description: ''
+        title: 'Tetris',
+        description: '經典復刻板，採用Vue框架渲染，具有combo計分機制，齁住方塊。'
     },
     {
         src:'assets/agario.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/dzNxQO',
-        title: '',
-        description: ''
+        title: 'Agar.io',
+        description: '經典多人遊戲單機板，以90秒限時挑戰模式計分，但要小心全世界都來吃你。'
     },
     {
         src:'assets/draggabletetris.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/RXxdVd',
         title: 'Draggable Tetris',
-        description: ''
+        description: '經典新玩法，給老弟畢專一個參考。'
     },
     {
         src:'assets/freecell.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/NZQwLR',
-        title: '',
-        description: ''
+        title: 'Freecell新接龍',
+        description: '前端精神屋作品，rewind倒轉，hint提示，auto自動遊玩(不保證通關)，雙擊自動擺牌，rule規則說明。'
     },
     {
         src:'assets/greenband.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/mQvxPV',
-        title: '',
-        description: ''
+        title: '綠燈帶最佳化',
+        description: `每當我們開車時總希望綠燈一直亮，號誌的調整其實也是門學問，這段可連續通過路口的時間稱作綠燈帶，專業解釋是一個號誌周期內能夠連續通過路口的時長。
+        傳統作法是以手繪線條進行逐步迭代求解，作法頗為曠日費時，藉由簡單的計算機程式可輸入周期、速率、路口長度、時差、綠燈時長參數，讓初學者可體驗連續綠口的號誌控制，
+        瞭解雙向的時間取捨要兩全其美並不容易。`
     },
 ]
 document.querySelectorAll('.shaker').forEach((el,i)=>{
@@ -177,5 +176,19 @@ fullscreen.onclick = e=>{
 defaultFractalTreeInteraction(document.getElementById('fractal-tree'))
 
 // scroll fx
-skr()
-smoothScroll(document.querySelector('.smooth-scroll-container'))
+if(!navigator.userAgent.includes('MSIE')&&!navigator.userAgent.includes('Edge')){
+    skr()
+    smoothScroll(document.getElementById('smooth-scroll-container'))
+}
+    
+window.onload = ()=>{
+    const lp = document.getElementById('loading-page')
+    lp.style.opacity = 0
+    // window.dispatchEvent(new Event('resize'))
+    HiddenText(document.getElementById('chuboy'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'top',0)
+    HiddenText(document.getElementById('web-dev'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'left',1000)
+    HiddenText(document.getElementById('data-analyst'),{padding:'25px',fontWeight:'bold'},{background:'dodgerblue'},'right',2000)
+    setTimeout(()=>{
+        lp.style.display = 'none'
+    },1000)
+}

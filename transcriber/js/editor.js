@@ -11,6 +11,7 @@ export default class Editor{
         })
         this.oncue = ()=>{}
         this.currentTime = 0
+        this.update()
         this.textEditor.addEventListener('keydown',e=>{
             this.keydown(e)
         })
@@ -109,10 +110,8 @@ export default class Editor{
         if(lastFile)
             this.textEditor.innerHTML = lastFile
     }
-    autoSave(){
-        setInterval(()=>{
-            localStorage.setItem('vizTranscriber',this.textEditor.innerHTML)
-        },3000)   
+    save(){
+        localStorage.setItem('vizTranscriber',this.textEditor.innerHTML)
     }
     importSrt(srt){
         function parseSrt(srt){

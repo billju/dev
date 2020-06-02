@@ -4,7 +4,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 module.exports = {
-    entry: ['@babel/polyfill','./intro/js/index.js'],
+    entry: ['@babel/polyfill','./transcriber/js/index.js'],
     module: {
         rules: [
             {
@@ -57,7 +57,7 @@ module.exports = {
         new MiniCssExtractPlugin({ filename: '[name].css' }),
         new TerserPlugin(),
         new HtmlWebpackPlugin({
-            template: './intro/index.pug',
+            template: './transcriber/index.pug',
             filename: 'index.html',
             minify: {
                 collapseBooleanAttributes: true,
@@ -76,6 +76,7 @@ module.exports = {
         }),
     ],
     output: {
+        publicPath: '/',
         path: path.resolve(__dirname, 'dist'),
         filename: '[name].min.js',
     },

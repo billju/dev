@@ -43,8 +43,8 @@ async function handleFile(file){
     }
 }
 
-editor.loadFromLocalStorage()
-editor.autoSave()
+// editor.loadFromLocalStorage()
+setInterval(()=>{editor.save()},3000)
 editor.oncue = e=>{
     player.currentTime = e.time
 }

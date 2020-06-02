@@ -1,4 +1,4 @@
-export function HiddenText(element,textStyle={},maskStyle={},dir='top'){
+export function HiddenText(element,textStyle={},maskStyle={},dir='top',delay=0){
     let axis = dir=='top'||dir=='bottom'?'Y':'X'
     let sign = dir=='top'||dir=='left'?1:-1
     let textDiv = document.createElement('div')
@@ -30,13 +30,13 @@ export function HiddenText(element,textStyle={},maskStyle={},dir='top'){
     })
     setTimeout(()=>{
         textDiv.style.transform = `translate${axis}(0%)`
-    },1500)
+    },1500+delay)
     setTimeout(()=>{
         maskDiv.style.transform = `translate${axis}(${sign*-100}%)`
-    },1000)
+    },1000+delay)
     setTimeout(()=>{
         maskDiv.style.transform = `translate${axis}(0%)`
-    },100)
+    },100+delay)
 }
 export function HoppingText(element){
     let chars = element.textContent
@@ -52,18 +52,21 @@ export function HoppingText(element){
         Object.assign(div.style,{
             display: 'inline-block',
             transform: 'translateY(100%)',
-            opacity: 1
+            opacity: 1,
+            transition: '1s ease-out'
         })
-        div.animate([
-            {transform: 'translateY(100%)',opacity: 1,easing:'ease-out'},
-            {transform: 'translateY(0%)',opacity: 1,offset:0.1},
-            {transform: 'translateY(0%)',opacity: 0,offset:0.9,easing:'ease-out'},
-            {transform: 'translateY(100%)',opacity: 0},
-        ],{
-            duration: 6000,
-            delay: i*100,
-            iterations: Infinity,
-        })
+        if(!navigator.userAgent.includes('Edge')&&!navigator.userAgent.includes('MSIE')){
+            div.animate([
+                {transform: 'translateY(100%)',opacity: 1,easing:'ease-out'},
+                {transform: 'translateY(0%)',opacity: 1,offset:0.1},
+                {transform: 'translateY(0%)',opacity: 0,offset:0.9,easing:'ease-out'},
+                {transform: 'translateY(100%)',opacity: 0},
+            ],{
+                duration: 6000,
+                delay: i*100,
+                iterations: Infinity,
+            })
+        }
     }
 }
 export function TypingText(element,texts=[''],delay=50){
@@ -74,15 +77,9 @@ export function TypingText(element,texts=[''],delay=50){
         margin: '2px',
         border: '1px solid black'
     })
-    cursor.animate([
-        {opacity: 0},
-        {opacity: 1},
-        {opacity: 0},
-    ],{
-        duration: 1000,
-        iterations: Infinity,
-        easing: 'steps(2,end)',
-    })
+    setInterval(()=>{
+        cursor.style.opacity = cursor.style.opacity==0?1:0
+    },500)
     element.appendChild(span)
     element.appendChild(cursor)
     let curIdx = 0, txtIdx = 0

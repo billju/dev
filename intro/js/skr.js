@@ -22,7 +22,7 @@ export function skr(node=document.body){
                         y: node.offsetTop-window.innerHeight+node.clientHeight*offset,
                         fromStyle: animations[node.dataset[key]].from,
                         toStyle: animations[node.dataset[key]].to,
-                        active: false,
+                        active: true,
                         transitionDuration: node.dataset['once-duration']||1000,
                         transitionDelay: node.dataset['once-delay']||0,
                         transitionTimingFunction: node.dataset['once-timing-function']||'ease'
@@ -58,9 +58,6 @@ export function skr(node=document.body){
     }else if(keyPoints.length){
         let initStyle = node.getAttribute('style')?node.getAttribute('style'):''
         keyPoints.sort((a,b)=>a.y-b.y)
-        function getMatchArray(string,regexp){
-            return Array.from(string.matchAll(regexp),x=>x[0])
-        }
         function handleScroll(){
             let cssText = keyPoints[keyPoints.length-1].cssText
             for(let i=1;i<keyPoints.length;i++){
@@ -70,8 +67,8 @@ export function skr(node=document.body){
                     let ratio = (window.scrollY-prev.y)/(next.y-prev.y)
                     ratio = ratio<0?0:ratio>1?1:ratio
                     cssText = cssText.replace(/[-\d]+/g, '{}')
-                    let prevs = getMatchArray(prev.cssText, /([-\d]+)/g)
-                    let nexts = getMatchArray(next.cssText, /([-\d]+)/g)
+                    let prevs = prev.cssText.match(/([-\d]+)/gi)
+                    let nexts = next.cssText.match(/([-\d]+)/g)
                     prevs.map((a,i)=>{
                         a = parseInt(a)
                         let b = parseInt(nexts[i])
@@ -92,14 +89,13 @@ export function skr(node=document.body){
     }
 }
 
-export function smoothScroll(container){
+export function smoothScroll(container,timingFunction='cubic-bezier(0.23, 1, 0.32, 1)'){
     document.addEventListener('DOMContentLoaded', () => { 
         container.style.overflow = 'hidden'
         container.style.position = 'fixed'
         container.style.height = '100vh'
         container.style.width = '100vw'
         const duration = 1000
-        const timingFunction = 'cubic-bezier(0.23, 1, 0.32, 1)'
         const translator = container.firstElementChild
         translator.style.transform = `translateY(${-window.scrollY}px)`
         translator.style.transition = `transform ${duration}ms ${timingFunction}`

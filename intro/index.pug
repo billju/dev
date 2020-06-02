@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 html(lang="en")
     head
         meta(charset="UTF-8")
@@ -7,7 +6,9 @@ html(lang="en")
         title ChuBoy
     body
         header
-            nav.navbar(style="display:none")
+            #loading-page.bg-dark.w-100.vh-100.position-fixed(style="z-index:666;transition: 1s")
+                #pumping-circle
+            //nav.navbar(style="display:none")
                 .container
                     a.navbar-brand(href='#') chuboy
                     input.navbar-toggler(type='checkbox')
@@ -22,12 +23,11 @@ html(lang="en")
                             a(href='#') articles
                         li
                             a(href='#') about
-        main.smooth-scroll-container
-            .smooth-scroll-translator
-                section.vh-100.position-relative.overflow-hidden.d-flex.flex-column.justify-content-center.align-items-center
-                    .row
+        main#smooth-scroll-container
+            #smooth-scroll-translator
+                section.vh-100.overflow-hidden.d-flex.flex-column.justify-content-center.align-items-center
+                    .row.my-3
                         .col-sm-12.col-md-7.d-flex.align-items-center.justify-content-center
-                            #loading.position-relative
                             .display-1#chuboy ChuBoy
                         .col-sm-12.col-md-5
                             .display-4#web-dev web developer
@@ -103,46 +103,59 @@ html(lang="en")
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/DaH8WZpgRR6A6UO_qIKPYw" target="_blank") 資料科學
                 section.overflow-hidden.w-100
                     svg#wave-top.w-100
-                    #how-i-apply.display-4
+                    h3#how-i-apply.my-5
                     svg#wave-bottom.w-100
-                    .bg-primary
+                    .bg-primary.pt-5
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
-                                h1 linebot
+                                h1 Linebot聊天機器人
                                 span.badge.badge-info.mx-1 line API
                                 span.badge.badge-info.mx-1 node
                                 span.badge.badge-info.mx-1 mongodb
-                                p line開放開發者使用messaging api的服務，可以新增機器人的頻道，將channelId、channelSecret、channelAccessToken 透過安全應用層https以post的方式和後端伺服器安全地連結，同時後端node.js套件npm中有一個linebot套件包，結合免費的Heroku---提供免費後端平台的服務PaaS，就能客製化自動彙整班兵回報的機器人
+                                p 故事由來：服役期間受營外回報所困擾，只要是最晚回的那個就得隨時收集大家的訊息並且按照座號排序整理，為了不讓大家互相傷害，乾脆寫一支linebot幫忙搞定!!!
+                                p 技術層面：line開放開發者使用messaging api的服務，可以新增機器人的頻道，將channelId、channelSecret、channelAccessToken 
+                                    | 透過安全應用層https以post的方式和後端伺服器安全地連結，同時後端node.js套件npm中有一個linebot套件包，結合免費的
+                                    | Heroku---提供免費後端平台的服務PaaS，就能客製化自動彙整班兵回報的機器人。
                                 a(href="https://github.com/billju/ninja-hattori" target="_blank") https://github.com/billju/ninja-hattori
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
-                                h1 android
+                                h1 Android範例
                                 span.badge.badge-info.mx-1 demos
-                                p 創客社的夥伴鼓吹大家多多參與競賽，在一次的ARM嵌入式系統開發競賽前，利用自上海交換學生回國的暑假期間，挑戰速學Android應用程式開發。
+                                p 故事由來：當創客時參加了ARM競賽，以無人商店為題，因緣際會下自學安卓APP開發，希望寫個APP能夠掃描商品標間，並配合物聯網將客人的需求快速加入購物車，
+                                    | 為了不忘記這些技術概念，將每塊功能模組用法用範例的方式紀錄下來作為手冊。
                                 a(href="https://github.com/billju/Android-source-code-demo" target="_blank") https://github.com/billju/Android-source-code-demo
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
-                                h1 packing
+                                h1 Packing最佳化
                                 span.badge.badge-info.mx-1 operation research
                                 span.badge.badge-info.mx-1 optimizer
                                 span.badge.badge-info.mx-1 gurobi
-                                p
+                                p 故事由來：就學期間有門課在研究線性規劃模型，我將其套用在物流業界中貨物堆疊的問題，此模型可額外擴充堆疊條件，像是貨物的重量、下方貨物的面積。
                                 a(href="https://github.com/billju/gurobi-packing" target="_blank") https://github.com/billju/gurobi-packing
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
-                                h1 transcriber
+                                h1 逐字稿&amp;字幕編輯軟體
                                 span.badge.badge-info.mx-1 rich text editor
                                 span.badge.badge-info.mx-1 web audio
                                 span.badge.badge-info.mx-1 media
                                 span.badge.badge-info.mx-1 SRT file IO
-                                p 逐字稿&amp;字幕編輯軟體
-                                p 工作上常常都需要撰寫會議記錄，需要一個工具能夠回播音檔同時能夠饌打文字，而且要有視覺化的音軌，因此自製了波峰取樣與文字編輯功能，不僅避開web audio的音樂解碼會佔據大量記憶體的問題，讓長達數小時的影音也能將波形視覺化，也能藉由格行標籤快速跳點。
+                                p 故事由來：開會總是要做會議紀錄，若要在紀錄細節時，邊聽錄音檔邊寫紀錄常常需要切換桌面應用程式，不斷切換播放器與編輯器的頁面，還容易因為沒打時間點，花費許多額外心力尋找關鍵字，
+                                    | 因此我特製了專屬編輯器讓工作變得更方便，後來又靈光乍現地擴充了影片上字幕功能，並且把檔案IO格式轉為通用的SRT，讓影音製作者也能夠享受到這番方便性。
+                                p 技術層面：以analyser即時產出的波峰進行取樣，避開了web audio的音樂解碼會佔據大量記憶體的問題，讓長達數小時的影音也能將波形視覺化，也能藉由自製文本編輯器格行標籤快速跳點。
                                 p everytime when transcribing from meeting is too trivial
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1 Webpack我全包了
+                                span.badge.badge-info.mx-1 npm
+                                span.badge.badge-info.mx-1 webpack
+                                p 最新文章，webpack入門與設定範例，介紹如何打包HTML/Pug, CSS/Sass/Scss, JS/Babel。
+                                a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA
+
                 section.bg-dark
                     canvas#chart(data-top="transform:translateY(0px)" data-top2000="transform:translateY(2000px)" style="transition:transform 1s cubic-bezier(0.23, 1, 0.32, 1)")
                     .position-relative.text-light(style="height:2000px")
-                        .position-absolute.w-100.px-3(style="top:0")
-                            .d-inline-block
+                        .position-absolute.w-100(style="top:0")
+                            .d-inline-block.px-3
                                 h1.display-1 Data Scientist
                                 h3.display-3.text-right Gradient Desecent
                                 h5.heading.float-right with custom chart
@@ -152,24 +165,23 @@ html(lang="en")
                         h1 交通地圖
                         span 讀運系卻搞資訊，做過票證分析、旅行時間預測模型、浮車法調查APP、客運評鑑系統
                         p 我希望整合交通資訊，讓規劃者有更好的依據，讓用路人有更好的選擇
-                        p traffic
-                        p network
-                        p city plan
-                        p environment
-                        p land owner
-                        p engineering
                 section
                     canvas#maze.w-100.vh-100(data-top="transform:translateY(0px)" data-top1500="transform:translateY(1500px)" style="transition:transform 1s cubic-bezier(0.23, 1, 0.32, 1)")
-                    .position-relative(style="height:1500px")
+                    #maze-description.position-relative.bg-light-white(style="height:1500px")
                         .position-absolute.w-100.px-3(style="top:0")
-                            .d-inline-block.bg-light-white
-                                h1.display-1.bg-light-white Path Finder
-                                h3.display-3.text-right Route Optimization
-                                h5.heading.float-right.bg-light-white A* Algorithm
-                            p.text-right.my-3.px-3.py-3.bg-light-white Here I'll show you how to solve this maze.
+                            .d-inline-block.bg-light-white.px-3
+                                h1.display-1 Path Finder
+                                h3.display-3.text-right Click me!!!
+                                h5.heading.float-right A* Algorithm
+                            .text-center.my-3.py-3.bg-light-white
+                                p Here I'll show you how to solve this maze.
+                                p We use a classic algorithm called A*.
+                                p It's clever and very compuational efficient.
+                                p This algorithm is widely used, especially at game.
+                                p By the way, something I would like to say is that - when it comes to algorithm research, I can do a good job.
                 section
                     svg#pulse.w-100
-                    .display-2(data-once="fade-left") more projects
+                    h1.display-2.text-center(data-once="fade-left") MORE PROJECTS
                     .container-lg
                         .row
                             .col-sm-12.col-md-4
@@ -214,23 +226,24 @@ html(lang="en")
                 .position-relative.bg-primary(style="height:500px")
                     canvas#fractal-tree.w-100.h-100.position-absolute
                     .position-absolute(style="bottom:0;left:0").px-3.py-3.text-light
+                        a(href="https://chuboy.co")
+                            h3 Previous Version
                         h3.display-4 contact me
                         .d-flex.flex-wrap.justify-content-around
-                            img(src="assets/facebook.png")
-                            img(src="assets/gmail.png")
-                            img(src="assets/github.png")
-                            img(src="assets/codepen.png")
-        .smooth-scroll-hitbox
+                            a.jello(href="https://www.facebook.com/baibai.zhu1" target="_blank")
+                                img(src="assets/facebook.png")
+                            a.jello(href="mailto:billju666@gmail.com" target="_blank")
+                                img(src="assets/gmail.png")
+                            a.jello(href="https://github.com/billju" target="_blank")
+                                img(src="assets/github.png")
+                            a.jello(href="https://codepen.io/HandsomeChuBoy" target="_blank")
+                                img(src="assets/codepen.png")
+        #smooth-scroll-hitbox
         footer#fullscreen.bg-dark.text-light
             .container.h-100.d-flex.flex-column.justify-content-center.align-items-center
                 a(href="#" target="_blank")
                     img(src="assets/pomodoro.gif", alt="" style="max-width: 100%")
                 h1
                 p Lorem ipsum dolor sit amet consectetur `adipisicing elit. Perspiciatis dolorum eius inventore officia qui quisquam, aspernatur quaerat sint, assumenda nobis architecto corporis excepturi atque asperiores tempora non quibusdam aperiam vitae.
-        script(src="js/textFx.js")
-        script(src="js/chart.js")
-        script(src="js/skr.js")
-        script(src="js/fractalTree.js")
-        script(src="js/maze.js")
-        script(src="js/index.js")
+                small 點圖片進入連結，點黑邊返回
         
