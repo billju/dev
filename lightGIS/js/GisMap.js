@@ -170,7 +170,7 @@ class GisMap{
         this.moveEvent = {x:0,y:0,vx:0,vy:0,active:false,moved:false}
         this.panEvent = {before:xyz,after:xyz,t:0,frames:60}
         this.drawEvent = {path:[],active:false,snap:false}
-        this.selectEvent = {x:0,y:0,bbox:[0,0,0,0],features:[],ctrlKey:false,active:false}
+        this.selectEvent = {x:0,y:0,bbox:[0,0,0,0],features:[],ctrlKey:false,active:false,styling:false}
         this.modifyEvent = {feature:null,anchor:-1,coords:[],geomType:null}
         this.animationFrame = null
         this.render = ()=>{
@@ -218,8 +218,8 @@ class GisMap{
                 this.ctx.globalAlpha = raster.opacity
                 this.renderTiles(raster.url)
             }
-            for(let feature of this.vector){
-                this.renderVector(feature)
+            for(let i=this.vector.length-1;i>=0;i--){
+                this.renderVector(this.vector[i])
             }
             if(this.drawEvent.active){
                 this.renderDraw()
@@ -336,73 +336,68 @@ class GisMap{
         }
         if(this.selectEvent.ctrlKey){
             this.selectEvent.active = true
-            this.selectEvent.x = e.clientX
-            this.selectEvent.y = e.clientY
             let coord = this.client2coord([e.clientX,e.clientY])
             this.selectEvent.bbox = [coord[0],coord[1],coord[0],coord[1]]
         }else{
             this.moveEvent.active = true
-            this.moveEvent.x = e.clientX
-            this.moveEvent.y = e.clientY
             e.target.style.cursor = 'grabbing'
             if(e.button==2){
                 this.drawEvent.active = true
-            }
-        }   
-    }
-    handleMousemove(e){
-        if(this.modifyEvent.anchor!=-1){
-            let i = this.modifyEvent.anchor
-            this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
-            if(this.modifyEvent.geomType=='POLYGON'){
-                if(i==0)
-                    this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[i]
-                else if(i==this.modifyEvent.coords.length-1)
-                    this.modifyEvent.coords[0] = this.modifyEvent.coords[i]
-            }
-        }else{
-            if(this.moveEvent.active){
-                var vx = - e.clientX + this.moveEvent.x
-                var vy = e.clientY - this.moveEvent.y
-                if(Math.sqrt(vx*vx+vy*vy)>3){
-                    this.setView([vx,vy])
-                    this.moveEvent.moved = true
-                }
-                Object.assign(this.moveEvent,{vx, vy, t:90})
-            }
-            if(this.selectEvent.active){
-                var vx = - e.clientX + this.selectEvent.x
-                var vy = e.clientY - this.selectEvent.y
-                if(Math.sqrt(vx*vx+vy*vy)>3){
-                    this.selectEvent.moved = true
-                }
-                let coord = this.client2coord([e.clientX,e.clientY])
-                this.selectEvent.bbox[2] = coord[0]
-                this.selectEvent.bbox[1] = coord[1]
             }
         }
         this.moveEvent.x = e.clientX
         this.moveEvent.y = e.clientY
     }
+    handleMousemove(e){
+        let vx = - e.clientX + this.moveEvent.x
+        let vy = e.clientY - this.moveEvent.y
+        if((this.moveEvent.active||this.modifyEvent.active||this.selectEvent.active)&&Math.sqrt(vx*vx+vy*vy)>3)
+            this.moveEvent.moved = true
+        if(this.moveEvent.moved||this.drawEvent.active){
+            this.moveEvent.x = e.clientX
+            this.moveEvent.y = e.clientY
+        }
+        if(this.modifyEvent.anchor!=-1){
+            let i = this.modifyEvent.anchor
+            this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
+            if(this.modifyEvent.geomType=='POLYGON'&&i==0)
+                this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0]
+        }else{
+            if(this.moveEvent.active&&this.moveEvent.moved){
+                this.setView([vx,vy])
+                Object.assign(this.moveEvent,{vx, vy, t:90})
+            }
+            if(this.selectEvent.active){
+                let coord = this.client2coord([e.clientX,e.clientY])
+                this.selectEvent.bbox[2] = coord[0]
+                this.selectEvent.bbox[1] = coord[1]
+            }
+        }
+    }
     handleMouseup(e){
         if(this.modifyEvent.anchor!=-1){
+            if(!this.moveEvent.moved){
+                this.modifyEvent.coords.splice(this.modifyEvent.anchor,1)
+                if(this.modifyEvent.anchor==0)
+                    this.modifyEvent.coords.push(this.modifyEvent.coords[0])
+            }
             let coords = this.modifyEvent.coords
             let bbox = this.modifyEvent.feature.geometry.bbox // update bbox
             bbox[0] = Math.min(...coords.map(c=>c[0])); bbox[1] = Math.min(...coords.map(c=>c[1]))
             bbox[2] = Math.max(...coords.map(c=>c[0])); bbox[3] = Math.max(...coords.map(c=>c[1]))
-            let lnglats = coords.map(coord=>this.toLnglat(coord)) // update properties
-            if(this.modifyEvent.geomType=='LINESTRING')
-                this.modifyEvent.feature.properties['周長'] = getLength(lnglats).toFixed(0)+'公尺'
-            if(this.modifyEvent.geomType=='POLYGON'){
-                this.modifyEvent.feature.properties['周長'] = getLength(lnglats).toFixed(0)+'公尺'
-                this.modifyEvent.feature.properties['面積'] = getArea(lnglats).toFixed(0)+'平方公尺'
-            }
+            Object.assign(this.modifyEvent.feature.properties,this.getDerivedProperties(this.modifyEvent.feature))
         }
         if(this.drawEvent.active&&!this.moveEvent.moved){
             this.drawEvent.path.push(this.client2coord([e.clientX,e.clientY])) 
         }
+        const dispatchSelectEvent = (features)=>{
+            if(!this.drawEvent.active&&!this.modifyEvent.active){
+                this.selectEvent.features = features
+                this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features}}))
+            }
+        }
         if(this.selectEvent.active){
-            if(this.selectEvent.moved){
+            if(this.moveEvent.moved){
                 const swap = (a,b)=>{b=[a,a=b][0]}
                 let bbox = this.selectEvent.bbox
                 if(bbox[0]>bbox[2])
@@ -413,49 +408,58 @@ class GisMap{
                     let fgb = feature.geometry.bbox
                     return fgb[0]>=bbox[0]&&fgb[1]>=bbox[1]&&fgb[2]<=bbox[2]&&fgb[3]<=bbox[3]
                 }
-                this.selectEvent.features = this.vector.filter(feature=>isInBbox(feature))
-                this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features:this.selectEvent.features}}))
-            }else{
+                dispatchSelectEvent(this.vector.filter(feature=>isInBbox(feature)))
+            }else{ //toggle selection
                 let feature = this.detectClient([e.clientX,e.clientY])
                 if(feature){
-                    if(this.selectEvent.features.includes(feature)){
-                        this.selectEvent.features = this.selectEvent.features.filter(x=>x!=feature)
-                    }else{
-                        this.selectEvent.features.push(feature)
-                    }
-                    this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features:this.selectEvent.features}}))
+                    if(this.selectEvent.features.includes(feature))
+                        dispatchSelectEvent(this.selectEvent.features.filter(x=>x!=feature))
+                    else
+                        dispatchSelectEvent([...this.selectEvent.features,feature])
                 }
             }
         }else if(!this.moveEvent.moved){
             let feature = this.detectClient([e.clientX,e.clientY])
-            this.selectEvent.features = feature?[feature]:[]
-            this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features:this.selectEvent.features}}))
+            dispatchSelectEvent(feature?[feature]:[])
         }
         this.moveEvent.active = false
         this.moveEvent.moved = false
         this.selectEvent.active = false
-        this.selectEvent.moved = false
         this.modifyEvent.anchor = -1
         e.target.style.cursor = 'grab'
+    }
+    getDerivedProperties(feature){
+        let properties = {}
+        switch(feature.geometry.type){
+            case 'LINESTRING':
+                properties['周長'] = getLength(feature.geometry.coordinates.map(this.toLnglat)).toFixed(0)+'公尺'
+                break
+            case 'POLYGON':
+                properties['周長'] = getLength(feature.geometry.coordinates[0].map(this.toLnglat)).toFixed(0)+'公尺'
+                let area = feature.geometry.coordinates.reduce((acc,cur,i)=>{
+                    if(i==0) return acc+getArea(cur.map(this.toLnglat))
+                    else return acc-getArea(cur.map(this.toLnglat))
+                },0)
+                properties['面積'] = area.toFixed(0)+'平方公尺'
+                break
+            default: break
+        }
+        return properties
     }
     handleDblclick(e){
         if(this.drawEvent.active){
             let path = this.drawEvent.path.slice(0,-1)
-            let geomType = 'LineString'
-            let properties = {
-                '周長': getLength(path.map(this.toLnglat)).toFixed(0)+'公尺'
-            }
+            let geomType = 'LINESTRING'
             if(this.drawEvent.snap==true&&path.length>3){
+                geomType = 'POLYGON'
                 path[path.length-1] = path[0]
-                geomType = 'Polygon'
-                properties['面積'] = getArea(path.map(this.toLnglat)).toFixed(0)+'平方公尺'
                 path = [path]
             }
-            if(path.length==3){
-                let R = circleDefinedBy3Points(...path[0],...path[1],...path[2]).r
-                properties.R = R
+            let feature = {
+                geometry: { type: geomType, coordinates: path },
+                properties: {}
             }
-            this.addVector(geomType,path,properties, true)
+            this.addVector(geomType,feature.geometry.coordinates,this.getDerivedProperties(feature), true)
             this.drawEvent.path = []
             this.drawEvent.active = false
             this.drawEvent.snap = false
@@ -674,6 +678,7 @@ class GisMap{
     }
     geojson(geojson, projected=false){
         geojson.features.map(feature=>{
+            feature.geometry.type = feature.geometry.type.toUpperCase()
             let geom = feature.geometry
             geom.bbox = [Infinity,Infinity,-Infinity,-Infinity]
             const project = lnglat=>{
@@ -685,7 +690,7 @@ class GisMap{
                 lnglat[0] = x
                 lnglat[1] = y
             }
-            switch(geom.type.toUpperCase()){
+            switch(geom.type){
                 case 'POINT':
                     project(geom.coordinates);break;
                 case 'MULTIPOINT':
@@ -699,7 +704,7 @@ class GisMap{
                 case 'MULTIPOLYGON':
                     geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))));break;
             }
-            this.vector.push(feature)
+            this.vector.unshift(feature)
         })   
     }
     detectClient(client){
@@ -730,28 +735,49 @@ class GisMap{
         }
         return false
     }
-    renderVector(feature,style={}){
+    renderVector(feature){
         let tolerance = Math.pow(2,18-this.view.zoom)
         tolerance = tolerance<1?0:tolerance
-        if(this.selectEvent.features.includes(feature)){
+        let defaultFill = ['POLYGON','MULTIPOLYGON'].includes(feature.geometry.type)?'rgba(0,0,255,0.3)':undefined
+        let style = {
+            'stroke': feature.properties['stroke']||'dodgerblue',
+            'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
+            'fill': feature.properties['fill']||defaultFill,
+            'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5
+        }
+         // customize
+         if(feature.geometry.type =='MULTIPOLYGON'){
+            let fillMap = {
+                '公': 'rgba(254,255,191,1)',
+                '私': 'rgba(188,233,252,1)',
+                '公私共有': 'rgba(202,214,159,1)',
+                '公法人': 'rgba(215,177,158,1)',
+                '糖': 'rgba(239,177,208,1)'
+            }
+            let owner = feature.properties['權屬']
+            style.fill = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
+            this.ctx.globalAlpha = 1
+        }
+        // selected style
+        if(!this.selectEvent.styling&&this.selectEvent.features.includes(feature)){
             Object.assign(style,{
                 stroke: 'red',
                 fill: 'rgba(255,0,0,0.3)'
             })
         }
-        let fillMap = {
-            '公': 'rgba(254,255,191,1)',
-            '私': 'rgba(188,233,252,1)',
-            '公私共有': 'rgba(202,214,159,1)',
-            '公法人': 'rgba(215,177,158,1)',
-            '糖': 'rgba(239,177,208,1)'
+        // render
+        const drawCircle = (coord)=>{
+            this.ctx.beginPath()
+            this.ctx.moveTo(coord[0]+style.radius,coord[1])
+            this.ctx.arc(coord[0],coord[1],style.radius,0,Math.PI*2,false)
+            this.ctx.strokeStyle = style.stroke
+            this.ctx.lineWidth = style.lineWidth
+            this.ctx.fillStyle = style.fill
+            this.ctx.stroke()
+            this.ctx.fill()
+            this.ctx.closePath()
         }
-        let owner = feature.properties['權屬']
-        let fill = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
-        let radius = feature.properties.radius||5
-        this.ctx.globalAlpha = 1
-        
-        const drawPath = (coords,stroke,fill)=>{
+        const drawPath = (coords)=>{
             this.ctx.beginPath()
             coords.map((coord,i)=>{
                 let c = this.coord2client(coord)
@@ -760,73 +786,44 @@ class GisMap{
                 else
                     this.ctx.lineTo(c[0],c[1])
             })
-            if(stroke){
-                this.ctx.strokeStyle = stroke
-                this.ctx.stroke()
-            }
-            if(fill){
-                this.ctx.fillStyle = fill
+            if(style.fill){
+                this.ctx.fillStyle = style.fill
                 this.ctx.fill()
             }
+            this.ctx.strokeStyle = style.stroke
+            this.ctx.lineWidth = style.lineWidth
+            this.ctx.lineCap = 'round'
+            this.ctx.lineJoin = 'round'
+            this.ctx.stroke()
             this.ctx.closePath()
         }
-        switch(feature.geometry.type.toUpperCase()){
+        switch(feature.geometry.type){
             case 'POINT':
-                let c = this.coord2client(feature.geometry.coordinates)
-                this.ctx.beginPath()
-                this.ctx.moveTo(c[0]+radius,c[1])
-                this.ctx.arc(c[0],c[1],radius,0,Math.PI*2,false)
-                this.ctx.strokeStyle = style.stroke||'darkorange'
-                this.ctx.fillStyle = style.fill||'orange'
-                this.ctx.stroke()
-                this.ctx.fill()
-                this.ctx.closePath()
+                drawCircle(this.coord2client(feature.geometry.coordinates))
                 break
             case 'MULTIPOINT':
-                this.ctx.beginPath()
-                feature.geometry.coordinates.map((coord,i)=>{
-                    let c = this.coord2client(coord)
-                    this.ctx.moveTo(c[0],c[1])
-                    this.ctx.arc(c[0],c[1],radius,0,Math.PI*2,false)
+                feature.geometry.coordinates.map(coord=>{
+                    drawCircle(this.coord2client(coord))
                 })
-                this.ctx.strokeStyle = style.stroke
-                this.ctx.stroke()
-                this.ctx.closePath()
                 break
             case 'LINESTRING':
-                drawPath(
-                    feature.geometry.coordinates,
-                    style.stroke||'orange',
-                    undefined
-                )
+                drawPath(feature.geometry.coordinates)
                 break
             case 'MULTILINESTRING':
                 for(let coords of feature.geometry.coordinates){
-                    drawPath(
-                        DouglasPeucker(coords,tolerance),
-                        style.stroke||'orange',
-                        undefined
-                    )
+                    drawPath(DouglasPeucker(coords,tolerance))
                 }
                 break
             case 'POLYGON':
                 this.ctx.beginPath()
                 for(let coords of feature.geometry.coordinates){
-                    drawPath(
-                        coords,
-                        style.stroke||'dodgerblue',
-                        style.fill||'rgba(0,0,255,0.3)'
-                    ) 
+                    drawPath(coords) 
                 }
                 break
             case 'MULTIPOLYGON':
                 for(let coordinates of feature.geometry.coordinates){
                     for(let coords of coordinates){
-                        drawPath(
-                            DouglasPeucker(coords,tolerance),
-                            style.stroke||'dodgerblue',
-                            style.fill||fill
-                        )
+                        drawPath(DouglasPeucker(coords,tolerance),)
                     }
                 }
                 break

@@ -23,12 +23,26 @@
                 </td>
             </tr>
         </table>
-        <table id="properties" class="table table-striped table-hover table-dark" style="max-width:300px;max-height:100vh;position:fixed;left:0;top:0"></table>
         <input type="file" id="file" style="display: none;"
             onchange="handleFile(event.target.files[0])">
         <div id="drop-field" ondrop="handleDrop(event)" ondragover="event.preventDefault()"
             onclick="document.getElementById('file').click()">加入檔案</div>
     </div>
+    <table id="properties" class="table table-striped table-hover table-dark" style="max-width:300px;max-height:100vh;position:fixed;left:0;top:0"></table>
+    <table id="styles" class="table table-striped table-hover table-dark" style="max-width:300px;position:fixed;left:0;bottom:0">
+        <tr>
+            <td>lineWidth</td>
+            <td><input type="number" oninput="setFeatureProperties('lineWidth',event.target.value)"></td>
+        </tr>
+        <tr>
+            <td>stroke</td>
+            <td><input type="color" oninput="setFeatureProperties('stroke',event.target.value)"></td>
+        </tr>
+        <tr>
+            <td>fill</td>
+            <td><input type="color" oninput="setFeatureProperties('fill',event.target.value)"></td>
+        </tr>
+    </table>
 </body>
 <style>
     *{
@@ -97,6 +111,7 @@
         gm.handleMousemove(e)
     })
     canvas.addEventListener('select',e=>{
+        gm.selectEvent.styling = false
         if(e.detail.features.length==1){
             propsTable.innerHTML = ''
             Object.entries(e.detail.features[0].properties).map(([key,val])=>{
@@ -110,6 +125,11 @@
             propsTable.innerHTML = ''
         }
     })
+    function setFeatureProperties(key,value){
+        gm.selectEvent.styling = true
+        for(let feature of gm.selectEvent.features)
+            feature.properties[key] = value
+    }
     canvas.addEventListener('mouseup',e=>{
         for(let imageShape of imageShapes)
             imageShape.handleMouseup(e)
@@ -140,8 +160,8 @@
                 gm.selectEvent.features = []
             }
         }
-        if(e.ctrlKey&&e.code=='KeyZ'){
-            recycle.pop().map(feature=>{gm.vector.push(feature)})
+        if(e.ctrlKey&&e.code=='KeyZ'&&recycle.length){
+            gm.vector.unshift(...recycle.pop())
         }
         if(e.code=='KeyM'){
             if(gm.selectEvent.features.length==1){
