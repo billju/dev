@@ -1,10 +1,13 @@
 # lightGIS
 ## todo list
 * style table
-* layer toggle
+* layer manager
 * overlay icon
 * export geojson
-* csv handler
-* ptx bus, ibike,
-* remove image backround color
-* border expanding
+* kml,csv handler
+* ptx bus, ibike, sites
+* remove image backround
+* add extent padding
+* raster min max zoom level
+* measure mode(line labeling)
+* patrol

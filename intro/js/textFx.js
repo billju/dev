@@ -69,13 +69,13 @@ export function HoppingText(element){
         }
     }
 }
-export function TypingText(element,texts=[''],delay=50){
+export function TypingText(element,texts=[''],delay=50,color='black'){
     let cursor = document.createElement('span')
     let span = document.createElement('span')
     element.textContent = ''
     Object.assign(cursor.style,{
         margin: '2px',
-        border: '1px solid black'
+        border: '1px solid '+color
     })
     setInterval(()=>{
         cursor.style.opacity = cursor.style.opacity==0?1:0

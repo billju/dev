@@ -24,13 +24,13 @@ html,body{
     padding: 10px;
     height: 50px;
     border-radius: 10px;
-    border: 1px solid #000;
+    border: 1px solid #fff;
 }
 .mouse-wheel{
     width: 5px;
     height: 10px;
     border-radius: 5px;
-    background: #333;
+    background: #ccc;
     animation: margin-top 2s infinite;
 }
 @keyframes margin-top {

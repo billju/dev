@@ -33,9 +33,9 @@ TypingText(document.getElementById('typing-text'),[
     'Hi, my name is chuboy.',
     'I am a developer as well as a data analyst.',
     "Let's scroll down and explore what I created."
-],50)
+],50,'white')
 HoppingText(document.getElementById('my-skills'))
-FlipText(document.getElementById('how-i-apply'),[
+FlipText(document.getElementById('flip-text'),[
     'My little story about discovery.',
     'All about how I make trivial work more intersting.',
     'Even during the military service, I created linebot.',
@@ -120,7 +120,7 @@ const shakers = [
         description: '經典多人遊戲單機板，以90秒限時挑戰模式計分，但要小心全世界都來吃你。'
     },
     {
-        src:'assets/draggabletetris.gif',
+        src:'assets/draggableTetris.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/RXxdVd',
         title: 'Draggable Tetris',
         description: '經典新玩法，給老弟畢專一個參考。'
@@ -176,7 +176,7 @@ fullscreen.onclick = e=>{
 defaultFractalTreeInteraction(document.getElementById('fractal-tree'))
 
 // scroll fx
-if(!navigator.userAgent.includes('MSIE')&&!navigator.userAgent.includes('Edge')){
+if(navigator.userAgent.includes('Chrome')&&!navigator.userAgent.includes('Mobile')){
     skr()
     smoothScroll(document.getElementById('smooth-scroll-container'))
 }

@@ -173,41 +173,39 @@ class ImageShape{
     handleMousedown(e){
         var {x,y,w,h,r} = this.frame
         this.event.verticalFlip = false
-        if(this.editing){
-            for(let key in this.anchor){
-                var dx = e.clientX-this.anchor[key].x
-                var dy = this.anchor[key].y-e.clientY
-                var dis = Math.sqrt(dx*dx+dy*dy)
-                if(dis<this.bufferRadius){
-                    switch(key){
-                        case 'LT':
-                            this.event.sign = {x:-1,y:1}
-                            this.event.radian = Math.atan2(h,-w)
-                            this.event.point = this.anchor['RB'];break;
-                        case 'T':
-                            this.event.point = this.anchor['B'];break;
-                        case 'RT':
-                            this.event.radian = Math.atan2(-h,-w)
-                            this.event.point = this.anchor['LB'];break;
-                        case 'R':
-                            this.event.point = this.anchor['L'];break;
-                        case 'RB':
-                            this.event.radian = Math.atan2(-h,w)
-                            this.event.point = this.anchor['LT'];break;
-                        case 'B':
-                            this.event.point = this.anchor['T'];break;
-                        case 'LB':
-                            this.event.radian = Math.atan2(h,w)
-                            this.event.point = this.anchor['RT'];break;
-                        case 'L':
-                            this.event.point = this.anchor['R'];break;
-                        case 'RO':
-                            this.event.point = {x,y};break;
-                        default: break;
-                    }
-                    this.event.type = key
-                    return true
+        for(let key in this.anchor){
+            var dx = e.clientX-this.anchor[key].x
+            var dy = this.anchor[key].y-e.clientY
+            var dis = Math.sqrt(dx*dx+dy*dy)
+            if(dis<this.bufferRadius){
+                switch(key){
+                    case 'LT':
+                        this.event.sign = {x:-1,y:1}
+                        this.event.radian = Math.atan2(h,-w)
+                        this.event.point = this.anchor['RB'];break;
+                    case 'T':
+                        this.event.point = this.anchor['B'];break;
+                    case 'RT':
+                        this.event.radian = Math.atan2(-h,-w)
+                        this.event.point = this.anchor['LB'];break;
+                    case 'R':
+                        this.event.point = this.anchor['L'];break;
+                    case 'RB':
+                        this.event.radian = Math.atan2(-h,w)
+                        this.event.point = this.anchor['LT'];break;
+                    case 'B':
+                        this.event.point = this.anchor['T'];break;
+                    case 'LB':
+                        this.event.radian = Math.atan2(h,w)
+                        this.event.point = this.anchor['RT'];break;
+                    case 'L':
+                        this.event.point = this.anchor['R'];break;
+                    case 'RO':
+                        this.event.point = {x,y};break;
+                    default: break;
                 }
+                this.event.type = key
+                return true
             }
         }
         if(this.contains([e.clientX,e.clientY])){

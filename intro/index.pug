@@ -3,6 +3,7 @@ html(lang="en")
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         meta(name="description", content="chuboy's portfolio")
+        link(rel="shortcut icon", href="assets/favicon.ico", type="image/x-icon")
         title ChuBoy
     body
         header
@@ -25,17 +26,19 @@ html(lang="en")
                             a(href='#') about
         main#smooth-scroll-container
             #smooth-scroll-translator
-                section.vh-100.overflow-hidden.d-flex.flex-column.justify-content-center.align-items-center
-                    .row.my-3
-                        .col-sm-12.col-md-7.d-flex.align-items-center.justify-content-center
-                            .display-1#chuboy ChuBoy
-                        .col-sm-12.col-md-5
-                            .display-4#web-dev web developer
-                            .display-4#data-analyst data analyst
-                    p.text-center#typing-text
-                    .d-flex.justify-content-center
-                        .mouse
-                            .mouse-wheel
+                section.vh-100.overflow-hidden.position-relative
+                    canvas#chart.position-absolute
+                    .position-absolute.w-100.h-100.d-flex.flex-column.justify-content-center.align-items-center.text-light
+                        .row.my-3
+                            .col-sm-12.col-md-7.d-flex.align-items-center.justify-content-center
+                                .display-1#chuboy ChuBoy
+                            .col-sm-12.col-md-5
+                                .display-4#web-dev web developer
+                                .display-4#data-analyst data analyst
+                        p.text-center#typing-text
+                        .d-flex.justify-content-center
+                            .mouse
+                                .mouse-wheel
                 section.bg-dark.py-5
                     #my-skills.display-1.text-light.mb-5 技能與專案
                     .container-fluid(style="transform:skewY(-5deg);padding:0").overflow-hidden
@@ -103,9 +106,12 @@ html(lang="en")
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/DaH8WZpgRR6A6UO_qIKPYw" target="_blank") 資料科學
                 section.overflow-hidden.w-100
                     svg#wave-top.w-100
-                    h3#how-i-apply.my-5
+                    .my-5
                     svg#wave-bottom.w-100
                     .bg-primary.pt-5
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1#flip-text
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 Linebot聊天機器人
@@ -116,6 +122,7 @@ html(lang="en")
                                 p 技術層面：line開放開發者使用messaging api的服務，可以新增機器人的頻道，將channelId、channelSecret、channelAccessToken 
                                     | 透過安全應用層https以post的方式和後端伺服器安全地連結，同時後端node.js套件npm中有一個linebot套件包，結合免費的
                                     | Heroku---提供免費後端平台的服務PaaS，就能客製化自動彙整班兵回報的機器人。
+                                span 網址連結：
                                 a(href="https://github.com/billju/ninja-hattori" target="_blank") https://github.com/billju/ninja-hattori
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
@@ -123,6 +130,7 @@ html(lang="en")
                                 span.badge.badge-info.mx-1 demos
                                 p 故事由來：當創客時參加了ARM競賽，以無人商店為題，因緣際會下自學安卓APP開發，希望寫個APP能夠掃描商品標間，並配合物聯網將客人的需求快速加入購物車，
                                     | 為了不忘記這些技術概念，將每塊功能模組用法用範例的方式紀錄下來作為手冊。
+                                span 網址連結：
                                 a(href="https://github.com/billju/Android-source-code-demo" target="_blank") https://github.com/billju/Android-source-code-demo
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
@@ -131,6 +139,7 @@ html(lang="en")
                                 span.badge.badge-info.mx-1 optimizer
                                 span.badge.badge-info.mx-1 gurobi
                                 p 故事由來：就學期間有門課在研究線性規劃模型，我將其套用在物流業界中貨物堆疊的問題，此模型可額外擴充堆疊條件，像是貨物的重量、下方貨物的面積。
+                                span 網址連結：
                                 a(href="https://github.com/billju/gurobi-packing" target="_blank") https://github.com/billju/gurobi-packing
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
@@ -143,23 +152,15 @@ html(lang="en")
                                     | 因此我特製了專屬編輯器讓工作變得更方便，後來又靈光乍現地擴充了影片上字幕功能，並且把檔案IO格式轉為通用的SRT，讓影音製作者也能夠享受到這番方便性。
                                 p 技術層面：以analyser即時產出的波峰進行取樣，避開了web audio的音樂解碼會佔據大量記憶體的問題，讓長達數小時的影音也能將波形視覺化，也能藉由自製文本編輯器格行標籤快速跳點。
                                 p everytime when transcribing from meeting is too trivial
+                                span 網址連結：
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 Webpack我全包了
                                 span.badge.badge-info.mx-1 npm
                                 span.badge.badge-info.mx-1 webpack
-                                p 最新文章，webpack入門與設定範例，介紹如何打包HTML/Pug, CSS/Sass/Scss, JS/Babel。
-                                a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA
-
-                section.bg-dark
-                    canvas#chart(data-top="transform:translateY(0px)" data-top2000="transform:translateY(2000px)" style="transition:transform 1s cubic-bezier(0.23, 1, 0.32, 1)")
-                    .position-relative.text-light(style="height:2000px")
-                        .position-absolute.w-100(style="top:0")
-                            .d-inline-block.px-3
-                                h1.display-1 Data Scientist
-                                h3.display-3.text-right Gradient Desecent
-                                h5.heading.float-right with custom chart
-                            p.text-right.mt-3.px-3 Here I'll show you how a regression model is trained.
+                                p 最新文章，webpack入門與設定範例，介紹如何打包HTML/Pug, CSS/Sass/Scss, JS/Babel，以及完整範例。
+                                span 網址連結：
+                                a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA                    
                 section
                     .container-lg
                         h1 交通地圖
@@ -244,6 +245,6 @@ html(lang="en")
                 a(href="#" target="_blank")
                     img(src="assets/pomodoro.gif", alt="" style="max-width: 100%")
                 h1
-                p Lorem ipsum dolor sit amet consectetur `adipisicing elit. Perspiciatis dolorum eius inventore officia qui quisquam, aspernatur quaerat sint, assumenda nobis architecto corporis excepturi atque asperiores tempora non quibusdam aperiam vitae.
+                p(style="max-width:500px") Lorem ipsum dolor sit amet consectetur `adipisicing elit. Perspiciatis dolorum eius inventore officia qui quisquam, aspernatur quaerat sint, assumenda nobis architecto corporis excepturi atque asperiores tempora non quibusdam aperiam vitae.
                 small 點圖片進入連結，點黑邊返回
         

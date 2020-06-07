@@ -140,8 +140,6 @@ class GisMap{
     constructor(element){
         this.canvas = element
         this.tilePixel = {w:256,h:256}
-        // world center must to be x:0, y:0
-        // bbox [westLon, minLat, eastLon, maxLat]
         this.world = {
             bbox: [-6378137*Math.PI,-6378137*Math.PI,6378137*Math.PI,6378137*Math.PI],
             w: 2*6378137*Math.PI,
@@ -216,7 +214,7 @@ class GisMap{
             for(let raster of this.raster.slice().reverse()){
                 if(!raster.active) continue
                 this.ctx.globalAlpha = raster.opacity
-                this.renderTiles(raster.url)
+                this.renderRaster(raster)
             }
             for(let i=this.vector.length-1;i>=0;i--){
                 this.renderVector(this.vector[i])
@@ -256,11 +254,12 @@ class GisMap{
     renderDraw(){
         // draw polygon
         let path = this.drawEvent.path.map(coord=>this.coord2client(coord))
-        if(path.length>2){
+        if(path.length){
             let dx = this.moveEvent.x-path[0][0]
             let dy = this.moveEvent.y-path[0][1]
             if(Math.sqrt(dx*dx+dy*dy)<10){
-                path.push(path[0])
+                if(path.length>2)
+                    path.push(path[0])
                 this.drawEvent.snap = true
             }else{
                 this.drawEvent.snap = false
@@ -362,6 +361,7 @@ class GisMap{
             this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
             if(this.modifyEvent.geomType=='POLYGON'&&i==0)
                 this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0]
+                Object.assign(this.modifyEvent.feature.properties,this.getDerivedProperties(this.modifyEvent.feature))
         }else{
             if(this.moveEvent.active&&this.moveEvent.moved){
                 this.setView([vx,vy])
@@ -376,23 +376,24 @@ class GisMap{
     }
     handleMouseup(e){
         if(this.modifyEvent.anchor!=-1){
-            if(!this.moveEvent.moved){
+            if(!this.moveEvent.moved&&this.modifyEvent.coords.length>2){
                 this.modifyEvent.coords.splice(this.modifyEvent.anchor,1)
-                if(this.modifyEvent.anchor==0)
-                    this.modifyEvent.coords.push(this.modifyEvent.coords[0])
+                if(this.modifyEvent.anchor==0){
+                    this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0]
+                }
             }
-            let coords = this.modifyEvent.coords
-            let bbox = this.modifyEvent.feature.geometry.bbox // update bbox
-            bbox[0] = Math.min(...coords.map(c=>c[0])); bbox[1] = Math.min(...coords.map(c=>c[1]))
-            bbox[2] = Math.max(...coords.map(c=>c[0])); bbox[3] = Math.max(...coords.map(c=>c[1]))
-            Object.assign(this.modifyEvent.feature.properties,this.getDerivedProperties(this.modifyEvent.feature))
+            this.modifyEvent.feature.geometry.bbox = this.getBbox(this.modifyEvent.coords)
         }
         if(this.drawEvent.active&&!this.moveEvent.moved){
             this.drawEvent.path.push(this.client2coord([e.clientX,e.clientY])) 
         }
         const dispatchSelectEvent = (features)=>{
-            if(!this.drawEvent.active&&!this.modifyEvent.active){
+            if(!this.drawEvent.active){
                 this.selectEvent.features = features
+                if(features.length==1)
+                    this.modifyEvent.feature = features[0]
+                else
+                    this.modifyEvent.feature = null
                 this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features}}))
             }
         }
@@ -428,38 +429,63 @@ class GisMap{
         this.modifyEvent.anchor = -1
         e.target.style.cursor = 'grab'
     }
-    getDerivedProperties(feature){
-        let properties = {}
-        switch(feature.geometry.type){
-            case 'LINESTRING':
-                properties['周長'] = getLength(feature.geometry.coordinates.map(this.toLnglat)).toFixed(0)+'公尺'
-                break
-            case 'POLYGON':
-                properties['周長'] = getLength(feature.geometry.coordinates[0].map(this.toLnglat)).toFixed(0)+'公尺'
-                let area = feature.geometry.coordinates.reduce((acc,cur,i)=>{
+    getFeatureLength(feature){
+        if(feature.geometry.type=='LINESTRING')
+            return getLength(feature.geometry.coordinates.map(this.toLnglat))
+        if(feature.geometry.type=='POLYGON')
+            return getLength(feature.geometry.coordinates[0].map(this.toLnglat))
+        return 0
+    }
+    getFeatureArea(feature){
+        if(feature.geometry.type=='POLYGON'){
+            return feature.geometry.coordinates.reduce((acc,cur,i)=>{
+                if(i==0) return acc+getArea(cur.map(this.toLnglat))
+                else return acc-getArea(cur.map(this.toLnglat))
+            },0)
+        }
+        if(feature.geometry.type=='MULTIPOLYGON'){
+            return feature.geometry.coordinates.reduce((accArea,coords)=>{
+                return accArea+coords.reduce((acc,cur,i)=>{
                     if(i==0) return acc+getArea(cur.map(this.toLnglat))
                     else return acc-getArea(cur.map(this.toLnglat))
                 },0)
-                properties['面積'] = area.toFixed(0)+'平方公尺'
-                break
-            default: break
+            },0)
         }
+        return 0
+    }
+    getDerivedProperties(feature){
+        let properties = {}
+        let length = this.getFeatureLength(feature)
+        if(length)
+            properties['周長'] = length.toFixed(0)+'公尺'
+        let area = this.getFeatureArea(feature)
+        if(area)
+            properties['面積'] = area.toFixed(0)+'平方公尺'
         return properties
     }
     handleDblclick(e){
         if(this.drawEvent.active){
             let path = this.drawEvent.path.slice(0,-1)
             let geomType = 'LINESTRING'
-            if(this.drawEvent.snap==true&&path.length>3){
-                geomType = 'POLYGON'
-                path[path.length-1] = path[0]
-                path = [path]
+            if(this.drawEvent.snap){
+                if(path.length<3){
+                    geomType = 'POINT'
+                    path = path[0]
+                }else{
+                    geomType = 'POLYGON'
+                    path[path.length-1] = path[0]
+                    path = [path]
+                }
             }
-            let feature = {
-                geometry: { type: geomType, coordinates: path },
-                properties: {}
+            let feature = { geometry: { type: geomType, coordinates: path }, properties: {} }
+            let properties = this.getDerivedProperties(feature)
+            properties['圖層'] = '手繪'
+            if(geomType=='POINT'){
+                properties['radius'] = 10
+                properties['lineWidth'] = 3
+                properties['fill'] = 'rgba(0,0,255,0.3)'
             }
-            this.addVector(geomType,feature.geometry.coordinates,this.getDerivedProperties(feature), true)
+            this.addVector(geomType,path,properties,true)
             this.drawEvent.path = []
             this.drawEvent.active = false
             this.drawEvent.snap = false
@@ -552,32 +578,32 @@ class GisMap{
             this.ctx.stroke()
         })
     }
-    renderTiles(url='https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}'){
+    renderRaster(raster){
         const tp = this.tilePixel, world = this.world, view = this.view
         const origin = {
             x: (world.bbox[0]-view.bbox[0])/world.w*tp.w*Math.pow(2,view.zoom),
             y: -(world.bbox[3]-view.bbox[3])/world.h*tp.h*Math.pow(2,view.zoom)
         }
         var z = Math.floor(view.zoom)
-        var {tiles, minX, minY, maxX, maxY} = this.getXYZ(z)
+        var {tiles, minX, minY, maxX, maxY} = this.getXYZ(this.minmax(z,raster.min||this.view.minZoom,raster.max||this.view.maxZoom))
         // load images
-        if(!(url in this.tiles)){
-            this.tiles[url] = {}
+        if(!(raster.url in this.tiles)){
+            this.tiles[raster.url] = {}
         }
-        var subDomain = url.match(/\{([a-z])-([a-z])\}/)
+        var subDomain = raster.url.match(/\{([a-z])-([a-z])\}/)
         tiles.map(tile=>{
             let xyz = [tile.x,tile.y,tile.z]
-            let src = url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
+            let src = raster.url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
             if(subDomain){
                 let charStart = subDomain[1].charCodeAt(0)
                 let chartEnd = subDomain[2].charCodeAt(0)
                 let domain = String.fromCharCode(charStart+Math.floor(Math.random()*(chartEnd-charStart)))
                 src = src.replace(subDomain[0],domain)
             }
-            if(!(xyz in this.tiles[url])){
+            if(!(xyz in this.tiles[raster.url])){
                 var img = new Image()
                 img.src = src
-                this.tiles[url][xyz] = img
+                this.tiles[raster.url][xyz] = img
             }
         })
         // find loaded images
@@ -588,7 +614,7 @@ class GisMap{
             let unique = {}
             for(let tile of tilesNotLoaded){
                 let xyz = [tile.x,tile.y,tile.z]
-                let loaded = this.tiles[url][xyz]?this.tiles[url][xyz].complete:false
+                let loaded = this.tiles[raster.url][xyz]?this.tiles[raster.url][xyz].complete:false
                 if(loaded){
                     tilesLoaded.unshift(tile)
                 }else if(zStep==1){
@@ -617,7 +643,7 @@ class GisMap{
             let X = origin.x+tile.x*W
             let Y = origin.y+tile.y*H
             let xyz = [tile.x,tile.y,tile.z]
-            let img = this.tiles[url][xyz]
+            let img = this.tiles[raster.url][xyz]
             try{
                 this.ctx.drawImage(img,X,Y,W,H)
             }catch{}
@@ -648,6 +674,14 @@ class GisMap{
             }
         }
         return {tiles, minX, minY, maxX, maxY}
+    }
+    getBbox(coords){
+        return [
+            Math.min(...coords.map(c=>c[0])),
+            Math.min(...coords.map(c=>c[1])),
+            Math.max(...coords.map(c=>c[0])),
+            Math.max(...coords.map(c=>c[1]))
+        ]
     }
     toCoord(lnglat) {
         var d = Math.PI / 180,
@@ -712,13 +746,14 @@ class GisMap{
         const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
         const isInBbox = (p,bbox)=>p[0]>=bbox[0]&&p[0]<=bbox[2]&&p[1]>=bbox[1]&&p[1]<=bbox[3]
         let point = this.client2coord(client)
-        let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox)).filter(feature=>feature.geometry.type.includes('Point')?true:isInBbox(point,feature.geometry.bbox))
+        let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox))
+            .filter(feature=>['POINT','MULTIPOINT'].includes(feature.geometry.type)?true:isInBbox(point,feature.geometry.bbox))
         for(let feature of features){
             let geom = feature.geometry
             let isInGeometry = false
             switch(geom.type.toUpperCase()){
                 case 'POINT':
-                    isInGeometry = Euclidean(client,this.coord2client(geom.coordinates)) < (feature.properties.radius||5);break;
+                    isInGeometry = Euclidean(client,this.coord2client(geom.coordinates)) < (parseInt(feature.properties.radius)||5);break;
                 case 'MULTIPOINT':
                     isInGeometry = geom.coordinates.some(coord=>Euclidean(client,this.coord2client(coord)) < 5);break;
                 case 'LINESTRING':
@@ -740,8 +775,8 @@ class GisMap{
         tolerance = tolerance<1?0:tolerance
         let defaultFill = ['POLYGON','MULTIPOLYGON'].includes(feature.geometry.type)?'rgba(0,0,255,0.3)':undefined
         let style = {
-            'stroke': feature.properties['stroke']||'dodgerblue',
             'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
+            'stroke': feature.properties['stroke']||'dodgerblue',
             'fill': feature.properties['fill']||defaultFill,
             'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5
         }
@@ -762,7 +797,7 @@ class GisMap{
         if(!this.selectEvent.styling&&this.selectEvent.features.includes(feature)){
             Object.assign(style,{
                 stroke: 'red',
-                fill: 'rgba(255,0,0,0.3)'
+                fill: ['LINESTRING','MULTILINESTRING'].includes(feature.geometry.type)?undefined:'rgba(255,0,0,0.3)'
             })
         }
         // render
@@ -770,11 +805,15 @@ class GisMap{
             this.ctx.beginPath()
             this.ctx.moveTo(coord[0]+style.radius,coord[1])
             this.ctx.arc(coord[0],coord[1],style.radius,0,Math.PI*2,false)
-            this.ctx.strokeStyle = style.stroke
-            this.ctx.lineWidth = style.lineWidth
-            this.ctx.fillStyle = style.fill
-            this.ctx.stroke()
-            this.ctx.fill()
+            if(style.lineWidth){
+                this.ctx.strokeStyle = style.stroke
+                this.ctx.lineWidth = style.lineWidth
+                this.ctx.stroke()
+            }
+            if(style.fill){
+                this.ctx.fillStyle = style.fill
+                this.ctx.fill()
+            }
             this.ctx.closePath()
         }
         const drawPath = (coords)=>{
@@ -790,11 +829,13 @@ class GisMap{
                 this.ctx.fillStyle = style.fill
                 this.ctx.fill()
             }
-            this.ctx.strokeStyle = style.stroke
-            this.ctx.lineWidth = style.lineWidth
-            this.ctx.lineCap = 'round'
-            this.ctx.lineJoin = 'round'
-            this.ctx.stroke()
+            if(style.lineWidth){
+                this.ctx.strokeStyle = style.stroke
+                this.ctx.lineWidth = style.lineWidth
+                this.ctx.lineCap = 'round'
+                this.ctx.lineJoin = 'round'
+                this.ctx.stroke()
+            }
             this.ctx.closePath()
         }
         switch(feature.geometry.type){
@@ -808,6 +849,16 @@ class GisMap{
                 break
             case 'LINESTRING':
                 drawPath(feature.geometry.coordinates)
+                if(feature.geometry.coordinates.length==2){
+                    let coords = feature.geometry.coordinates
+                    let x = (coords[0][0]+coords[1][0])/2
+                    let y = (coords[0][1]+coords[1][1])/2
+                    let client = this.coord2client([x,y])
+                    this.ctx.font = '12px 微軟正黑體'
+                    this.ctx.fillStyle = 'black'
+                    let metric = this.ctx.measureText(feature.properties['周長'])
+                    this.ctx.fillText(feature.properties['周長'],client[0]-metric.width/2,client[1]+6)
+                }
                 break
             case 'MULTILINESTRING':
                 for(let coords of feature.geometry.coordinates){
