@@ -3,8 +3,9 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+const dir = 'lightGIS'
 module.exports = {
-    entry: ['@babel/polyfill','./intro/js/index.js'],
+    entry: ['@babel/polyfill',`./${dir}/js/index.js`],
     module: {
         rules: [
             {
@@ -57,7 +58,7 @@ module.exports = {
         new MiniCssExtractPlugin({ filename: '[name].css' }),
         new TerserPlugin(),
         new HtmlWebpackPlugin({
-            template: './intro/index.pug',
+            template: `./${dir}/index.pug`,
             filename: 'index.html',
             minify: {
                 collapseBooleanAttributes: true,

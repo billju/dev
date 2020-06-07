@@ -17,7 +17,16 @@ function handleCSV(text){
         aoa[aoa.length-1].push(matched)
     }
 }
-function xml_string_to_json(xmlstr) {
+export function readFileAsText(file){
+    let reader = new FileReader()
+    return new Promise((resolve,reject)=>{
+        reader.onload = ()=>{
+            resolve(reader.result)
+        }
+        reader.readAsText(file)
+    })
+}
+export function xml_string_to_json(xmlstr) {
     let parser = new DOMParser();
     let srcDOM = parser.parseFromString(xmlstr, "application/xml");
     function xml2json(srcDOM) {
@@ -70,7 +79,7 @@ function beautifiedJsonHtml(){
     //     color: lightblue;
     // }
 }
-function handleRequest(){
+function handleUpload(){
     let url = document.getElementById('request-url').value
     // fetch(url,{}).then(res=>res.json()).then(text=>{})
     const xhr = new XMLHttpRequest()
@@ -89,12 +98,23 @@ function handleRequest(){
     //     }
     // }
 }
-function downloadText(text,filename='downlaod.txt'){
+function downloadLink(href,filename){
     let a = document.createElement('a')
-    a.href = "data:text/plain;charset=UTF-8," + encodeURIComponent(text)
+    a.href = href
     a.download = filename
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
 }
-window.addEventListener('paste',e=>{
-    let blob = e.clipboardData.items[0].getAsFile()
-})
+export function downloadText(text,filename='downlaod.txt'){
+    let href = "data:text/plain;charset=UTF-8," + encodeURIComponent(text)
+    downloadLink(href,filename)
+}
+export function downloadCanvas(canvas,filename='downlaod.png'){
+    let ext = filename.split('.')[1]
+    let href = canvas.toDataURL(`image/${ext}`).replace('image/png','image/octet-stream')
+    downloadLink(href,filename)
+}
+// window.addEventListener('paste',e=>{
+//     let blob = e.clipboardData.items[0].getAsFile()
+// })

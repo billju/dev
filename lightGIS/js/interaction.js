@@ -1,4 +1,4 @@
-class Interaction{
+export default class Interaction{
     constructor(gismap){
         this.gismap = gismap
         this.imageShapes = []
@@ -32,7 +32,7 @@ class Interaction{
         this.gismap.canvas.addEventListener('render',()=>{
             for(let imageShape of this.imageShapes.slice().reverse()){
                 imageShape.updateGisClient()
-                imageShape.draw(ctx)
+                imageShape.draw(this.gismap.ctx)
             }
         })
         // native events
@@ -89,7 +89,9 @@ class Interaction{
                 }
             }
             if(e.ctrlKey&&e.code=='KeyZ'){
-                this.recycle.pop().map(feature=>{this.gismap.vector.push(feature)})
+                let features = this.recycle.pop()
+                if(features)
+                    features.map(feature=>{this.gismap.vector.push(feature)})
             }
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
         })
@@ -112,7 +114,7 @@ class Interaction{
             if(val&&val!='null'){
                 let tr = this.propsTable.insertRow()
                 tr.insertCell().textContent = key
-                tr.insertCell().textContent = val
+                tr.insertCell().innerHTML = val
             }
         })
     }
@@ -185,11 +187,13 @@ class Interaction{
         rasterTemplate.remove()
     }
     // misc
-    fitExtent(){
-        if(this.gismap.selectEvent.features.length){
+    fitExtent(features=this.gismap.selectEvent.features){
+        let bound = 6378137*Math.PI
+        if(features.length){
             let coords = []
-            for(let feature of this.gismap.selectEvent.features){
+            for(let feature of features){
                 let bbox = feature.geometry.bbox
+                if(bbox.some(x=>x<-bound||x>bound)) continue
                 coords.push([bbox[0],bbox[1]])
                 coords.push([bbox[2],bbox[3]])
             }
@@ -204,4 +208,15 @@ class Interaction{
         else if(position=='bottom')
             this.gismap.vector.push(...features)
     }
+    // simplify(){
+    //     let percentage = parseInt(document.getElementById('percentage').value)/100
+    //     for(let feature of this.gismap.selectEvent.features){
+    //         let coords = feature.geometry.coordinates
+    //         if(feature.geometry.type=='Polygon'){
+    //             feature.geometry.coordinates = coords.map(c=>simplifyVisvalingam(c,Math.round(c.length*percentage)))
+    //         }else if(feature.geometry.type=='MultiPolygon'){
+    //             feature.geometry.coordinates = coords.map(cs=>cs.map(c=>simplifyVisvalingam(c,Math.round(c.length*percentage))))
+    //         }
+    //     }
+    // }
 }

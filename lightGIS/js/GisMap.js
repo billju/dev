@@ -7,45 +7,40 @@ function radialDistFilter(points, epsilon){
         return dx*dx+dy*dy > epsilon_squ
     })
 }
-function PerpendicularDistance(p,p1,p2){
-    var x = p1[0],
-        y = p1[1],
-        dx = p2[0]-p1[0],
-        dy = p2[1]-p1[1]
-    if(dx!==0||dy!==0){
-        var t = ((p[0]-x)*dx+(p[1]-y)*dy)/(dx*dx+dy*dy) //scale of projection
-        if(t>1){
-            x = p2[0]
-            y = p2[1]
-        }else if(t>0){
-            x+= dx*t
-            y+= dy*t
+function getShiftedCoords(coords,width){
+    var x2, y2, x42, y42
+    var shift_coord=[]
+    for(let i=0;i<coords.length;i++){
+        if(i==0){
+            var y1 = coords[i][0]
+            var x1 = coords[i][1]
+            y2 = coords[i+1][0]
+            x2 = coords[i+1][1]
+            var s124 = width/Math.sqrt(Math.pow(x2-x1,2)+Math.pow(y2-y1,2))
+            x42 = (y2-y1)*s124
+            y42 = -(x2-x1)*s124
+            shift_coord.push([y1+y42,x1+x42])
+        }else if(i==coords.length-1){
+            shift_coord.push([y2+y42,x2+x42])
+        }else{
+            var y3 = coords[i+1][0]
+            var x3 = coords[i+1][1]
+            var s235 = width/Math.sqrt(Math.pow(x3-x2,2)+Math.pow(y3-y2,2))
+            var x52 = (y3-y2)*s235
+            var y52 = -(x3-x2)*s235
+            var radian = Math.atan2(x42*y52-y42*x52,x42*x52+y42*y52)
+            var scalar = 1/2/Math.pow(Math.cos(radian/2),2)
+            var sx = (x42+x52)*scalar
+            var sy = (y42+y52)*scalar
+            shift_coord.push([y2+sy,x2+sx])
+            y2 = coords[i+1][0]
+            x2 = coords[i+1][1]
+            x42 = x52
+            y42 = y52
         }
     }
-    dx = p[0]-x
-    dy = p[1]-y
-    return Math.sqrt(dx*dx + dy*dy)
+    return shift_coord
 }
-function DouglasPeucker(points, epsilon){
-    if(epsilon==0) return points
-    var dmax=0, index=-1, firstPoint = points[0], lastPoint = points[points.length-1]
-    for(var i=1;i<points.length;i++){
-        var d = PerpendicularDistance(points[i], firstPoint, lastPoint)
-        if(d>dmax){
-            dmax = d
-            index = i
-        }
-    }
-    if(dmax>=epsilon){
-        return [
-            ...DouglasPeucker(points.slice(0,index+1), epsilon).slice(0,-1),
-            ...DouglasPeucker(points.slice(index), epsilon)
-        ]
-    }else{
-        return [points[0], points[points.length-1]]
-    }
-}
-
 function getLength(coords){
     return coords.reduce((acc,cur,i,arr)=>{
         if(i==0) return acc
@@ -136,7 +131,7 @@ var EasingFunctions = {
     // acceleration until halfway, then deceleration 
     easeInOutQuint: t => t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t
 }
-class GisMap{
+export default class GisMap{
     constructor(element){
         this.canvas = element
         this.tilePixel = {w:256,h:256}
@@ -238,8 +233,8 @@ class GisMap{
     }
     renderModify(){
         let coords = this.modifyEvent.feature.geometry.coordinates
-        let geomType = this.modifyEvent.feature.geometry.type.toUpperCase()
-        coords = geomType=='POINTS'?[coords]:geomType=='LINESTRING'?coords:geomType=='POLYGON'?coords[0]:[]
+        let geomType = this.modifyEvent.feature.geometry.type
+        coords = geomType=='PointS'?[coords]:geomType=='LineString'?coords:geomType=='Polygon'?coords[0]:[]
         coords.map(coord=>this.coord2client(coord)).map((client,i)=>{    
             this.ctx.beginPath()
             this.ctx.lineWidth = 2
@@ -295,11 +290,11 @@ class GisMap{
             this.ctx.closePath()
         })
     }
-    panTo(coord,zoom=this.view.zoom,duration=1500){
+    panTo(coord,zoom=this.view.zoom,duration=1000){
         // let coord = this.toCoord(lnglat)
         this.panEvent.before = {...this.view.center,z:this.view.zoom}
         this.panEvent.after = {x:coord[0],y:coord[1],z:zoom}
-        this.panEvent.frames = Math.round(duration/60)
+        this.panEvent.frames = Math.round(duration/1000*60)
         this.panEvent.t = this.panEvent.frames
     }
     fitBound(bbox,duration=1500){
@@ -313,8 +308,8 @@ class GisMap{
     handleMousedown(e){
         if(this.modifyEvent.feature){
             let coords = this.modifyEvent.feature.geometry.coordinates
-            let geomType = this.modifyEvent.feature.geometry.type.toUpperCase()
-            coords = geomType=='POINTS'?[coords]:geomType=='LINESTRING'?coords:geomType=='POLYGON'?coords[0]:[]
+            let geomType = this.modifyEvent.feature.geometry.type
+            coords = geomType=='PointS'?[coords]:geomType=='LineString'?coords:geomType=='Polygon'?coords[0]:[]
             this.modifyEvent.coords = coords // assign by reference
             this.modifyEvent.geomType = geomType
             let clients = coords.map(coord=>this.coord2client(coord))
@@ -359,7 +354,7 @@ class GisMap{
         if(this.modifyEvent.anchor!=-1){
             let i = this.modifyEvent.anchor
             this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
-            if(this.modifyEvent.geomType=='POLYGON'&&i==0)
+            if(this.modifyEvent.geomType=='Polygon'&&i==0)
                 this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0]
                 Object.assign(this.modifyEvent.feature.properties,this.getDerivedProperties(this.modifyEvent.feature))
         }else{
@@ -430,20 +425,20 @@ class GisMap{
         e.target.style.cursor = 'grab'
     }
     getFeatureLength(feature){
-        if(feature.geometry.type=='LINESTRING')
+        if(feature.geometry.type=='LineString')
             return getLength(feature.geometry.coordinates.map(this.toLnglat))
-        if(feature.geometry.type=='POLYGON')
+        if(feature.geometry.type=='Polygon')
             return getLength(feature.geometry.coordinates[0].map(this.toLnglat))
         return 0
     }
     getFeatureArea(feature){
-        if(feature.geometry.type=='POLYGON'){
+        if(feature.geometry.type=='Polygon'){
             return feature.geometry.coordinates.reduce((acc,cur,i)=>{
                 if(i==0) return acc+getArea(cur.map(this.toLnglat))
                 else return acc-getArea(cur.map(this.toLnglat))
             },0)
         }
-        if(feature.geometry.type=='MULTIPOLYGON'){
+        if(feature.geometry.type=='MultiPolygon'){
             return feature.geometry.coordinates.reduce((accArea,coords)=>{
                 return accArea+coords.reduce((acc,cur,i)=>{
                     if(i==0) return acc+getArea(cur.map(this.toLnglat))
@@ -466,13 +461,13 @@ class GisMap{
     handleDblclick(e){
         if(this.drawEvent.active){
             let path = this.drawEvent.path.slice(0,-1)
-            let geomType = 'LINESTRING'
+            let geomType = 'LineString'
             if(this.drawEvent.snap){
                 if(path.length<3){
-                    geomType = 'POINT'
+                    geomType = 'Point'
                     path = path[0]
                 }else{
-                    geomType = 'POLYGON'
+                    geomType = 'Polygon'
                     path[path.length-1] = path[0]
                     path = [path]
                 }
@@ -480,7 +475,7 @@ class GisMap{
             let feature = { geometry: { type: geomType, coordinates: path }, properties: {} }
             let properties = this.getDerivedProperties(feature)
             properties['圖層'] = '手繪'
-            if(geomType=='POINT'){
+            if(geomType=='Point'){
                 properties['radius'] = 10
                 properties['lineWidth'] = 3
                 properties['fill'] = 'rgba(0,0,255,0.3)'
@@ -602,6 +597,7 @@ class GisMap{
             }
             if(!(xyz in this.tiles[raster.url])){
                 var img = new Image()
+                img.crossOrigin = 'anonymous'
                 img.src = src
                 this.tiles[raster.url][xyz] = img
             }
@@ -712,7 +708,7 @@ class GisMap{
     }
     geojson(geojson, projected=false){
         geojson.features.map(feature=>{
-            feature.geometry.type = feature.geometry.type.toUpperCase()
+            feature.geometry.type = feature.geometry.type
             let geom = feature.geometry
             geom.bbox = [Infinity,Infinity,-Infinity,-Infinity]
             const project = lnglat=>{
@@ -725,17 +721,17 @@ class GisMap{
                 lnglat[1] = y
             }
             switch(geom.type){
-                case 'POINT':
+                case 'Point':
                     project(geom.coordinates);break;
-                case 'MULTIPOINT':
+                case 'MultiPoint':
                     geom.coordinates.map(lnglat=>project(lnglat));break;
-                case 'LINESTRING':
+                case 'LineString':
                     geom.coordinates.map(lnglat=>project(lnglat));break;
-                case 'MULTILINESTRING':
+                case 'MultiLineString':
                     geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
-                case 'POLYGON':
+                case 'Polygon':
                     geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
-                case 'MULTIPOLYGON':
+                case 'MultiPolygon':
                     geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))));break;
             }
             this.vector.unshift(feature)
@@ -747,22 +743,22 @@ class GisMap{
         const isInBbox = (p,bbox)=>p[0]>=bbox[0]&&p[0]<=bbox[2]&&p[1]>=bbox[1]&&p[1]<=bbox[3]
         let point = this.client2coord(client)
         let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox))
-            .filter(feature=>['POINT','MULTIPOINT'].includes(feature.geometry.type)?true:isInBbox(point,feature.geometry.bbox))
+            .filter(feature=>['Point','MultiPoint'].includes(feature.geometry.type)?true:isInBbox(point,feature.geometry.bbox))
         for(let feature of features){
             let geom = feature.geometry
             let isInGeometry = false
-            switch(geom.type.toUpperCase()){
-                case 'POINT':
+            switch(geom.type){
+                case 'Point':
                     isInGeometry = Euclidean(client,this.coord2client(geom.coordinates)) < (parseInt(feature.properties.radius)||5);break;
-                case 'MULTIPOINT':
+                case 'MultiPoint':
                     isInGeometry = geom.coordinates.some(coord=>Euclidean(client,this.coord2client(coord)) < 5);break;
-                case 'LINESTRING':
-                    isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance(client,coords[i-1],coord)<5);break;
-                case 'MULTILINESTRING':
-                    isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:PerpendicularDistance(client,coords[i-1],coord)<5));break;
-                case 'POLYGON':
+                case 'LineString':
+                    isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:this.perpendicular(client,coords[i-1],coord).distance<5);break;
+                case 'MultiLineString':
+                    isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:this.perpendicular(client,coords[i-1],coord).distance<5));break;
+                case 'Polygon':
                     isInGeometry = geom.coordinates.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr));break;
-                case 'MULTIPOLYGON':
+                case 'MultiPolygon':
                     isInGeometry = geom.coordinates.some(arr2d=>arr2d.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr)));break;
             }
             if(isInGeometry)
@@ -773,7 +769,7 @@ class GisMap{
     renderVector(feature){
         let tolerance = Math.pow(2,18-this.view.zoom)
         tolerance = tolerance<1?0:tolerance
-        let defaultFill = ['POLYGON','MULTIPOLYGON'].includes(feature.geometry.type)?'rgba(0,0,255,0.3)':undefined
+        let defaultFill = ['Polygon','MultiPolygon'].includes(feature.geometry.type)?'rgba(0,0,255,0.3)':undefined
         let style = {
             'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
             'stroke': feature.properties['stroke']||'dodgerblue',
@@ -781,7 +777,7 @@ class GisMap{
             'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5
         }
          // customize
-         if(feature.geometry.type =='MULTIPOLYGON'){
+         if(feature.geometry.type =='MultiPolygon'){
             let fillMap = {
                 '公': 'rgba(254,255,191,1)',
                 '私': 'rgba(188,233,252,1)',
@@ -797,7 +793,7 @@ class GisMap{
         if(!this.selectEvent.styling&&this.selectEvent.features.includes(feature)){
             Object.assign(style,{
                 stroke: 'red',
-                fill: ['LINESTRING','MULTILINESTRING'].includes(feature.geometry.type)?undefined:'rgba(255,0,0,0.3)'
+                fill: ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:'rgba(255,0,0,0.3)'
             })
         }
         // render
@@ -839,15 +835,15 @@ class GisMap{
             this.ctx.closePath()
         }
         switch(feature.geometry.type){
-            case 'POINT':
+            case 'Point':
                 drawCircle(this.coord2client(feature.geometry.coordinates))
                 break
-            case 'MULTIPOINT':
+            case 'MultiPoint':
                 feature.geometry.coordinates.map(coord=>{
                     drawCircle(this.coord2client(coord))
                 })
                 break
-            case 'LINESTRING':
+            case 'LineString':
                 drawPath(feature.geometry.coordinates)
                 if(feature.geometry.coordinates.length==2){
                     let coords = feature.geometry.coordinates
@@ -860,21 +856,21 @@ class GisMap{
                     this.ctx.fillText(feature.properties['周長'],client[0]-metric.width/2,client[1]+6)
                 }
                 break
-            case 'MULTILINESTRING':
+            case 'MultiLineString':
                 for(let coords of feature.geometry.coordinates){
-                    drawPath(DouglasPeucker(coords,tolerance))
+                    drawPath(this.DouglasPeucker(coords,tolerance))
                 }
                 break
-            case 'POLYGON':
+            case 'Polygon':
                 this.ctx.beginPath()
                 for(let coords of feature.geometry.coordinates){
                     drawPath(coords) 
                 }
                 break
-            case 'MULTIPOLYGON':
+            case 'MultiPolygon':
                 for(let coordinates of feature.geometry.coordinates){
                     for(let coords of coordinates){
-                        drawPath(DouglasPeucker(coords,tolerance),)
+                        drawPath(this.DouglasPeucker(coords,tolerance))
                     }
                 }
                 break
@@ -916,6 +912,25 @@ class GisMap{
         return {
             distance: Math.sqrt(dx*dx + dy*dy),
             closest: [x,y]
+        }
+    }
+    DouglasPeucker(points, epsilon){
+        if(epsilon==0) return points
+        var dmax=0, index=-1, firstPoint = points[0], lastPoint = points[points.length-1]
+        for(var i=1;i<points.length;i++){
+            var d = this.perpendicular(points[i], firstPoint, lastPoint).distance
+            if(d>dmax){
+                dmax = d
+                index = i
+            }
+        }
+        if(dmax>=epsilon){
+            return [
+                ...this.DouglasPeucker(points.slice(0,index+1), epsilon).slice(0,-1),
+                ...this.DouglasPeucker(points.slice(index), epsilon)
+            ]
+        }else{
+            return [points[0], points[points.length-1]]
         }
     }
 }

@@ -1,4 +1,4 @@
-function makeElementMovable(element){
+export default function makeElementMovable(element){
     // do not assign top,left,right,bottom in css class
     element.addEventListener('mousedown', e=>{
         element.dataset.dragging = true
