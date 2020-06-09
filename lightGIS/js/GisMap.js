@@ -297,9 +297,11 @@ export default class GisMap{
         this.panEvent.frames = Math.round(duration/1000*60)
         this.panEvent.t = this.panEvent.frames
     }
-    fitBound(bbox,duration=1500){
+    fitBound(bbox,duration=1500,padding=50){
         let vw = this.view.bbox[2]-this.view.bbox[0], vh = this.view.bbox[3]-this.view.bbox[1]
         let bw = bbox[2]-bbox[0], bh = bbox[3]-bbox[1], bx = bbox[0]+bw/2, by = bbox[1]+bh/2
+        vw*= (this.view.w-padding)/this.view.w
+        vh*= (this.view.h-padding)/this.view.h
         let ratio = Math.min(vw/bw,vh/bh)
         let newZoom = this.view.zoom+Math.log2(ratio)
         newZoom = this.minmax(newZoom,this.view.minZoom,this.view.maxZoom)
@@ -373,7 +375,7 @@ export default class GisMap{
         if(this.modifyEvent.anchor!=-1){
             if(!this.moveEvent.moved&&this.modifyEvent.coords.length>2){
                 this.modifyEvent.coords.splice(this.modifyEvent.anchor,1)
-                if(this.modifyEvent.anchor==0){
+                if(this.modifyEvent.anchor==0&&this.modifyEvent.feature.geometry.type=='Polygon'){
                     this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0]
                 }
             }
@@ -394,12 +396,11 @@ export default class GisMap{
         }
         if(this.selectEvent.active){
             if(this.moveEvent.moved){
-                const swap = (a,b)=>{b=[a,a=b][0]}
                 let bbox = this.selectEvent.bbox
                 if(bbox[0]>bbox[2])
-                    swap(bbox[0],bbox[2])
+                    [bbox[0],bbox[2]] = [bbox[2],bbox[0]]
                 if(bbox[1]>bbox[3])
-                    swap(bbox[1],bbox[3])
+                    [bbox[1],bbox[3]] = [bbox[3],bbox[1]]
                 const isInBbox = feature=>{
                     let fgb = feature.geometry.bbox
                     return fgb[0]>=bbox[0]&&fgb[1]>=bbox[1]&&fgb[2]<=bbox[2]&&fgb[3]<=bbox[3]
@@ -707,7 +708,7 @@ export default class GisMap{
         return isInside;
     }
     geojson(geojson, projected=false){
-        geojson.features.map(feature=>{
+        let features = geojson.features.map(feature=>{
             feature.geometry.type = feature.geometry.type
             let geom = feature.geometry
             geom.bbox = [Infinity,Infinity,-Infinity,-Infinity]
@@ -734,8 +735,9 @@ export default class GisMap{
                 case 'MultiPolygon':
                     geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))));break;
             }
-            this.vector.unshift(feature)
-        })   
+            return feature
+        })
+        this.vector.unshift(...features)
     }
     detectClient(client){
         const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2))
@@ -769,12 +771,16 @@ export default class GisMap{
     renderVector(feature){
         let tolerance = Math.pow(2,18-this.view.zoom)
         tolerance = tolerance<1?0:tolerance
-        let defaultFill = ['Polygon','MultiPolygon'].includes(feature.geometry.type)?'rgba(0,0,255,0.3)':undefined
         let style = {
             'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
             'stroke': feature.properties['stroke']||'dodgerblue',
-            'fill': feature.properties['fill']||defaultFill,
-            'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5
+            'fill': ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:'rgba(0,0,255,0.3)',
+            'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5,
+            'opacity': feature.properties['opacity']?parseFloat(feature.properties['opacity']):1,
+            'text': feature.properties['text'],
+            'textAnchor': feature.properties['textAnchor']||'[-1,-1]',
+            'textColor': feature.properties['textColor']||'dodgerblue',
+            'fontSize': feature.properties['fontSize']?parseInt(feature.properties['fontSize']):12,
         }
          // customize
          if(feature.geometry.type =='MultiPolygon'){
@@ -797,6 +803,7 @@ export default class GisMap{
             })
         }
         // render
+        this.ctx.globalAlpha = style.opacity
         const drawCircle = (coord)=>{
             this.ctx.beginPath()
             this.ctx.moveTo(coord[0]+style.radius,coord[1])
@@ -809,6 +816,15 @@ export default class GisMap{
             if(style.fill){
                 this.ctx.fillStyle = style.fill
                 this.ctx.fill()
+            }
+            if(style.text){
+                let anchor = JSON.parse(style.textAnchor)
+                let metric = this.ctx.measureText(style.text)
+                this.ctx.font = style.fontSize+'px 微軟正黑體'
+                this.ctx.fillStyle = style.textColor
+                let x = coord[0]+metric.width*anchor[0]+style.radius*anchor[0]
+                let y = coord[1]+style.fontSize*anchor[1]+style.radius*anchor[1]
+                this.ctx.fillText(style.text,x,y)
             }
             this.ctx.closePath()
         }

@@ -55,6 +55,7 @@ export class Maze{
         this.size = 30
         this.event = {active: false, fill: undefined, index: -1}
         this.nodes = []
+        this.fixedNodes = []
         this.init()
         this.container.addEventListener('mousedown',e=>{
             this.event.active = true            
@@ -183,7 +184,8 @@ export class Maze{
             let dx = Math.floor((e.clientX-rect.left)/this.size)
             let dy = Math.floor((e.clientY-rect.top)/this.size)
             let idx = dx*this.rows+dy
-            if(this.event.index!=idx){
+            let isFixedNode = this.fixedNodes.some(n=>n.isEqual(this.nodes[dx][dy]))
+            if(this.event.index!=idx&&!isFixedNode){
                 let scale = 1.1, coef = this.size*(scale-1), pad = 5
                 let children = this.container.children
                 if(this.event.fill===undefined)
@@ -301,13 +303,11 @@ export function defaultMazeInteraction(mazeContainer){
         maze.init()
         startNode = maze.getRandomNode()
         endNode = maze.getRandomNode([startNode])
+        maze.fixedNodes = [startNode,endNode]
         astar = new Astar(maze.nodes,startNode,endNode)
         maze.randomWall([startNode,endNode],0.7)
         maze.setNodeFill(startNode,color.blue)
         maze.setNodeFill(endNode,color.red)
     }
-    window.addEventListener('resize',()=>{
-        resetMaze()
-    })
     return handleClick
 }

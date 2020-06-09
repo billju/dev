@@ -68,15 +68,16 @@ window.exportFile = function(){
     let extension = document.getElementById('file-extension').value
     if(extension=='.geojson'){
         const unproject = gm.toLnglat
-        let features = gm.selectEvent.features.map(feature=>{
+        let features = gm.selectEvent.features.length?gm.selectEvent.features:gm.vector
+        features = features.map(feature=>{
             let f = {...feature}, coords = feature.geometry.coordinates
+            f.geometry = {...f.geometry}
             switch(f.geometry.type){
                 case 'Point':
                     f.geometry.coordinates = unproject(coords);break;
                 case 'MultiPoint':
                     f.geometry.coordinates = coords.map(coord=>unproject(coord));break;
                 case 'LineString':
-                    console.log(unproject)
                     f.geometry.coordinates = coords.map(coord=>unproject(coord));break;
                 case 'MultiLineString':
                     f.geometry.coordinates = coords.map(arr=>arr.map(coord=>unproject(coord)));break;

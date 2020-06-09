@@ -10,23 +10,30 @@ import {FractalTree, defaultFractalTreeInteraction} from './fractalTree.js'
 import {skr, smoothScroll} from './skr.js'
 // pumping animation
 pumpingConcentricCircle(document.getElementById('pumping-circle'))
-
-// chart
 const dataset = new Dataset().random(50)
 const chart = new Chart(document.getElementById('chart'),{
     data: dataset.xy,
     beginAtZero: true
 })
+var chartAnimationFrame = null
 function draw(){
     chart.clear()    
     chart.animateTo(dataset.xy)
     chart.drawGrid()
     chart.drawDots()
     // chart.drawLine(Array.from(Array(window.innerWidth).keys(),x=>([x,wave.f(x+i)*30+100])))
-    window.requestAnimationFrame(draw)
+    chartAnimationFrame = window.requestAnimationFrame(draw)
 }
 draw()
 setInterval(()=>{dataset.random(50)},2000)
+window.addEventListener('scroll',()=>{
+    if(window.scrollY>window.innerHeight&&chartAnimationFrame){
+        window.cancelAnimationFrame(chartAnimationFrame)
+        chartAnimationFrame = null
+    }else if(!chartAnimationFrame){
+        draw()
+    }
+})
 
 // text fx
 TypingText(document.getElementById('typing-text'),[
@@ -97,8 +104,7 @@ pulseBottom.init()
 pulseBottom.svg.onclick = e=>{pulseBottom.init()}
 
 // maze
-const handleMazeClick = defaultMazeInteraction(document.getElementById('maze'))
-document.getElementById('maze-description').onclick = e=>{handleMazeClick()}
+window.handleMazeClick = defaultMazeInteraction(document.getElementById('maze'))
 // fullscreen cards
 const shakers = [
     {
@@ -145,7 +151,7 @@ document.querySelectorAll('.shaker').forEach((el,i)=>{
         let rect = el.getBoundingClientRect()
         let fs = document.getElementById('fullscreen')
         Object.assign(fs.style,{
-            display: 'block',
+            display: 'flex',
             transformOrigin: `${rect.left+rect.width/2}px ${rect.top+rect.height/2}px`,
             transform: 'scale(0) translateY(0%)',
             opacity: 0,
@@ -176,11 +182,10 @@ fullscreen.onclick = e=>{
 defaultFractalTreeInteraction(document.getElementById('fractal-tree'))
 
 // scroll fx
-if(navigator.userAgent.includes('Chrome')&&!navigator.userAgent.includes('Mobile')){
-    skr()
+skr()
+if(navigator.userAgent.includes('Windows')){
     smoothScroll(document.getElementById('smooth-scroll-container'))
 }
-    
 window.onload = ()=>{
     const lp = document.getElementById('loading-page')
     lp.style.opacity = 0

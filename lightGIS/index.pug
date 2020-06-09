@@ -38,9 +38,33 @@ html(lang="zh_tw")
                 td
                     input#percentage(type="number" style="width:50px;" min="1" value="100")
             tr
+                td text
+                td
+                    input#text(type="text" style="width:50px" oninput="interaction.setFeatureProps('text',event.target.value)")
+            tr
+                td textAnchor
+                td
+                    select#text-anchor(name="text-anchor" onchange="interaction.setFeatureProps('textAnchor',event.target.value)")
+                        option(value="[-1,-1]") 左上
+                        option(value="[-0.5,-1]") 上
+                        option(value="[0,-1]") 右上
+                        option(value="[0,-0.5]") 右
+                        option(value="[0,0]") 右下
+                        option(value="[-0.5,0]") 下
+                        option(value="[-1,0]") 左下
+                        option(value="[-1,-0.5]") 左
+            tr
+                td fontSize
+                td
+                    input(type='number' style='width:50px;' min='6' max='72' oninput="interaction.setFeatureProps('fontSize',event.target.value)")
+            tr
                 td radius
                 td
                     input(type='number' style='width:50px;' min='1' oninput="interaction.setFeatureProps('radius',event.target.value)")
+            tr
+                td opacity
+                td
+                    input(type='number' style='width:50px;' min='0.1' max='1' step='0.1' oninput="interaction.setFeatureProps('opacity',event.target.value)")
             tr
                 td lineWidth
                 td

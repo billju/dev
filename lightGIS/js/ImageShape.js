@@ -1,4 +1,4 @@
-class ImageShape{
+export default class ImageShape{
     constructor(img,cx,cy,gismap){
         this.img = img
         this.gismap = gismap

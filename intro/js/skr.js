@@ -7,6 +7,7 @@ export function skr(node=document.body){
         'fade-left':{from:{transform:'translateX(50%)',opacity:0},to:{transform:'translateX(0)',opacity:1}},
         'fade-right':{from:{transform:'translateX(-50%)',opacity:0},to:{transform:'translateX(0)',opacity:1}},
     }
+    let center = window.innerHeight/2
     function findKeyPoints(){
         keyPoints = []
         for(let key in node.dataset){
@@ -17,9 +18,8 @@ export function skr(node=document.body){
                 case 'bottom':
                     y = node.offsetTop+node.clientHeight;break;
                 case 'once':                    
-                    let offset = parseFloat(node.dataset['onceOffset'])||1
                     animation = {
-                        y: node.offsetTop-window.innerHeight+node.clientHeight*offset,
+                        y: node.offsetTop-window.innerHeight+(node.clientHeight>center?center:node.clientHeight),
                         fromStyle: animations[node.dataset[key]].from,
                         toStyle: animations[node.dataset[key]].to,
                         active: true,

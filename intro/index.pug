@@ -7,7 +7,7 @@ html(lang="en")
         title ChuBoy
     body
         header
-            #loading-page.bg-dark.w-100.vh-100.position-fixed(style="z-index:666;transition: 1s")
+            #loading-page.bg-dark.w-100.vh-100.position-fixed(style="z-index:100;transition: 1s")
                 #pumping-circle
             //nav.navbar(style="display:none")
                 .container
@@ -40,15 +40,15 @@ html(lang="en")
                             .mouse
                                 .mouse-wheel
                 section.bg-dark.py-5
-                    #my-skills.display-1.text-light.mb-5 技能與專案
+                    h1#my-skills.text-light.mb-5.px-2(style="font-size:8vw") 技能與專案
                     .container-fluid(style="transform:skewY(-5deg);padding:0").overflow-hidden
                         .w-100.d-flex.justify-content-around.bg-warning.py-3
                             h1 FRONTEND
                             h1.d-none.d-md-block FRONTEND
                             h1.d-none.d-sm-block FRONTEND
-                        .row.bg-info.w-100.py-3(data-once="fade-up" data-once-offset="1.5")
+                        .row.bg-info.w-100.py-3(data-once="fade-up")
                             .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
-                                a.neon-btn(href="https://musicplayer-666.web.app/")
+                                .neon-btn
                                     .d-flex.flex-column.justify-content-center
                                         h1.display-1.border-bottom Vue
                                         h3.display-3 音樂清單
@@ -65,9 +65,9 @@ html(lang="en")
                                 a(href="https://musicplayer-666.web.app/")
                                     img(style="max-width:100%" src="assets/mvbox.min.gif", alt="")
                         .py-5
-                        .row.flex-row-reverse.bg-primary.w-100.py-3(data-once="fade-up" data-once-offset="1.5")
+                        .row.flex-row-reverse.bg-primary.w-100.py-3(data-once="fade-up")
                             .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
-                                a.neon-btn(href="http://chatroom-websocket.com/")
+                                .neon-btn
                                     .d-flex.flex-column.justify-content-center
                                         h1.display-1.border-bottom React
                                         h3.display-3 聊天室
@@ -89,15 +89,21 @@ html(lang="en")
                             h1 BACKEND
                             h1.d-none.d-md-block BACKEND
                             h1.d-none.d-sm-block BACKEND
-                        .row.bg-warning.py-3(data-once="fade-up" data-once-offset="3")
+                        .row.bg-warning.py-3(data-once="fade-up")
                             .col-sm-12.col-md-6.d-flex.flex-column.justify-content-center.align-items-center
-                                h1.display-1.border-bottom Python
-                                h3.display-3 文章點滴
-                                .d-flex.justify-content-around
-                                    span.badge.badge-light.mx-1 爬蟲
-                                    span.badge.badge-light.mx-1 數據分析
-                                    span.badge.badge-light.mx-1 後端框架
-                                    span.badge.badge-light.mx-1 資料庫
+                                .neon-btn
+                                    .d-flex.flex-column.justify-content-center
+                                        h1.display-1.border-bottom Python
+                                        h3.display-3 文章點滴
+                                        .d-flex.justify-content-around
+                                            span.badge.badge-light.mx-1 爬蟲
+                                            span.badge.badge-light.mx-1 數據分析
+                                            span.badge.badge-light.mx-1 後端框架
+                                            span.badge.badge-light.mx-1 資料庫
+                                    span
+                                    span
+                                    span
+                                    span
                             .col-sm-12.col-md-6.d-flex.flex-wrap.align-items-center
                                 .list-group.w-100.text-center.py-3.px-3
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/2aiF1bNaQrOHnYpln9SxaQ" target="_blank") 爬蟲菜單
@@ -162,27 +168,20 @@ html(lang="en")
                                 span 網址連結：
                                 a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA                    
                 section
-                    .container-lg
+                    .container
                         h1 交通地圖
                         span 讀運系卻搞資訊，做過票證分析、旅行時間預測模型、浮車法調查APP、客運評鑑系統
                         p 我希望整合交通資訊，讓規劃者有更好的依據，讓用路人有更好的選擇
                 section
-                    canvas#maze.w-100.vh-100(data-top="transform:translateY(0px)" data-top1500="transform:translateY(1500px)" style="transition:transform 1s cubic-bezier(0.23, 1, 0.32, 1)")
-                    #maze-description.position-relative.bg-light-white(style="height:1500px")
-                        .position-absolute.w-100.px-3(style="top:0")
-                            .d-inline-block.bg-light-white.px-3
-                                h1.display-1 Path Finder
-                                h3.display-3.text-right Click me!!!
-                                h5.heading.float-right A* Algorithm
-                            .text-center.my-3.py-3.bg-light-white
-                                p Here I'll show you how to solve this maze.
-                                p We use a classic algorithm called A*.
-                                p It's clever and very compuational efficient.
-                                p This algorithm is widely used, especially at game.
-                                p By the way, something I would like to say is that - when it comes to algorithm research, I can do a good job.
+                    .container
+                        h1 路徑搜索演算法
+                        p 不管是做導航軟體或是遊戲，總是離不開路徑搜索的問題，A*演算法設計了f,g,h三個權重進行比對，能夠快速又有效率地找出通往目的地的方法，以下是個迷宮小遊戲範例，點擊方框可以興建或拆除障礙物，點擊按鈕試試看。
+                    .position-relative.vh-100
+                        canvas#maze.w-100.h-100.position-absolute
+                        .btn.btn-success.position-absolute(style="top:0;left:0;right:0" onclick="handleMazeClick()") Click me!
                 section
                     svg#pulse.w-100
-                    h1.display-2.text-center(data-once="fade-left") MORE PROJECTS
+                    h1.text-center(style="font-size:8vw" data-once="fade-left") MORE PROJECTS
                     .container-lg
                         .row
                             .col-sm-12.col-md-4
@@ -224,7 +223,7 @@ html(lang="en")
                                         .mask visit site
                                     .px-2.py-2
                                         h3 Greenband
-                .position-relative.bg-primary(style="height:500px")
+                footer.position-relative.bg-primary(style="height:500px")
                     canvas#fractal-tree.w-100.h-100.position-absolute
                     .position-absolute(style="bottom:0;left:0").px-3.py-3.text-light
                         a(href="https://chuboy.co")
@@ -240,7 +239,7 @@ html(lang="en")
                             a.jello(href="https://codepen.io/HandsomeChuBoy" target="_blank")
                                 img(src="assets/codepen.png")
         #smooth-scroll-hitbox
-        footer#fullscreen.bg-dark.text-light
+        #fullscreen.bg-dark.text-light
             .container.h-100.d-flex.flex-column.justify-content-center.align-items-center
                 a(href="#" target="_blank")
                     img(src="assets/pomodoro.gif", alt="" style="max-width: 100%")
