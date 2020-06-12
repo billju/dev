@@ -26,6 +26,11 @@ export default class Editor{
         const mis = (seconds%1).toFixed(3).substr(2)
         return format.replace('hh',hh).replace('mm',mm).replace('ss',ss).replace('mis',mis)
     }
+    parseTime(str, format='hh:mm:ss,mis'){
+        let matches = str.match(/(\d+):(\d+):(\d+),(\d+)/)
+        let seconds = matches[1]*3600+matches[2]*60+matches[3]*1+matches[4]*0.001
+        return parseFloat(seconds)
+    }
     update(){
         this.lineNumbers.innerHTML = ''
         for(let i=0;i<this.textEditor.childNodes.length;i++){
@@ -113,13 +118,12 @@ export default class Editor{
     save(){
         localStorage.setItem('vizTranscriber',this.textEditor.innerHTML)
     }
-    importSrt(srt){
-        function parseSrt(srt){
+    importSrt(){
+        const parseSrt = (srt)=>{
             let fromSec = 0
             srt.split('\n').map((line,i)=>{
                 if(i%4==1){
-                    fromSec = line.split(' --> ')[0].replace(',','')
-                    fromSec = parseFloat(fromSec)
+                    fromSec = this.parseTime(line.split(' --> ')[0],'hh:mm:ss,mis')
                 }
                 if(i%4==2){
                     let div = document.createElement('div')
@@ -149,7 +153,7 @@ export default class Editor{
     }
     exportSrt(){
         let lines = [...this.textEditor.children].map(el=>{
-            return {time: this.getFormatTime(el.dataset.time), text:el.textContent}
+            return {time: this.getFormatTime(el.dataset.time,'hh:mm:ss,mis'), text:el.textContent}
         }).sort((a,b)=>a.time-b.time)
         let srt = ''
         for(let i=0;i<lines.length-1;i++){

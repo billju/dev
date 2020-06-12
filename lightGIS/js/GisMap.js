@@ -311,14 +311,15 @@ export default class GisMap{
         if(this.modifyEvent.feature){
             let coords = this.modifyEvent.feature.geometry.coordinates
             let geomType = this.modifyEvent.feature.geometry.type
-            coords = geomType=='PointS'?[coords]:geomType=='LineString'?coords:geomType=='Polygon'?coords[0]:[]
+            coords = geomType=='Point'?[coords]:geomType=='LineString'?coords:geomType=='Polygon'?coords[0]:[]
             this.modifyEvent.coords = coords // assign by reference
             this.modifyEvent.geomType = geomType
             let clients = coords.map(coord=>this.coord2client(coord))
             const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2))
             this.modifyEvent.anchor = -1
+            let buffer = geomType=='Point'?parseInt(this.modifyEvent.feature.properties['radius'])||10:10
             for(let i=0;i<clients.length;i++){
-                if(Euclidean([e.clientX,e.clientY],clients[i]) < 10){
+                if(Euclidean([e.clientX,e.clientY],clients[i]) < buffer){
                     this.modifyEvent.anchor = i; break;
                 }
                 if(i>0){
@@ -356,6 +357,8 @@ export default class GisMap{
         if(this.modifyEvent.anchor!=-1){
             let i = this.modifyEvent.anchor
             this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
+            if(this.modifyEvent.geomType=='Point')
+                this.modifyEvent.feature.geometry.coordinates = this.modifyEvent.coords[0]
             if(this.modifyEvent.geomType=='Polygon'&&i==0)
                 this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0]
                 Object.assign(this.modifyEvent.feature.properties,this.getDerivedProperties(this.modifyEvent.feature))
@@ -412,7 +415,7 @@ export default class GisMap{
                     if(this.selectEvent.features.includes(feature))
                         dispatchSelectEvent(this.selectEvent.features.filter(x=>x!=feature))
                     else
-                        dispatchSelectEvent([...this.selectEvent.features,feature])
+                        dispatchSelectEvent([feature,...this.selectEvent.features])
                 }
             }
         }else if(!this.moveEvent.moved){
@@ -475,16 +478,16 @@ export default class GisMap{
             }
             let feature = { geometry: { type: geomType, coordinates: path }, properties: {} }
             let properties = this.getDerivedProperties(feature)
-            properties['圖層'] = '手繪'
             if(geomType=='Point'){
                 properties['radius'] = 10
                 properties['lineWidth'] = 3
                 properties['fill'] = 'rgba(0,0,255,0.3)'
             }
-            this.addVector(geomType,path,properties,true)
+            feature = this.addVector(geomType,path,properties,true)
             this.drawEvent.path = []
             this.drawEvent.active = false
             this.drawEvent.snap = false
+            this.canvas.dispatchEvent(new CustomEvent('drawend',{detail:{feature}}))
         }
     }
     handleMouseleave(e){
@@ -738,6 +741,7 @@ export default class GisMap{
             return feature
         })
         this.vector.unshift(...features)
+        return features
     }
     detectClient(client){
         const Euclidean = (p1,p2)=>Math.sqrt(Math.pow(p1[0]-p2[0],2)+Math.pow(p1[1]-p2[1],2))
@@ -774,12 +778,14 @@ export default class GisMap{
         let style = {
             'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
             'stroke': feature.properties['stroke']||'dodgerblue',
-            'fill': ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:'rgba(0,0,255,0.3)',
+            'fill': ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:feature.properties['fill']||'rgba(0,0,255,0.3)',
             'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5,
             'opacity': feature.properties['opacity']?parseFloat(feature.properties['opacity']):1,
             'text': feature.properties['text'],
-            'textAnchor': feature.properties['textAnchor']||'[-1,-1]',
-            'textColor': feature.properties['textColor']||'dodgerblue',
+            'textAnchor': feature.properties['textAnchor']||'[1,-1]',
+            'textFill': feature.properties['textFill']||'dodgerblue',
+            'textStroke': feature.properties['textStroke']||'dodgerblue',
+            'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):1,
             'fontSize': feature.properties['fontSize']?parseInt(feature.properties['fontSize']):12,
         }
          // customize
@@ -820,11 +826,15 @@ export default class GisMap{
             if(style.text){
                 let anchor = JSON.parse(style.textAnchor)
                 let metric = this.ctx.measureText(style.text)
-                this.ctx.font = style.fontSize+'px 微軟正黑體'
-                this.ctx.fillStyle = style.textColor
-                let x = coord[0]+metric.width*anchor[0]+style.radius*anchor[0]
-                let y = coord[1]+style.fontSize*anchor[1]+style.radius*anchor[1]
+                this.ctx.font = `bold ${style.fontSize}px 微軟正黑體`
+                this.ctx.fillStyle = style.textFill
+                this.ctx.strokeStyle = style.textStroke
+                this.ctx.lineWidth = style.fontWeight
+                this.ctx.textBaseline = 'middle'
+                let x = coord[0]+(anchor[0]/2-0.5)*metric.width+style.radius*anchor[0]
+                let y = coord[1]+anchor[1]/2*style.fontSize+style.radius*anchor[1]
                 this.ctx.fillText(style.text,x,y)
+                this.ctx.strokeText(style.text,x,y)
             }
             this.ctx.closePath()
         }
@@ -900,7 +910,7 @@ export default class GisMap{
             },
             properties: properties
         }]}
-        this.geojson(geojson, projected)
+        return this.geojson(geojson, projected)[0]
     }
     WKT(wkt,properties){
         let type = wkt.match(/\w+/)[0]

@@ -25,6 +25,7 @@ html(lang="zh_tw")
                     option(value='.geojson') .geojson
                     option(value='.png') .png
         table#properties.table.table-striped.table-hover.table-dark(style='max-width:300px;max-height:100vh;position:fixed;left:0;top:0')
+        table#layers(style="position:fixed;left:0;bottom:0")
         table#styles.table.table-striped.table-hover.table-dark(style='max-width:200px;position:fixed;left:0;bottom:0;margin-bottom:0;cursor:move;display:none')
             tr
                 td(colspan='2')
@@ -44,36 +45,48 @@ html(lang="zh_tw")
             tr
                 td textAnchor
                 td
-                    select#text-anchor(name="text-anchor" onchange="interaction.setFeatureProps('textAnchor',event.target.value)")
+                    select#textAnchor(name="text-anchor" oninput="interaction.setFeatureProps('textAnchor',event.target.value)")
                         option(value="[-1,-1]") 左上
-                        option(value="[-0.5,-1]") 上
-                        option(value="[0,-1]") 右上
-                        option(value="[0,-0.5]") 右
-                        option(value="[0,0]") 右下
-                        option(value="[-0.5,0]") 下
-                        option(value="[-1,0]") 左下
-                        option(value="[-1,-0.5]") 左
+                        option(value="[0,-1.2]") 上
+                        option(value="[1,-1]") 右上
+                        option(value="[1.2,0]") 右
+                        option(value="[1,1]") 右下
+                        option(value="[0,1.2]") 下
+                        option(value="[-1,1]") 左下
+                        option(value="[-1.2,0]") 左
+            tr
+                td textFill
+                td
+                    input#textFill(type='color' oninput="interaction.setFeatureProps('textFill',event.target.value)")
+            tr
+                td textStroke
+                td
+                    input#textStroke(type='color' oninput="interaction.setFeatureProps('textStroke',event.target.value)")
+            tr
+                td fontWeight
+                td
+                    input#fontWeight(type='number' style='width:50px;' min='1' max='5' step="0.5" oninput="interaction.setFeatureProps('fontWeight',event.target.value)")
             tr
                 td fontSize
                 td
-                    input(type='number' style='width:50px;' min='6' max='72' oninput="interaction.setFeatureProps('fontSize',event.target.value)")
+                    input#fontSize(type='number' style='width:50px;' min='6' max='72' oninput="interaction.setFeatureProps('fontSize',event.target.value)")
             tr
                 td radius
                 td
-                    input(type='number' style='width:50px;' min='1' oninput="interaction.setFeatureProps('radius',event.target.value)")
+                    input#radius(type='number' style='width:50px;' min='1' oninput="interaction.setFeatureProps('radius',event.target.value)")
             tr
                 td opacity
                 td
-                    input(type='number' style='width:50px;' min='0.1' max='1' step='0.1' oninput="interaction.setFeatureProps('opacity',event.target.value)")
+                    input#opacity(type='number' style='width:50px;' min='0.1' max='1' step='0.1' oninput="interaction.setFeatureProps('opacity',event.target.value)")
             tr
                 td lineWidth
                 td
-                    input(type='number' style='width:50px;' min='0' oninput="interaction.setFeatureProps('lineWidth',event.target.value)")
+                    input#lineWidth(type='number' style='width:50px;' min='0' oninput="interaction.setFeatureProps('lineWidth',event.target.value)")
             tr
                 td stroke
                 td
-                    input(type='color' oninput="interaction.setFeatureProps('stroke',event.target.value)")
+                    input#stroke(type='color' oninput="interaction.setFeatureProps('stroke',event.target.value)")
             tr
                 td fill
                 td
-                    input(type='color' oninput="interaction.setFeatureProps('fill',event.target.value)")
+                    input#fill(type='color' oninput="interaction.setFeatureProps('fill',event.target.value)")

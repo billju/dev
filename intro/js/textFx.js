@@ -26,10 +26,11 @@ export function HiddenText(element,textStyle={},maskStyle={},dir='top',delay=0){
         width: '100%',
         height: '100%',
         transform: `translate${axis}(${sign*100}%)`,
-        transition: `transform ${0.5}s`
+        transition: `transform ${500}ms`
     })
     setTimeout(()=>{
         textDiv.style.transform = `translate${axis}(0%)`
+        element.removeChild(maskDiv)
     },1500+delay)
     setTimeout(()=>{
         maskDiv.style.transform = `translate${axis}(${sign*-100}%)`

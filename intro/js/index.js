@@ -43,9 +43,14 @@ TypingText(document.getElementById('typing-text'),[
 ],50,'white')
 HoppingText(document.getElementById('my-skills'))
 FlipText(document.getElementById('flip-text'),[
-    'My little story about discovery.',
-    'All about how I make trivial work more intersting.',
-    'Even during the military service, I created linebot.',
+    '技術與生活應用',
+    '以下介紹我如何將繁瑣的工作變得有趣',
+    '當兵放假不想被營外回報霸凌，寫了聊天機器人',
+    '想要參加競賽生出作品，寫了安卓開發範例',
+    '期末報告想做不同的主題，設計了空間最佳化模型',
+    '開會寫紀錄太無聊，順便寫了逐字稿軟體',
+    '疊圖分析路網聽起來很複雜，製作了GIS系統',
+    '保留學習結晶，常用MD寫筆記',
 ],32)
 
 // svg wave

@@ -5,6 +5,8 @@ export default class Interaction{
         this.recycle = []
         this.propsTable = document.getElementById('properties')
         this.styleTable = document.getElementById('styles')
+        this.currentLayer = '手繪'
+        this.layerTable = document.getElementById('layers')
         this.gismap.raster = this.getDefaultRaster()
         this.renderRasterTable(document.getElementById('raster'))
         // custom events
@@ -12,9 +14,11 @@ export default class Interaction{
             this.gismap.selectEvent.styling = false
             let features = e.detail.features
             if(features.length==1){
+                this.renderFeatureProps(features[0])
                 this.renderPropsTable(features[0].properties)
                 this.styleTable.style.display = 'block'
             }else if(features.length>1){
+                this.renderFeatureProps(features[0])
                 let area = features.reduce((acc,cur)=>{
                     return acc+this.gismap.getFeatureArea(cur)
                 },0)
@@ -28,6 +32,10 @@ export default class Interaction{
                 this.renderPropsTable({})
                 this.styleTable.style.display = 'none'
             }
+            this.renderLayerTable()
+        })
+        this.gismap.canvas.addEventListener('drawend',e=>{
+            e.detail.feature.properties['圖層'] = this.currentLayer
         })
         this.gismap.canvas.addEventListener('render',()=>{
             for(let imageShape of this.imageShapes.slice().reverse()){
@@ -108,15 +116,33 @@ export default class Interaction{
             feature.properties[key] = value
         }
     }
+    renderFeatureProps(feature){
+        let keys = ['text','textAnchor','textFill','textStrokeWidth','fontSize','radius','opacity','lineWidth','stroke','fill']
+        for(let key of keys){
+            if(feature.properties[key]!=undefined)
+                document.getElementById(key).value = feature.properties[key]
+        }
+    }
     renderPropsTable(properties){
         this.propsTable.innerHTML = ''
         Object.entries(properties).map(([key,val])=>{
             if(val&&val!='null'){
                 let tr = this.propsTable.insertRow()
                 tr.insertCell().textContent = key
-                tr.insertCell().innerHTML = val
+                let td = tr.insertCell()
+                td.contentEditable = true
+                td.textContent = val
+                td.oninput = e=>{properties[key] = e.target.textContent}
             }
         })
+    }
+    renderLayerTable(){
+        this.layerTable.innerHTML = ''
+        let layers = [...new Set(this.gismap.vector.map(v=>v.properties['圖層']).filter(v=>v))]
+        for(let layer of layers){
+            let tr = this.layerTable.insertRow()
+            tr.insertCell().textContent = layer
+        }
     }
     getDefaultRaster(){
         const token = "qn5cMMfaz2E84GbcNlqB2deRwJpO0NfuIorLEzgqLiaQv3lB8mfoVF7VU0u0rJCMbkMjDCBz2xD1JH-8fYMuBg.."

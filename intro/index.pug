@@ -2,7 +2,14 @@ html(lang="en")
     head
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        meta(name="description", content="chuboy's portfolio")
+        meta(name="og:locale" content="zh_tw")
+        meta(name="og:title" content="Chuboy's portfolio")
+        meta(name="og:site_name" content="Chuboy's portfolio")
+        meta(name="og:description", content="I am a web developer as well as a data analyst.")
+        meta(name="og:image" content="assets/og-title.png")
+        meta(name="og:image:type" content="image/png")
+        meta(name="og:url" content="https://chuboy.dev")
+        meta(name="description", content="Chuboy's portfolio includes vue media player, react & socket.io chatroom, python notes and even more.")
         link(rel="shortcut icon", href="assets/favicon.ico", type="image/x-icon")
         title ChuBoy
     body
@@ -26,19 +33,20 @@ html(lang="en")
                             a(href='#') about
         main#smooth-scroll-container
             #smooth-scroll-translator
-                section.vh-100.overflow-hidden.position-relative
+                section.vh-100.overflow-hidden.position-relative.text-light
                     canvas#chart.position-absolute
-                    .position-absolute.w-100.h-100.d-flex.flex-column.justify-content-center.align-items-center.text-light
+                    .position-absolute.w-100.h-100.d-flex.flex-column.justify-content-center.align-items-center
                         .row.my-3
-                            .col-sm-12.col-md-7.d-flex.align-items-center.justify-content-center
+                            .col-sm-12.col-md-6.d-flex.align-items-center.justify-content-center
                                 .display-1#chuboy ChuBoy
-                            .col-sm-12.col-md-5
-                                .display-4#web-dev web developer
-                                .display-4#data-analyst data analyst
+                            .col-sm-12.col-md-6
+                                pre.display-4#web-dev.text-light Web developer
+                                pre.display-4#data-analyst.text-light Data analyst
                         p.text-center#typing-text
-                        .d-flex.justify-content-center
-                            .mouse
+                        .d-flex.justify-content-center.align-items-center
+                            .mouse.mx-2
                                 .mouse-wheel
+                            span scroll down
                 section.bg-dark.py-5
                     h1#my-skills.text-light.mb-5.px-2(style="font-size:8vw") 技能與專案
                     .container-fluid(style="transform:skewY(-5deg);padding:0").overflow-hidden
@@ -52,8 +60,8 @@ html(lang="en")
                                     .d-flex.flex-column.justify-content-center
                                         h1.display-1.border-bottom Vue
                                         h3.display-3 音樂清單
-                                        .d-flex.justify-content-around
-                                            .badge.badge-light.mx-1 mp3 player
+                                        .d-flex.justify-content-center
+                                            .badge.badge-light.mx-1 media player
                                             .badge.badge-light.mx-1 firebase
                                             .badge.badge-light.mx-1 youtube api
                                     span
@@ -61,9 +69,10 @@ html(lang="en")
                                     span
                                     span
                             .col-sm-12.col-md-6.px-3.py-3
-                                h1.heading(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單
+                                h1.heading(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單。
                                 a(href="https://musicplayer-666.web.app/")
-                                    img(style="max-width:100%" src="assets/mvbox.min.gif", alt="")
+                                    video(style="max-width:100%" autoplay loop muted)
+                                        source(src="assets/mvbox.mp4" type="video/mp4")
                         .py-5
                         .row.flex-row-reverse.bg-primary.w-100.py-3(data-once="fade-up")
                             .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
@@ -71,7 +80,7 @@ html(lang="en")
                                     .d-flex.flex-column.justify-content-center
                                         h1.display-1.border-bottom React
                                         h3.display-3 聊天室
-                                        .d-flex.justify-content-around
+                                        .d-flex.justify-content-center
                                             .badge.badge-light.mx-1 node server
                                             .badge.badge-light.mx-1 sqlite
                                             .badge.badge-light.mx-1 socket.io
@@ -81,7 +90,7 @@ html(lang="en")
                                     span
                                     span
                             .col-sm-12.col-md-6.px-3.py-3
-                                h1.text-light.heading(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片
+                                h1.text-light.heading(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片。
                                 a(href="http://chatroom-websocket.com/")
                                     img(style="max-width:100%" src="assets/chatroom.gif", alt="")
                         .py-5
@@ -95,11 +104,11 @@ html(lang="en")
                                     .d-flex.flex-column.justify-content-center
                                         h1.display-1.border-bottom Python
                                         h3.display-3 文章點滴
-                                        .d-flex.justify-content-around
-                                            span.badge.badge-light.mx-1 爬蟲
-                                            span.badge.badge-light.mx-1 數據分析
-                                            span.badge.badge-light.mx-1 後端框架
-                                            span.badge.badge-light.mx-1 資料庫
+                                        .d-flex.justify-content-center
+                                            .badge.badge-light.mx-1 爬蟲
+                                            .badge.badge-light.mx-1 數據分析
+                                            .badge.badge-light.mx-1 後端框架
+                                            .badge.badge-light.mx-1 資料庫
                                     span
                                     span
                                     span
@@ -117,7 +126,7 @@ html(lang="en")
                     .bg-primary.pt-5
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
-                                h1#flip-text
+                                #flip-text
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 Linebot聊天機器人
@@ -135,7 +144,7 @@ html(lang="en")
                                 h1 Android範例
                                 span.badge.badge-info.mx-1 demos
                                 p 故事由來：當創客時參加了ARM競賽，以無人商店為題，因緣際會下自學安卓APP開發，希望寫個APP能夠掃描商品標間，並配合物聯網將客人的需求快速加入購物車，
-                                    | 為了不忘記這些技術概念，將每塊功能模組用法用範例的方式紀錄下來作為手冊。
+                                    | 為了不忘記這些技術概念，將每塊功能以使用範例的方式紀錄下來作為手冊。
                                 span 網址連結：
                                 a(href="https://github.com/billju/Android-source-code-demo" target="_blank") https://github.com/billju/Android-source-code-demo
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
@@ -144,7 +153,8 @@ html(lang="en")
                                 span.badge.badge-info.mx-1 operation research
                                 span.badge.badge-info.mx-1 optimizer
                                 span.badge.badge-info.mx-1 gurobi
-                                p 故事由來：就學期間有門課在研究線性規劃模型，我將其套用在物流業界中貨物堆疊的問題，此模型可額外擴充堆疊條件，像是貨物的重量、下方貨物的面積。
+                                p 故事由來：就學期間有門課在研究線性規劃模型，大家都做TSP(traveling sales problem)路徑搜索問題，我偏不要，反而將線性規劃(linear programing)
+                                    | 套用在物流業界中貨物堆疊的問題，做出不一樣的成果，此模型可設定堆疊條件進行規劃，像是貨物的重量、下方貨物的面積。
                                 span 網址連結：
                                 a(href="https://github.com/billju/gurobi-packing" target="_blank") https://github.com/billju/gurobi-packing
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
@@ -157,8 +167,18 @@ html(lang="en")
                                 p 故事由來：開會總是要做會議紀錄，若要在紀錄細節時，邊聽錄音檔邊寫紀錄常常需要切換桌面應用程式，不斷切換播放器與編輯器的頁面，還容易因為沒打時間點，花費許多額外心力尋找關鍵字，
                                     | 因此我特製了專屬編輯器讓工作變得更方便，後來又靈光乍現地擴充了影片上字幕功能，並且把檔案IO格式轉為通用的SRT，讓影音製作者也能夠享受到這番方便性。
                                 p 技術層面：以analyser即時產出的波峰進行取樣，避開了web audio的音樂解碼會佔據大量記憶體的問題，讓長達數小時的影音也能將波形視覺化，也能藉由自製文本編輯器格行標籤快速跳點。
-                                p everytime when transcribing from meeting is too trivial
                                 span 網址連結：
+                                a(href="https://chuboy.dev/transcriber" target="_blank") https://chuboy.dev/transcriber
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1 lightGIS地理資訊系統
+                                span.badge.badge-info.mx-1 OOP
+                                span.badge.badge-info.mx-1 Vanilla JS
+                                span.badge.badge-info.mx-1 WEB GIS
+                                p 全手刻的網頁版輕量地理資訊系統，除了能製作地理美術圖，還能進行數據分析，打開右方開關開啟圖層，拖曳圖層名稱切換先後順序，點擊右鍵開始繪製，可匯入圖片檔與geojson檔，
+                                    | 未來將整合PTX資料，我希望整合交通資訊，讓規劃者能更快速的進行疊圖分析，讓用路人有更多元的運具選擇。
+                                span 網址連結：
+                                a(href="https://chuboy.dev/lightGIS" target="_blank") https://chuboy.dev/lightGIS
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 Webpack我全包了
@@ -166,22 +186,17 @@ html(lang="en")
                                 span.badge.badge-info.mx-1 webpack
                                 p 最新文章，webpack入門與設定範例，介紹如何打包HTML/Pug, CSS/Sass/Scss, JS/Babel，以及完整範例。
                                 span 網址連結：
-                                a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA                    
+                                a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA
                 section
-                    .container
-                        h1 交通地圖
-                        span 讀運系卻搞資訊，做過票證分析、旅行時間預測模型、浮車法調查APP、客運評鑑系統
-                        p 我希望整合交通資訊，讓規劃者有更好的依據，讓用路人有更好的選擇
-                section
-                    .container
+                    .container.pt-3
                         h1 路徑搜索演算法
                         p 不管是做導航軟體或是遊戲，總是離不開路徑搜索的問題，A*演算法設計了f,g,h三個權重進行比對，能夠快速又有效率地找出通往目的地的方法，以下是個迷宮小遊戲範例，點擊方框可以興建或拆除障礙物，點擊按鈕試試看。
-                    .position-relative.vh-100
-                        canvas#maze.w-100.h-100.position-absolute
-                        .btn.btn-success.position-absolute(style="top:0;left:0;right:0" onclick="handleMazeClick()") Click me!
+                    .btn.btn-success.w-100(onclick="handleMazeClick()") Click me!
+                    canvas#maze.w-100.vh-100
                 section
                     svg#pulse.w-100
-                    h1.text-center(style="font-size:8vw" data-once="fade-left") MORE PROJECTS
+                    .w-100.bg-dark.text-light
+                        h1.text-center(style="font-size:8vw" data-once="fade-left") MORE PROJECTS
                     .container-lg
                         .row
                             .col-sm-12.col-md-4
@@ -245,5 +260,5 @@ html(lang="en")
                     img(src="assets/pomodoro.gif", alt="" style="max-width: 100%")
                 h1
                 p(style="max-width:500px") Lorem ipsum dolor sit amet consectetur `adipisicing elit. Perspiciatis dolorum eius inventore officia qui quisquam, aspernatur quaerat sint, assumenda nobis architecto corporis excepturi atque asperiores tempora non quibusdam aperiam vitae.
-                small 點圖片進入連結，點黑邊返回
+                small 點圖片進入連結，點黑底返回
         

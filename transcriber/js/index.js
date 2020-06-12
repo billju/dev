@@ -40,17 +40,17 @@ async function handleFile(file){
             document.getElementById('audio-control-bar'),
             document.getElementById('audio-control-text')
         )
+        editor.oncue = e=>{
+            player.currentTime = e.time
+        }
+        player.addEventListener('timeupdate',()=>{
+            editor.currentTime = player.currentTime
+        })
     }
 }
-
 // editor.loadFromLocalStorage()
 setInterval(()=>{editor.save()},3000)
-editor.oncue = e=>{
-    player.currentTime = e.time
-}
-player.addEventListener('timeupdate',()=>{
-    editor.currentTime = player.currentTime
-})
+
 const shortcuts = document.getElementById('shortcuts')
 makeElementMovable(shortcuts)
 textEditor.addEventListener('keydown',e=>{
