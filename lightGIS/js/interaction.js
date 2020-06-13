@@ -6,36 +6,17 @@ export default class Interaction{
         this.propsTable = document.getElementById('properties')
         this.styleTable = document.getElementById('styles')
         this.currentLayer = '手繪'
+        this.copied = {features:[],center:[0,0]}
         this.layerTable = document.getElementById('layers')
         this.gismap.raster = this.getDefaultRaster()
         this.renderRasterTable(document.getElementById('raster'))
         // custom events
         this.gismap.canvas.addEventListener('select',e=>{
-            this.gismap.selectEvent.styling = false
-            let features = e.detail.features
-            if(features.length==1){
-                this.renderFeatureProps(features[0])
-                this.renderPropsTable(features[0].properties)
-                this.styleTable.style.display = 'block'
-            }else if(features.length>1){
-                this.renderFeatureProps(features[0])
-                let area = features.reduce((acc,cur)=>{
-                    return acc+this.gismap.getFeatureArea(cur)
-                },0)
-                let properties = {
-                    '數量':features.length,
-                    '面積合計':area.toFixed(0)+'平方公尺'
-                }
-                this.renderPropsTable(properties)
-                this.styleTable.style.display = 'block'
-            }else{
-                this.renderPropsTable({})
-                this.styleTable.style.display = 'none'
-            }
-            this.renderLayerTable()
+            this.handleSelectFeatures(e.detail.features)
         })
         this.gismap.canvas.addEventListener('drawend',e=>{
             e.detail.feature.properties['圖層'] = this.currentLayer
+            this.renderLayerTable()
         })
         this.gismap.canvas.addEventListener('render',()=>{
             for(let imageShape of this.imageShapes.slice().reverse()){
@@ -87,8 +68,7 @@ export default class Interaction{
         window.addEventListener('keyup',e=>{
             for(let imageShape of this.imageShapes)
                 imageShape.handleKeyup(e)
-            if(e.code=='Delete'){
-                this.imageShapes = this.imageShapes.filter(x=>!x.editing)
+            const deleteSelected = ()=>{
                 if(this.gismap.selectEvent.features.length){
                     this.gismap.vector = this.gismap.vector.filter(feature=>!this.gismap.selectEvent.features.includes(feature))
                     this.recycle.push(this.gismap.selectEvent.features)
@@ -96,10 +76,39 @@ export default class Interaction{
                     this.gismap.modifyEvent.feature = null
                 }
             }
-            if(e.ctrlKey&&e.code=='KeyZ'){
+            const copySelected = ()=>{
+                const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
+                if(this.gismap.selectEvent.features.length){
+                    this.copied.features = this.gismap.selectEvent.features
+                    this.copied.center = this.gismap.getCoordsCenter(this.copied.features.flatMap(f=>flatten(f.geometry.coordinates)))
+                }
+            }
+            if(e.code=='Delete'){
+                this.imageShapes = this.imageShapes.filter(x=>!x.editing)
+                deleteSelected()
+            }
+            else if(e.ctrlKey&&e.code=='KeyZ'){
                 let features = this.recycle.pop()
                 if(features)
                     features.map(feature=>{this.gismap.vector.push(feature)})
+            }
+            else if(e.ctrlKey&&e.code=='KeyX'){
+                copySelected()
+                deleteSelected()
+            }
+            else if(e.ctrlKey&&e.code=='KeyC'){
+                copySelected()
+            }
+            else if(e.ctrlKey&&e.code=='KeyV'){
+                const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
+                let from = this.copied.center
+                let to = this.gismap.moveEvent.currentCoord
+                let offset = [to[0]-from[0],to[1]-from[1]]
+                for(let feature of this.copied.features.slice().reverse()){
+                    let f = JSON.parse(JSON.stringify(feature))
+                    flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
+                    this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
+                }
             }
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
         })
@@ -110,6 +119,29 @@ export default class Interaction{
             this.gismap.handleResize()
         })
     }
+    handleSelectFeatures(features){
+        this.gismap.selectEvent.styling = false
+        if(features.length==1){
+            this.renderFeatureProps(features[0])
+            this.renderPropsTable(features[0].properties)
+            this.styleTable.style.display = 'block'
+        }else if(features.length>1){
+            this.renderFeatureProps(features[0])
+            let area = features.reduce((acc,cur)=>{
+                return acc+this.gismap.getFeatureArea(cur)
+            },0)
+            let properties = {
+                '數量':features.length,
+                '面積合計':area.toFixed(0)+'平方公尺'
+            }
+            this.renderPropsTable(properties)
+            this.styleTable.style.display = 'block'
+        }else{
+            this.renderPropsTable({})
+            this.styleTable.style.display = 'none'
+        }
+        this.renderLayerTable()
+    }
     setFeatureProps(key,value){
         this.gismap.selectEvent.styling = true
         for(let feature of this.gismap.selectEvent.features){
@@ -117,10 +149,9 @@ export default class Interaction{
         }
     }
     renderFeatureProps(feature){
-        let keys = ['text','textAnchor','textFill','textStrokeWidth','fontSize','radius','opacity','lineWidth','stroke','fill']
-        for(let key of keys){
-            if(feature.properties[key]!=undefined)
-                document.getElementById(key).value = feature.properties[key]
+        let style = this.gismap.getDefaultStyle(feature)
+        for(let key in style){
+            document.getElementById(key).value = style[key]||''
         }
     }
     renderPropsTable(properties){
@@ -142,6 +173,15 @@ export default class Interaction{
         for(let layer of layers){
             let tr = this.layerTable.insertRow()
             tr.insertCell().textContent = layer
+            tr.style.color = layer==this.currentLayer?'red':'black'
+            tr.style.cursor = 'pointer'
+            tr.onclick = ()=>{
+                tr.style.color = layer==this.currentLayer?'red':'black'
+                this.currentLayer = layer
+                let features = this.gismap.vector.filter(f=>f.properties['圖層']==layer)
+                this.gismap.selectEvent.features = features
+                this.handleSelectFeatures(features)
+            }
         }
     }
     getDefaultRaster(){

@@ -24,9 +24,10 @@ html(lang="zh_tw")
                 select#file-extension.btn.btn-outline-success(name='file-extension')
                     option(value='.geojson') .geojson
                     option(value='.png') .png
+                    option(value='.svg') .svg
         table#properties.table.table-striped.table-hover.table-dark(style='max-width:300px;max-height:100vh;position:fixed;left:0;top:0')
         table#layers(style="position:fixed;left:0;bottom:0")
-        table#styles.table.table-striped.table-hover.table-dark(style='max-width:200px;position:fixed;left:0;bottom:0;margin-bottom:0;cursor:move;display:none')
+        table#styles.table.table-striped.table-hover.table-dark(style='max-width:250px;position:fixed;left:0;bottom:0;margin-bottom:0;cursor:move;display:none')
             tr
                 td(colspan='2')
                     .btn-group.w-100
@@ -41,11 +42,12 @@ html(lang="zh_tw")
             tr
                 td text
                 td
-                    input#text(type="text" style="width:50px" oninput="interaction.setFeatureProps('text',event.target.value)")
+                    input#text(type="text" style="width:100px" oninput="interaction.setFeatureProps('text',event.target.value)")
             tr
                 td textAnchor
                 td
                     select#textAnchor(name="text-anchor" oninput="interaction.setFeatureProps('textAnchor',event.target.value)")
+                        option(value="[0,0]") 中
                         option(value="[-1,-1]") 左上
                         option(value="[0,-1.2]") 上
                         option(value="[1,-1]") 右上
@@ -63,9 +65,15 @@ html(lang="zh_tw")
                 td
                     input#textStroke(type='color' oninput="interaction.setFeatureProps('textStroke',event.target.value)")
             tr
+                td fontFamily
+                td
+                    select#fontFamily(name="font-family" oninput="interaction.setFeatureProps('fontFamily',event.target.value)")
+                        option(value="sans-serif") sans-serif
+                        option(value="微軟正黑體") 微軟正黑體
+            tr
                 td fontWeight
                 td
-                    input#fontWeight(type='number' style='width:50px;' min='1' max='5' step="0.5" oninput="interaction.setFeatureProps('fontWeight',event.target.value)")
+                    input#fontWeight(type='number' style='width:50px;' min='0' max='5' oninput="interaction.setFeatureProps('fontWeight',event.target.value)")
             tr
                 td fontSize
                 td

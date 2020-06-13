@@ -160,7 +160,7 @@ export default class GisMap{
         this.ctx = canvas.getContext('2d')
         let xyz = {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom}
         this.zoomEvent = {before:xyz,after:xyz,t:0,frames:25,delta:0.5,zStep:1}
-        this.moveEvent = {x:0,y:0,vx:0,vy:0,active:false,moved:false}
+        this.moveEvent = {x:0,y:0,vx:0,vy:0,active:false,moved:false,currentCoord:[0,0]}
         this.panEvent = {before:xyz,after:xyz,t:0,frames:60}
         this.drawEvent = {path:[],active:false,snap:false}
         this.selectEvent = {x:0,y:0,bbox:[0,0,0,0],features:[],ctrlKey:false,active:false,styling:false}
@@ -203,7 +203,7 @@ export default class GisMap{
                 this.updateView()
                 this.panEvent.t--
             }
-            // draw tiles
+            // raster
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
             // this.renderGrids()
             for(let raster of this.raster.slice().reverse()){
@@ -211,8 +211,11 @@ export default class GisMap{
                 this.ctx.globalAlpha = raster.opacity
                 this.renderRaster(raster)
             }
+            // vector
+            let tolerance = Math.pow(2,18-this.view.zoom)
+            tolerance = tolerance<1?0:tolerance
             for(let i=this.vector.length-1;i>=0;i--){
-                this.renderVector(this.vector[i])
+                this.renderVector(this.vector[i],tolerance)
             }
             if(this.drawEvent.active){
                 this.renderDraw()
@@ -373,6 +376,7 @@ export default class GisMap{
                 this.selectEvent.bbox[1] = coord[1]
             }
         }
+        this.moveEvent.currentCoord = this.client2coord([e.clientX,e.clientY])
     }
     handleMouseup(e){
         if(this.modifyEvent.anchor!=-1){
@@ -772,22 +776,27 @@ export default class GisMap{
         }
         return false
     }
-    renderVector(feature){
-        let tolerance = Math.pow(2,18-this.view.zoom)
-        tolerance = tolerance<1?0:tolerance
-        let style = {
+    getCoordsCenter(coords){
+        return coords.reduce((acc,cur)=>([acc[0]+cur[0],acc[1]+cur[1]]),[0,0]).map(c=>c/coords.length)
+    }
+    getDefaultStyle(feature){
+        return {
             'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
             'stroke': feature.properties['stroke']||'dodgerblue',
             'fill': ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:feature.properties['fill']||'rgba(0,0,255,0.3)',
             'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5,
             'opacity': feature.properties['opacity']?parseFloat(feature.properties['opacity']):1,
             'text': feature.properties['text'],
-            'textAnchor': feature.properties['textAnchor']||'[1,-1]',
+            'textAnchor': feature.properties['textAnchor']||'[0,0]',
             'textFill': feature.properties['textFill']||'dodgerblue',
             'textStroke': feature.properties['textStroke']||'dodgerblue',
+            'fontFamily': feature.properties['fontFamily']||'sans-serif',
             'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):1,
             'fontSize': feature.properties['fontSize']?parseInt(feature.properties['fontSize']):12,
         }
+    }
+    renderVector(feature,tolerance=0){
+        let style = this.getDefaultStyle(feature)
          // customize
          if(feature.geometry.type =='MultiPolygon'){
             let fillMap = {
@@ -810,10 +819,26 @@ export default class GisMap{
         }
         // render
         this.ctx.globalAlpha = style.opacity
+        const drawText = (client)=>{
+            this.ctx.font = `bold ${style.fontSize}px ${style.fontFamily}`
+            this.ctx.textBaseline = 'middle'
+            let anchor = JSON.parse(style.textAnchor)
+            let metric = this.ctx.measureText(style.text)
+            this.ctx.fillStyle = style.textFill
+            this.ctx.strokeStyle = style.textStroke
+            let x = client[0]+(anchor[0]/2-0.5)*metric.width+style.radius*anchor[0]
+            let y = client[1]+anchor[1]/2*style.fontSize+style.radius*anchor[1]
+            this.ctx.fillText(style.text,x,y)
+            if(style.fontWeight){
+                this.ctx.lineWidth = style.fontWeight
+                this.ctx.strokeText(style.text,x,y)
+            }
+        }
         const drawCircle = (coord)=>{
+            let c = this.coord2client(coord)
             this.ctx.beginPath()
-            this.ctx.moveTo(coord[0]+style.radius,coord[1])
-            this.ctx.arc(coord[0],coord[1],style.radius,0,Math.PI*2,false)
+            this.ctx.moveTo(c[0]+style.radius,c[1])
+            this.ctx.arc(c[0],c[1],style.radius,0,Math.PI*2,false)
             if(style.lineWidth){
                 this.ctx.strokeStyle = style.stroke
                 this.ctx.lineWidth = style.lineWidth
@@ -824,17 +849,7 @@ export default class GisMap{
                 this.ctx.fill()
             }
             if(style.text){
-                let anchor = JSON.parse(style.textAnchor)
-                let metric = this.ctx.measureText(style.text)
-                this.ctx.font = `bold ${style.fontSize}px 微軟正黑體`
-                this.ctx.fillStyle = style.textFill
-                this.ctx.strokeStyle = style.textStroke
-                this.ctx.lineWidth = style.fontWeight
-                this.ctx.textBaseline = 'middle'
-                let x = coord[0]+(anchor[0]/2-0.5)*metric.width+style.radius*anchor[0]
-                let y = coord[1]+anchor[1]/2*style.fontSize+style.radius*anchor[1]
-                this.ctx.fillText(style.text,x,y)
-                this.ctx.strokeText(style.text,x,y)
+                drawText(c)
             }
             this.ctx.closePath()
         }
@@ -862,7 +877,7 @@ export default class GisMap{
         }
         switch(feature.geometry.type){
             case 'Point':
-                drawCircle(this.coord2client(feature.geometry.coordinates))
+                drawCircle(feature.geometry.coordinates)
                 break
             case 'MultiPoint':
                 feature.geometry.coordinates.map(coord=>{
@@ -888,10 +903,11 @@ export default class GisMap{
                 }
                 break
             case 'Polygon':
-                this.ctx.beginPath()
                 for(let coords of feature.geometry.coordinates){
                     drawPath(coords) 
                 }
+                if(style.text)
+                    drawText(this.coord2client(this.getCoordsCenter(feature.geometry.coordinates[0])))
                 break
             case 'MultiPolygon':
                 for(let coordinates of feature.geometry.coordinates){
