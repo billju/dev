@@ -49,8 +49,9 @@ FlipText(document.getElementById('flip-text'),[
     '想要參加競賽生出作品，寫了安卓開發範例',
     '期末報告想做不同的主題，設計了空間最佳化模型',
     '開會寫紀錄太無聊，順便寫了逐字稿軟體',
-    '疊圖分析路網聽起來很複雜，製作了GIS系統',
+    '為了進行路網疊圖分析，手刻了GIS系統',
     '保留學習結晶，常用MD寫筆記',
+    '附帶一提，上面的波浪可以點它',
 ],32)
 
 // svg wave
@@ -122,7 +123,7 @@ const shakers = [
         src:'assets/tetris.gif',
         href: 'https://codepen.io/HandsomeChuBoy/full/YoVNoW',
         title: 'Tetris',
-        description: '經典復刻板，採用Vue框架渲染，具有combo計分機制，齁住方塊。'
+        description: '經典復刻板，採用Vue框架渲染，具有combo計分機制，並且可以齁住方塊。'
     },
     {
         src:'assets/agario.gif',

@@ -5,9 +5,15 @@ html(lang="zh_tw")
         title lightGIS
     body
         canvas#canvas(ondrop='handleDrop(event)' ondragover='event.preventDefault()')
-        .position-fixed(style='right:0;top:0;height:100%;overflow-y:scroll;')
-            table
-                tr#raster(draggable='true' ondragstart='dragged=event.target' ondrop='handleDrop(event,this)' ondragover='event.preventDefault()')
+        table#properties.table.table-striped.table-hover.table-dark(style='max-width:300px;max-height:100vh;position:fixed;left:0;top:0')
+        .position-fixed(style='right:0;top:0;max-height:100%;width:300px;overflow-y:scroll;background:rgba(255,255,255,0.3')
+            .btn-group.w-100
+                button.btn.btn-secondary(onclick="interaction.setActive('raster')") 底圖
+                button.btn.btn-secondary(onclick="interaction.setActive('groups')") 群組
+                button.btn.btn-secondary(onclick="interaction.setActive('styles')") 樣式
+                button.btn.btn-secondary(onclick="interaction.setActive('settings')") 檔案
+            table#raster
+                tr#v-for(draggable='true' ondragstart='dragged=event.target' ondrop='handleDrop(event,this)' ondragover='event.preventDefault()')
                     td.pb-1.pr-1
                         span {{name}}
                     td.custom-control.custom-switch
@@ -16,85 +22,88 @@ html(lang="zh_tw")
                     td.input-text(draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
                         input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction: rtl;')
             input#file(type='file' style='display: none' onchange='handleFiles(event.target.files)' multiple='')
-            .btn.btn-outline-primary.w-100(onclick="document.getElementById('file').click()") 選取檔案或拖曳匯入
-            .input-group
-                .input-group-prepend
-                    .btn.btn-outline-success(onclick="exportFile('geojson')") 匯出
-                input#file-export.form-control.btn.btn-outline-success(type='text' name='file-export' style='width:50px')
-                select#file-extension.btn.btn-outline-success(name='file-extension')
-                    option(value='.geojson') .geojson
-                    option(value='.png') .png
-                    option(value='.svg') .svg
-        table#properties.table.table-striped.table-hover.table-dark(style='max-width:300px;max-height:100vh;position:fixed;left:0;top:0')
-        table#layers(style="position:fixed;left:0;bottom:0")
-        table#styles.table.table-striped.table-hover.table-dark(style='max-width:250px;position:fixed;left:0;bottom:0;margin-bottom:0;cursor:move;display:none')
-            tr
-                td(colspan='2')
-                    .btn-group.w-100
-                        .btn.btn-dark(onclick='interaction.fitExtent()') 聚焦
-                        .btn.btn-dark(onclick="interaction.moveLayerTo('top')") 置頂
-                        .btn.btn-dark(onclick="interaction.moveLayerTo('bottom')") 置底
-            //tr
-                td
-                    .btn.btn-dark(onclick="interaction.simplify()") 簡化
-                td
-                    input#percentage(type="number" style="width:50px;" min="1" value="100")
-            tr
-                td text
-                td
-                    input#text(type="text" style="width:100px" oninput="interaction.setFeatureProps('text',event.target.value)")
-            tr
-                td textAnchor
-                td
-                    select#textAnchor(name="text-anchor" oninput="interaction.setFeatureProps('textAnchor',event.target.value)")
-                        option(value="[0,0]") 中
-                        option(value="[-1,-1]") 左上
-                        option(value="[0,-1.2]") 上
-                        option(value="[1,-1]") 右上
-                        option(value="[1.2,0]") 右
-                        option(value="[1,1]") 右下
-                        option(value="[0,1.2]") 下
-                        option(value="[-1,1]") 左下
-                        option(value="[-1.2,0]") 左
-            tr
-                td textFill
-                td
-                    input#textFill(type='color' oninput="interaction.setFeatureProps('textFill',event.target.value)")
-            tr
-                td textStroke
-                td
-                    input#textStroke(type='color' oninput="interaction.setFeatureProps('textStroke',event.target.value)")
-            tr
-                td fontFamily
-                td
-                    select#fontFamily(name="font-family" oninput="interaction.setFeatureProps('fontFamily',event.target.value)")
-                        option(value="sans-serif") sans-serif
-                        option(value="微軟正黑體") 微軟正黑體
-            tr
-                td fontWeight
-                td
-                    input#fontWeight(type='number' style='width:50px;' min='0' max='5' oninput="interaction.setFeatureProps('fontWeight',event.target.value)")
-            tr
-                td fontSize
-                td
-                    input#fontSize(type='number' style='width:50px;' min='6' max='72' oninput="interaction.setFeatureProps('fontSize',event.target.value)")
-            tr
-                td radius
-                td
-                    input#radius(type='number' style='width:50px;' min='1' oninput="interaction.setFeatureProps('radius',event.target.value)")
-            tr
-                td opacity
-                td
-                    input#opacity(type='number' style='width:50px;' min='0.1' max='1' step='0.1' oninput="interaction.setFeatureProps('opacity',event.target.value)")
-            tr
-                td lineWidth
-                td
-                    input#lineWidth(type='number' style='width:50px;' min='0' oninput="interaction.setFeatureProps('lineWidth',event.target.value)")
-            tr
-                td stroke
-                td
-                    input#stroke(type='color' oninput="interaction.setFeatureProps('stroke',event.target.value)")
-            tr
-                td fill
-                td
-                    input#fill(type='color' oninput="interaction.setFeatureProps('fill',event.target.value)")
+            #groups
+                table#group-table.w-100.table(style="margin-bottom:0")
+                .input-group
+                    .input-group-prepend
+                        .btn.btn-outline-success(onclick="interaction.addGroup()") 新增群組
+                    input#new-group.form-control.btn.btn-outline-success(type='text' name='new-group')
+                .w-100.btn.btn-outline-success(onclick="interaction.moveGroup()") 移動選取項目至作用中群組
+            table#styles.table.table-striped.table-hover.table-dark
+                tbody
+                    tr
+                        td(colspan='2')
+                            .btn-group.w-100
+                                .btn.btn-dark(onclick='interaction.fitExtent()') 聚焦
+                                .btn.btn-dark(onclick="interaction.moveLayerTo('top')") 置頂
+                                .btn.btn-dark(onclick="interaction.moveLayerTo('bottom')") 置底
+                    tr
+                        td text
+                        td
+                            input#text(type="text" style="width:100px" oninput="interaction.setFeatureProps('text',event.target.value)")
+                    tr
+                        td textAnchor
+                        td
+                            select#textAnchor(name="text-anchor" oninput="interaction.setFeatureProps('textAnchor',event.target.value)")
+                                option(value="[0,0]") 中
+                                option(value="[-1,-1]") 左上
+                                option(value="[0,-1.2]") 上
+                                option(value="[1,-1]") 右上
+                                option(value="[1.2,0]") 右
+                                option(value="[1,1]") 右下
+                                option(value="[0,1.2]") 下
+                                option(value="[-1,1]") 左下
+                                option(value="[-1.2,0]") 左
+                    tr
+                        td textFill
+                        td
+                            input#textFill(type='color' oninput="interaction.setFeatureProps('textFill',event.target.value)")
+                    tr
+                        td textStroke
+                        td
+                            input#textStroke(type='color' oninput="interaction.setFeatureProps('textStroke',event.target.value)")
+                    tr
+                        td fontFamily
+                        td
+                            select#fontFamily(name="font-family" oninput="interaction.setFeatureProps('fontFamily',event.target.value)")
+                                option(value="sans-serif") sans-serif
+                                option(value="微軟正黑體") 微軟正黑體
+                    tr
+                        td fontWeight
+                        td
+                            input#fontWeight(type='number' style='width:50px;' min='0' max='5' oninput="interaction.setFeatureProps('fontWeight',event.target.value)")
+                    tr
+                        td fontSize
+                        td
+                            input#fontSize(type='number' style='width:50px;' min='6' max='72' oninput="interaction.setFeatureProps('fontSize',event.target.value)")
+                    tr
+                        td radius
+                        td
+                            input#radius(type='number' style='width:50px;' min='1' oninput="interaction.setFeatureProps('radius',event.target.value)")
+                    tr
+                        td opacity
+                        td
+                            input#opacity(type='number' style='width:50px;' min='0.1' max='1' step='0.1' oninput="interaction.setFeatureProps('opacity',event.target.value)")
+                    tr
+                        td lineWidth
+                        td
+                            input#lineWidth(type='number' style='width:50px;' min='0' oninput="interaction.setFeatureProps('lineWidth',event.target.value)")
+                    tr
+                        td stroke
+                        td
+                            input#stroke(type='color' oninput="interaction.setFeatureProps('stroke',event.target.value)")
+                    tr
+                        td fill
+                        td
+                            input#fill(type='color' oninput="interaction.setFeatureProps('fill',event.target.value)")
+            #settings
+                .btn.btn-outline-primary.w-100(onclick="document.getElementById('file').click()") 選取檔案或拖曳匯入
+                .input-group
+                    .input-group-prepend
+                        .btn.btn-outline-success(onclick="exportFile('geojson')") 匯出
+                    input#file-export.form-control.btn.btn-outline-success(type='text' name='file-export' style='width:50px')
+                    select#file-extension.btn.btn-outline-success(name='file-extension')
+                        option(value='.geojson') .geojson
+                        option(value='.png') .png
+                        option(value='.svg') .svg
+        #loading-page.position-fixed.w-100.h-100(style="top:0;left:0").bg-dark

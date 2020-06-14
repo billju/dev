@@ -41,16 +41,23 @@ html,body{
         margin-top: 20px;
     }
 }
-.bg-img{
-    background-repeat: no-repeat;
-    background-size: contain;
-    background-position: center;
+.flex-hover{
+    flex: 1;
+    transition: flex 0.5s;
+}
+.flex-hover:hover{
+    flex: 3;
 }
 .hover-mask{
     max-width: 100%;
     position: relative;
     overflow: hidden;
     cursor: pointer;
+}
+.hover-mask img{
+    width: 100%;
+    object-fit: cover;
+    object-position: center;
 }
 .hover-mask .mask{
     position: absolute;

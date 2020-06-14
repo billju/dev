@@ -118,3 +118,28 @@ export function downloadCanvas(canvas,filename='downlaod.png'){
 // window.addEventListener('paste',e=>{
 //     let blob = e.clipboardData.items[0].getAsFile()
 // })
+export function svgAnimation(
+        container,url,callback,
+        style={
+            strokeDasharray:2500,
+            strokeDashoffset:2500,
+            transition: 'stroke-dashoffset 5000ms',
+            width:'100%',
+            height:'100%',
+        }){
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET",url,false);
+    xhr.overrideMimeType("image/svg+xml");
+    xhr.onload = function() {
+        let svg = xhr.responseXML.documentElement
+        Object.assign(svg.style,style)
+        container.appendChild(svg);
+        setTimeout(()=>{
+            svg.style.strokeDashoffset = 0
+            setTimeout(()=>{
+                callback()
+            },2000)
+        },100)
+    }
+    xhr.send();
+}

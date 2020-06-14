@@ -108,7 +108,7 @@ export function smoothScroll(container,timingFunction='cubic-bezier(0.23, 1, 0.3
             translator.style.transform = `translateY(${-window.scrollY}px)`
         })
         window.addEventListener('resize',()=>{
-            hitbox.style.height = translator.offsetHeight+'px'
+            hitbox.style.height = translator.clientHeight+'px'
         })
         window.dispatchEvent(new Event('resize'))
     })

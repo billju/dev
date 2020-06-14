@@ -2,10 +2,12 @@ import makeElementMovable from './makeElementMovable.js'
 import GisMap from './GisMap.js'
 import ImageShape from './ImageShape.js'
 import Interaction from './interaction.js'
-import {readFileAsText,downloadCanvas,downloadText} from './fileHandler.js'
+import {Bike_Station} from './ptx.js'
+import {readFileAsText,downloadCanvas,downloadText,svgAnimation} from './fileHandler.js'
 import '../css/lightGIS.css'
 import '../css/bootstrap.css'
-makeElementMovable(document.getElementById('styles'))
+window.getPTX = Bike_Station
+// makeElementMovable(document.getElementById('styles'))
 window.onload = ()=>{
     window.canvas = document.getElementById('canvas')
     window.gm = new GisMap(canvas)
@@ -23,7 +25,8 @@ window.handleFiles = function(files){
     document.getElementById('file').value = null
 }
 async function handleFile(file){
-    let ext = file.name.match(/\.\w+$/i)[0]
+    let filename = file.name.split('.')[0]
+    let extension = file.name.match(/\.\w+$/i)[0]
     if(file.type.includes('image')){
         let img = new Image()
         img.src = URL.createObjectURL(file)
@@ -32,14 +35,18 @@ async function handleFile(file){
             interaction.imageShapes.unshift(imageShape)
         }
     }
-    if(ext=='.geojson'){
+    if(extension=='.geojson'){
         let text = await readFileAsText(file)
         let geojson = JSON.parse(text)
-        let layer = file.name.split('.')[0]
-        geojson.features.map(f=>{f.properties['圖層']=layer})
+        geojson.features.map(f=>{f.properties['群組']=f.properties['群組']??filename})
+        let groups = [...new Set(geojson.features.map(f=>f.properties['群組']))].filter(g=>g)
+        if(groups.length)
+            groups.map(group=>{interaction.addGroup(group)})
+        else
+            interaction.addGroup(group)
         gm.geojson(geojson)
         interaction.fitExtent(geojson.features)
-    }else if(ext=='.kml'){
+    }else if(extension=='.kml'){
         let xjson = xml_string_to_json(await readFileAsText(file))
         let placemarks = []
         function findPlacemark(obj){
@@ -54,14 +61,15 @@ async function handleFile(file){
         }
         findPlacemark(xjson)
         console.log(placemarks)
-    }else if(ext=='.wkt'){
+    }else if(extension=='.wkt'){
         gm.WKT(await readFileAsText(file))
-    }else if(ext=='.json'){
+    }else if(extension=='.json'){
         const dir = {0:'去程',1:'返程',2:'迴圈',255:'未知'}
         JSON.parse(await readFileAsText(file)).map(row=>{
             gm.WKT(row.Geometry,{'路線':row.RouteName.Zh_tw,'方向':dir[row.Direction]})
         })
     }
+    interaction.renderGroupTable()
 }
 window.exportFile = function(){
     let filename = document.getElementById('file-export').value||'lightGIS'
@@ -125,7 +133,17 @@ window.exportFile = function(){
                 paths+= `<path d="${d}" ${style}/>`
             }
         }
-        let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${gm.view.w}" height="${gm.view.h}">${paths}</svg>`
+        let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${gm.view.w} ${gm.view.h}">${paths}</svg>`
         downloadText(svg,filename+extension)
     }
 }
+const loadingPage = document.getElementById('loading-page')
+svgAnimation(loadingPage,'assets/light.svg',()=>{
+    setTimeout(()=>{
+        loadingPage.style.transition = 'opacity 1s'
+        loadingPage.style.opacity = 0
+    },100)
+    setTimeout(()=>{
+        document.body.removeChild(loadingPage)    
+    },1000)
+})

@@ -1,8 +1,8 @@
-function Bike_Station(city='Taichung'){
+export function Bike_Station(city='Taichung'){
     fetch(`https://ptx.transportdata.tw/MOTC/v2/Bike/Station/${city}?$select=StationName%2CStationPosition%2CBikesCapacity&$format=JSON`)
         .then(res=>res.json()).then(json=>{
         for(let row of json){
-            gm.addVector('POINT',[row.StationPosition.PositionLon,row.StationPosition.PositionLat],{
+            gm.addVector('Point',[row.StationPosition.PositionLon,row.StationPosition.PositionLat],{
                 "車站": row.StationName.Zh_tw,
                 "容量": row.BikesCapacity,
                 "經度": row.StationPosition.PositionLon,

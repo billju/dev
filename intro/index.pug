@@ -2,13 +2,13 @@ html(lang="en")
     head
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
-        meta(name="og:locale" content="zh_tw")
-        meta(name="og:title" content="Chuboy's portfolio")
-        meta(name="og:site_name" content="Chuboy's portfolio")
-        meta(name="og:description", content="I am a web developer as well as a data analyst.")
-        meta(name="og:image" content="assets/og-title.png")
-        meta(name="og:image:type" content="image/png")
-        meta(name="og:url" content="https://chuboy.dev")
+        meta(property="og:locale" content="zh_tw")
+        meta(property="og:title" content="Chuboy's portfolio")
+        meta(property="og:description", content="I am a web developer as well as a data analyst.")
+        meta(property="og:image" content="https://chuboy.dev/assets/og-title.jpg")
+        meta(property="og:image:type" content="image/jpg")
+        meta(property="og:type" content="portfolio")
+        meta(property="og:url" content="https://chuboy.dev")
         meta(name="description", content="Chuboy's portfolio includes vue media player, react & socket.io chatroom, python notes and even more.")
         link(rel="shortcut icon", href="assets/favicon.ico", type="image/x-icon")
         title ChuBoy
@@ -106,7 +106,7 @@ html(lang="en")
                                         h3.display-3 文章點滴
                                         .d-flex.justify-content-center
                                             .badge.badge-light.mx-1 爬蟲
-                                            .badge.badge-light.mx-1 數據分析
+                                            .badge.badge-light.mx-1 資料科學
                                             .badge.badge-light.mx-1 後端框架
                                             .badge.badge-light.mx-1 資料庫
                                     span
@@ -117,8 +117,9 @@ html(lang="en")
                                 .list-group.w-100.text-center.py-3.px-3
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/2aiF1bNaQrOHnYpln9SxaQ" target="_blank") 爬蟲菜單
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/82tLFMonR1CNdVfN7RMJXQ" target="_blank") 資料庫筆記
-                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/Zx2flP23T4apmwSYcjBXxQ" target="_blank") 統計筆記
+                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/fxoAisnGRCKJLA8msKrTVA" target="_blank") Flask筆記
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/DaH8WZpgRR6A6UO_qIKPYw" target="_blank") 資料科學
+                                    a.list-group-item.list-group-item-warning(href="https://github.com/billju/lazyplotly" target="_blank") 上架套件
                 section.overflow-hidden.w-100
                     svg#wave-top.w-100
                     .my-5
@@ -127,36 +128,59 @@ html(lang="en")
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 #flip-text
-                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                        .w-100.bg-light.px-3.py-3(data-once="fade-up")
                             .container
-                                h1 Linebot聊天機器人
+                                h1 Line Bot聊天機器人
                                 span.badge.badge-info.mx-1 line API
                                 span.badge.badge-info.mx-1 node
                                 span.badge.badge-info.mx-1 mongodb
-                                p 故事由來：服役期間受營外回報所困擾，只要是最晚回的那個就得隨時收集大家的訊息並且按照座號排序整理，為了不讓大家互相傷害，乾脆寫一支linebot幫忙搞定!!!
-                                p 技術層面：line開放開發者使用messaging api的服務，可以新增機器人的頻道，將channelId、channelSecret、channelAccessToken 
-                                    | 透過安全應用層https以post的方式和後端伺服器安全地連結，同時後端node.js套件npm中有一個linebot套件包，結合免費的
-                                    | Heroku---提供免費後端平台的服務PaaS，就能客製化自動彙整班兵回報的機器人。
-                                span 網址連結：
-                                a(href="https://github.com/billju/ninja-hattori" target="_blank") https://github.com/billju/ninja-hattori
+                                .row
+                                    .col-md-6
+                                        img.w-100.my-3(src="assets/linebot.png", alt="" loading="lazy")
+                                    .col-md-6
+                                        p 故事由來：服役期間受營外回報所困擾，只要是最晚回的那個就得隨時收集大家的訊息並且按照座號排序整理，為了不讓大家互相傷害，乾脆寫一支linebot幫忙搞定!!!
+                                        p 技術層面：line開放開發者使用messaging api的服務，可以新增機器人的頻道，將channelId、channelSecret、channelAccessToken 
+                                            | 透過安全應用層https以post的方式和後端伺服器安全地連結，同時後端node.js套件npm中有一個linebot套件包，結合免費的
+                                            | Heroku---提供免費後端平台的服務PaaS，就能客製化自動彙整班兵回報的機器人。
+                                        span 網址連結：
+                                        a(href="https://github.com/billju/ninja-hattori" target="_blank") https://github.com/billju/ninja-hattori
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 Android範例
-                                span.badge.badge-info.mx-1 demos
-                                p 故事由來：當創客時參加了ARM競賽，以無人商店為題，因緣際會下自學安卓APP開發，希望寫個APP能夠掃描商品標間，並配合物聯網將客人的需求快速加入購物車，
-                                    | 為了不忘記這些技術概念，將每塊功能以使用範例的方式紀錄下來作為手冊。
-                                span 網址連結：
-                                a(href="https://github.com/billju/Android-source-code-demo" target="_blank") https://github.com/billju/Android-source-code-demo
-                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                                span.badge.badge-info.mx-1 demo
+                                span.badge.badge-info.mx-1 android studio
+                                .d-flex.flex-column.flex-md-row.my-3(style="width:100%;height:600px")
+                                    .flex-hover(style="background:url(assets/MyStore1.jpg);background-size:cover;background-repeat:no-repeat;background-position:center")
+                                    .flex-hover(style="background:url(assets/MyStore2.jpg);background-size:cover;background-repeat:no-repeat;background-position:center")
+                                    .flex-hover(style="background:url(assets/MyStore3.jpg);background-size:cover;background-repeat:no-repeat;background-position:center")
+                                    .flex-hover(style="background:url(assets/MyStore4.jpg);background-size:cover;background-repeat:no-repeat;background-position:center")
+                                    .flex-hover(style="background:url(assets/MyStore5.jpg);background-size:cover;background-repeat:no-repeat;background-position:center")
+                                    .flex-hover(style="background:url(assets/MyStore6.jpg);background-size:cover;background-repeat:no-repeat;background-position:center")
+                                .row
+                                    .col-sm-6.d-flex.justify-content-center
+                                        video.my-3(src="assets/mystore.mp4" muted autoplay loop style="height:400px")
+                                    .col-sm-6.d-flex.align-items-center
+                                        div
+                                            p 故事由來：當創客時參加了ARM競賽，以無人商店為題，因緣際會下自學安卓APP開發，希望寫個APP能夠掃描商品標間，並配合物聯網將客人的需求快速加入購物車，
+                                                | 為了不忘記這些技術概念，將每塊功能以使用範例的方式紀錄下來作為手冊。
+                                            p 功能簡介：MyStore APP可以掃描商品上的QR CODE並且連結至後端伺服器進行行動支付，同時具有購物車與餘額查詢功能。
+                                            span 網址連結：
+                                            a(href="https://github.com/billju/Android-source-code-demo" target="_blank") https://github.com/billju/Android-source-code-demo
+                        .w-100.bg-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 Packing最佳化
                                 span.badge.badge-info.mx-1 operation research
                                 span.badge.badge-info.mx-1 optimizer
                                 span.badge.badge-info.mx-1 gurobi
-                                p 故事由來：就學期間有門課在研究線性規劃模型，大家都做TSP(traveling sales problem)路徑搜索問題，我偏不要，反而將線性規劃(linear programing)
-                                    | 套用在物流業界中貨物堆疊的問題，做出不一樣的成果，此模型可設定堆疊條件進行規劃，像是貨物的重量、下方貨物的面積。
-                                span 網址連結：
-                                a(href="https://github.com/billju/gurobi-packing" target="_blank") https://github.com/billju/gurobi-packing
+                                .row
+                                    .col-sm-6
+                                        img.w-100.my-3(src="assets/packing.png" alt="" loading="lazy")
+                                    .col-sm-6.d-flex.align-items-center
+                                        div
+                                            p 故事由來：就學期間有門課在研究線性規劃模型，大家都做TSP(traveling sales problem)路徑搜索問題，我想做不一樣的，反而將線性規劃(linear programing)
+                                                | 套用在物流業界中貨物堆疊的問題，做出不一樣的成果，此模型可設定堆疊條件進行規劃，像是貨物的重量、下方貨物的面積。
+                                            span 網址連結：
+                                            a(href="https://github.com/billju/gurobi-packing" target="_blank") https://github.com/billju/gurobi-packing
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 逐字稿&amp;字幕編輯軟體
@@ -164,11 +188,23 @@ html(lang="en")
                                 span.badge.badge-info.mx-1 web audio
                                 span.badge.badge-info.mx-1 media
                                 span.badge.badge-info.mx-1 SRT file IO
-                                p 故事由來：開會總是要做會議紀錄，若要在紀錄細節時，邊聽錄音檔邊寫紀錄常常需要切換桌面應用程式，不斷切換播放器與編輯器的頁面，還容易因為沒打時間點，花費許多額外心力尋找關鍵字，
-                                    | 因此我特製了專屬編輯器讓工作變得更方便，後來又靈光乍現地擴充了影片上字幕功能，並且把檔案IO格式轉為通用的SRT，讓影音製作者也能夠享受到這番方便性。
-                                p 技術層面：以analyser即時產出的波峰進行取樣，避開了web audio的音樂解碼會佔據大量記憶體的問題，讓長達數小時的影音也能將波形視覺化，也能藉由自製文本編輯器格行標籤快速跳點。
+                                .row
+                                    .col-md-6
+                                        img.w-100.my-3(src="assets/transcriber.jpg" alt="" loading="lazy")
+                                    .col-md-6
+                                        p 故事由來：開會總是要做會議紀錄，若要在紀錄細節時，邊聽錄音檔邊寫紀錄常常需要切換桌面應用程式，不斷切換播放器與編輯器的頁面，還容易因為沒打時間點，花費許多額外心力尋找關鍵字，
+                                            | 因此我特製了專屬編輯器讓工作變得更方便，後來又靈光乍現地擴充了影片上字幕功能，並且把檔案IO格式轉為通用的SRT，讓影音製作者也能夠享受到這番方便性。
+                                        p 技術層面：因web audio的解碼會佔據大量記憶體的問題，改對即時產出的波峰進行取樣，讓長達數小時的影音也能將波形視覺化，並自製文本編輯器將每段文字加入時戳標籤。
+                                        span 網址連結：
+                                        a(href="https://chuboy.dev/transcriber" target="_blank") https://chuboy.dev/transcriber
+                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
+                            .container
+                                h1 Webpack - 我全包了
+                                span.badge.badge-info.mx-1 npm
+                                span.badge.badge-info.mx-1 webpack
+                                p 最新文章：webpack入門與設定範例，介紹如何打包HTML/Pug, CSS/Sass/Scss, JS/Babel，以及完整範例。
                                 span 網址連結：
-                                a(href="https://chuboy.dev/transcriber" target="_blank") https://chuboy.dev/transcriber
+                                a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 lightGIS地理資訊系統
@@ -179,14 +215,6 @@ html(lang="en")
                                     | 未來將整合PTX資料，我希望整合交通資訊，讓規劃者能更快速的進行疊圖分析，讓用路人有更多元的運具選擇。
                                 span 網址連結：
                                 a(href="https://chuboy.dev/lightGIS" target="_blank") https://chuboy.dev/lightGIS
-                        .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
-                            .container
-                                h1 Webpack我全包了
-                                span.badge.badge-info.mx-1 npm
-                                span.badge.badge-info.mx-1 webpack
-                                p 最新文章，webpack入門與設定範例，介紹如何打包HTML/Pug, CSS/Sass/Scss, JS/Babel，以及完整範例。
-                                span 網址連結：
-                                a(href="https://hackmd.io/tkWGj4THScCtgumJRMkhXA" target="_blank") https://hackmd.io/tkWGj4THScCtgumJRMkhXA
                 section
                     .container.pt-3
                         h1 路徑搜索演算法
@@ -202,39 +230,39 @@ html(lang="en")
                             .col-sm-12.col-md-4
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3(data-once="fade-up")
                                     .hover-mask
-                                        .bg-img(style="height:300px;background:url(assets/pomodoro.gif)")
+                                        img(src="assets/pomodoro.gif" alt="" style="height:300px" loading="lazy")
                                         .mask visit site
                                     .px-2.py-2
                                         h3 Pomodoro
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                                     .hover-mask
-                                        .bg-img(style="height:300px;background:url(assets/tetris.gif)")
+                                        img(src="assets/tetris.gif" alt="" style="height:300px" loading="lazy")
                                         .mask visit site
                                     .px-2.py-2
                                         h3 Tetris
                             .col-sm-12.col-md-4
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                                     .hover-mask
-                                        .bg-img(style="height:400px;background:url(assets/agario.gif)")
+                                        img(src="assets/agario.gif" alt="" style="height:400px" loading="lazy")
                                         .mask visit site
                                     .px-2.py-2
                                         h3 Agar.io
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                                     .hover-mask
-                                        .bg-img(style="height:300px;background:url(assets/draggableTetris.gif)")
+                                        img(src="assets/draggableTetris.gif" alt="" style="height:300px" loading="lazy")
                                         .mask visit site
                                     .px-2.py-2
                                         h3 Draggable Tetris
                             .col-sm-12.col-md-4
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                                     .hover-mask
-                                        .bg-img(style="height:250px;background:url(assets/freecell.gif)")
+                                        img(src="assets/freecell.gif" alt="" style="height:250px" loading="lazy")
                                         .mask visit site
                                     .px-2.py-2
                                         h3 Freecell
                                 .shaker.rounded.bg-dark.text-light.px-3.py-3.my-3
                                     .hover-mask
-                                        .bg-img(style="height:250px;background:url(assets/greenband.gif)")
+                                        img(src="assets/greenband.gif" alt="" style="height:250px" loading="lazy")
                                         .mask visit site
                                     .px-2.py-2
                                         h3 Greenband
@@ -246,18 +274,18 @@ html(lang="en")
                         h3.display-4 contact me
                         .d-flex.flex-wrap.justify-content-around
                             a.jello(href="https://www.facebook.com/baibai.zhu1" target="_blank")
-                                img(src="assets/facebook.png")
+                                img(src="assets/facebook.png" loading="lazy")
                             a.jello(href="mailto:billju666@gmail.com" target="_blank")
-                                img(src="assets/gmail.png")
+                                img(src="assets/gmail.png" loading="lazy")
                             a.jello(href="https://github.com/billju" target="_blank")
-                                img(src="assets/github.png")
+                                img(src="assets/github.png" loading="lazy")
                             a.jello(href="https://codepen.io/HandsomeChuBoy" target="_blank")
-                                img(src="assets/codepen.png")
+                                img(src="assets/codepen.png" loading="lazy")
         #smooth-scroll-hitbox
         #fullscreen.bg-dark.text-light
             .container.h-100.d-flex.flex-column.justify-content-center.align-items-center
                 a(href="#" target="_blank")
-                    img(src="assets/pomodoro.gif", alt="" style="max-width: 100%")
+                    img(src="assets/pomodoro.gif", alt="" style="max-width:;100%;max-height:400px")
                 h1
                 p(style="max-width:500px") Lorem ipsum dolor sit amet consectetur `adipisicing elit. Perspiciatis dolorum eius inventore officia qui quisquam, aspernatur quaerat sint, assumenda nobis architecto corporis excepturi atque asperiores tempora non quibusdam aperiam vitae.
                 small 點圖片進入連結，點黑底返回

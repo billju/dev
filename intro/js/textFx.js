@@ -164,24 +164,3 @@ export class CountingText{
         }
     }
 }
-export function svgAnimation(container,style={}){
-    xhr = new XMLHttpRequest();
-    xhr.open("GET","logo.svg",false);
-    xhr.overrideMimeType("image/svg+xml");
-    xhr.onload = function(e) {
-        let svg = xhr.responseXML.documentElement
-        Object.assign(svg.style,{
-            strokeDasharray: 500,
-            strokeDashoffset: 0,
-            ...style
-        })
-        container.appendChild(svg);
-        svg.animate([
-            {strokeDashoffset: 500},
-            {strokeDashoffset: 0}
-        ],{
-            duration: 5000
-        })
-    }
-    xhr.send();
-}
