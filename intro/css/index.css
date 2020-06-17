@@ -104,7 +104,7 @@ svg{
     cursor: pointer;
     box-shadow: 5px 5px 5px 0 rgba(0,0,0,0.3);
 }
-.shaker:hover{
+.shakable:hover{
     transition-delay: transform 1s;
     animation: shake 1s;
     transform: rotate3d(0,1,0.3,-10deg);

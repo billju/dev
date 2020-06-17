@@ -79,17 +79,28 @@ export default class Interaction{
                     }
                 }
                 const copySelected = ()=>{
-                    const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
                     if(this.gismap.selectEvent.features.length){
                         this.copied.features = this.gismap.selectEvent.features
-                        this.copied.center = this.gismap.getCoordsCenter(this.copied.features.flatMap(f=>flatten(f.geometry.coordinates)))
+                        let coords = this.gismap.selectEvent.features.flatMap(f=>{
+                            let b = f.geometry.bbox; return [[b[0],b[1]],[b[2],b[3]]]
+                        })
+                        this.copied.center = this.gismap.getBboxCenter(this.gismap.getBbox(coords))
                     }
                 }
-                if(e.code=='Delete'){
-                    this.imageShapes = this.imageShapes.filter(x=>!x.editing)
-                    deleteSelected()
+                const pasteSelected = (stay=false)=>{
+                    const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
+                    let from = this.copied.center
+                    let to = this.gismap.moveEvent.currentCoord
+                    let offset = [to[0]-from[0],to[1]-from[1]]
+                    this.gismap.selectEvent.features = this.copied.features.slice().reverse().map(feature=>{
+                        let f = JSON.parse(JSON.stringify(feature))
+                        if(!stay)
+                            flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
+                        return this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
+                    })
+                    this.renderGroupTable()
                 }
-                else if(e.ctrlKey&&e.code=='KeyZ'){
+                if(e.ctrlKey&&e.code=='KeyZ'){
                     let features = this.recycle.pop()
                     if(features)
                         features.map(feature=>{this.gismap.vector.push(feature)})
@@ -102,16 +113,11 @@ export default class Interaction{
                     copySelected()
                 }
                 else if(e.ctrlKey&&e.code=='KeyV'){
-                    const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
-                    let from = this.copied.center
-                    let to = this.gismap.moveEvent.currentCoord
-                    let offset = [to[0]-from[0],to[1]-from[1]]
-                    for(let feature of this.copied.features.slice().reverse()){
-                        let f = JSON.parse(JSON.stringify(feature))
-                        flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
-                        this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
-                    }
-                    this.renderGroupTable()
+                    pasteSelected(false)
+                }
+                else if(e.ctrlKey&&e.code=='KeyB'){
+                    copySelected()
+                    pasteSelected(true)
                 }
                 if(e.code&&!e.code.includes('Control'))
                     this.isKeyup = false
@@ -167,7 +173,10 @@ export default class Interaction{
     renderFeatureProps(feature){
         let style = this.gismap.getDefaultStyle(feature)
         for(let key in style){
-            document.getElementById(key).value = style[key]||''
+            if(key=='lineDash')
+            document.getElementById(key).value = style[key][0]||''
+            else
+                document.getElementById(key).value = style[key]||''
         }
     }
     renderPropsTable(properties){
@@ -212,6 +221,7 @@ export default class Interaction{
     renderGroupTable(){
         this.allVector = []
         this.groupTable.innerHTML = ''
+        const maxItems = 20
         this.groups.map((group,i)=>{
             let features = this.gismap.vector.filter(f=>f.properties['群組']==group.name)
             let tr = this.groupTable.insertRow()
@@ -242,7 +252,7 @@ export default class Interaction{
                 let tdFeature = trFeature.insertCell()
                 tdFeature.className = 'bg-light'
                 const renderList = ()=>{
-                    let end = group.start+20>features.length?features.length:group.start+20    
+                    let end = group.start+maxItems>features.length?features.length:group.start+maxItems
                     tdCount.textContent = `${group.start}~${end} / ${features.length}`
                     tdFeature.innerHTML = ''
                     features.slice(group.start,end).map((feature,i)=>{                    
@@ -263,8 +273,10 @@ export default class Interaction{
                 renderList()
                 tdFeature.onwheel = e=>{
                     e.preventDefault()
-                    let sign = Math.sign(e.deltaY)*20
-                    group.start = group.start+sign<0?0:group.start+sign>=features.length?group.start:group.start+sign
+                    let sign = Math.sign(e.deltaY)*maxItems
+                    group.start = 
+                        group.start+sign<0?0:
+                        group.start+sign>=features.length?features.length-maxItems<0?0:features.length-1:group.start+sign
                     renderList()
                 }
             }

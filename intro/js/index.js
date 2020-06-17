@@ -153,6 +153,8 @@ const shakers = [
     },
 ]
 document.querySelectorAll('.shaker').forEach((el,i)=>{
+    if(navigator.userAgent.includes('Windows'))
+        el.classList.add('shakable')
     el.onclick = e=>{
         let rect = el.getBoundingClientRect()
         let fs = document.getElementById('fullscreen')
@@ -189,9 +191,7 @@ defaultFractalTreeInteraction(document.getElementById('fractal-tree'))
 
 // scroll fx
 skr()
-if(navigator.userAgent.includes('Windows')){
-    smoothScroll(document.getElementById('smooth-scroll-container'))
-}
+// smoothScroll(document.getElementById('smooth-scroll-container'))
 window.onload = ()=>{
     const lp = document.getElementById('loading-page')
     lp.style.opacity = 0

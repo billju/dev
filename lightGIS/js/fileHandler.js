@@ -121,9 +121,9 @@ export function downloadCanvas(canvas,filename='downlaod.png'){
 export function svgAnimation(
         container,url,callback,
         style={
-            strokeDasharray:2500,
-            strokeDashoffset:2500,
-            transition: 'stroke-dashoffset 5000ms',
+            strokeDasharray:3000,
+            strokeDashoffset:3000,
+            transition: 'stroke-dashoffset 2s ease-out',
             width:'100%',
             height:'100%',
         }){
@@ -138,7 +138,7 @@ export function svgAnimation(
             svg.style.strokeDashoffset = 0
             setTimeout(()=>{
                 callback()
-            },2000)
+            },1500)
         },100)
     }
     xhr.send();

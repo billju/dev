@@ -55,27 +55,22 @@ html(lang="zh_tw")
                                 option(value="[-1,1]") 左下
                                 option(value="[-1.2,0]") 左
                     tr
-                        td textFill
+                        td textColor
                         td
                             input#textFill(type='color' oninput="interaction.setFeatureProps('textFill',event.target.value)")
-                    tr
-                        td textStroke
-                        td
                             input#textStroke(type='color' oninput="interaction.setFeatureProps('textStroke',event.target.value)")
+                    tr
+                        td textSize
+                        td
+                            input#fontSize(type='number' style='width:50px;' min='6' max='72' oninput="interaction.setFeatureProps('fontSize',event.target.value)")
+                            input#fontWeight(type='number' style='width:50px;' min='0' max='5' oninput="interaction.setFeatureProps('fontWeight',event.target.value)")
                     tr
                         td fontFamily
                         td
                             select#fontFamily(name="font-family" oninput="interaction.setFeatureProps('fontFamily',event.target.value)")
-                                option(value="sans-serif") sans-serif
-                                option(value="微軟正黑體") 微軟正黑體
-                    tr
-                        td fontWeight
-                        td
-                            input#fontWeight(type='number' style='width:50px;' min='0' max='5' oninput="interaction.setFeatureProps('fontWeight',event.target.value)")
-                    tr
-                        td fontSize
-                        td
-                            input#fontSize(type='number' style='width:50px;' min='6' max='72' oninput="interaction.setFeatureProps('fontSize',event.target.value)")
+                                option(value="arial") arial
+                                option(value="monospace") monospace
+                                option(value="微軟正黑體") 微軟正黑體                        
                     tr
                         td radius
                         td
@@ -84,6 +79,11 @@ html(lang="zh_tw")
                         td opacity
                         td
                             input#opacity(type='number' style='width:50px;' min='0.1' max='1' step='0.1' oninput="interaction.setFeatureProps('opacity',event.target.value)")
+                    tr
+                        td lineDash
+                        td
+                            input#lineDash(type='number' style='width:50px;' min='0' oninput="interaction.setFeatureProps('lineDash',JSON.stringify([event.target.value,event.target.value]))")
+                            input#lineDashOffset(type='number' style='width:50px;' value="0" oninput="interaction.setFeatureProps('lineDashOffset',event.target.value)")
                     tr
                         td lineWidth
                         td

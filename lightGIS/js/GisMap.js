@@ -687,6 +687,9 @@ export default class GisMap{
             Math.max(...coords.map(c=>c[1]))
         ]
     }
+    getBboxCenter(bbox){
+        return [(bbox[0]+bbox[2])/2,(bbox[1]+bbox[3])/2]
+    }
     toCoord(lnglat) {
         var d = Math.PI / 180,
             max = 85.0511287798,
@@ -776,12 +779,11 @@ export default class GisMap{
         }
         return false
     }
-    getCoordsCenter(coords){
-        return coords.reduce((acc,cur)=>([acc[0]+cur[0],acc[1]+cur[1]]),[0,0]).map(c=>c/coords.length)
-    }
     getDefaultStyle(feature){
         return {
             'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
+            'lineDash': feature.properties['lineDash']?JSON.parse(feature.properties['lineDash']):[],
+            'lineDashOffset': feature.properties['lineDashOffset']?parseInt(feature.properties['lineDashOffset']):0,
             'stroke': feature.properties['stroke']||'dodgerblue',
             'fill': ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:feature.properties['fill']||'rgba(0,0,255,0.3)',
             'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5,
@@ -790,7 +792,7 @@ export default class GisMap{
             'textAnchor': feature.properties['textAnchor']||'[0,0]',
             'textFill': feature.properties['textFill']||'#ffffff',
             'textStroke': feature.properties['textStroke']||'#000000',
-            'fontFamily': feature.properties['fontFamily']||'sans-serif',
+            'fontFamily': feature.properties['fontFamily']||'arial',
             'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):1,
             'fontSize': feature.properties['fontSize']?parseInt(feature.properties['fontSize']):12,
         }
@@ -834,19 +836,31 @@ export default class GisMap{
                 this.ctx.strokeText(style.text,x,y)
             }
         }
+        const drawStroke = ()=>{
+            this.ctx.setLineDash(style.lineDash)
+            this.ctx.lineDashOffset = style.lineDashOffset
+            this.ctx.strokeStyle = style.stroke
+            this.ctx.lineWidth = style.lineWidth
+            if(style.lineDash.length){
+                this.ctx.lineCap = 'butt'
+                this.ctx.lineJoin = 'butt'
+            }else{
+                this.ctx.lineCap = 'round'
+                this.ctx.lineJoin = 'round'
+            }
+            this.ctx.stroke()
+        }
         const drawCircle = (coord)=>{
             let c = this.coord2client(coord)
             this.ctx.beginPath()
             this.ctx.moveTo(c[0]+style.radius,c[1])
             this.ctx.arc(c[0],c[1],style.radius,0,Math.PI*2,false)
-            if(style.lineWidth){
-                this.ctx.strokeStyle = style.stroke
-                this.ctx.lineWidth = style.lineWidth
-                this.ctx.stroke()
-            }
             if(style.fill){
                 this.ctx.fillStyle = style.fill
                 this.ctx.fill()
+            }
+            if(style.lineWidth){
+                drawStroke()
             }
             if(style.text){
                 drawText(c)
@@ -867,11 +881,7 @@ export default class GisMap{
                 this.ctx.fill()
             }
             if(style.lineWidth){
-                this.ctx.strokeStyle = style.stroke
-                this.ctx.lineWidth = style.lineWidth
-                this.ctx.lineCap = 'round'
-                this.ctx.lineJoin = 'round'
-                this.ctx.stroke()
+                drawStroke()
             }
             this.ctx.closePath()
         }
@@ -907,7 +917,7 @@ export default class GisMap{
                     drawPath(coords) 
                 }
                 if(style.text)
-                    drawText(this.coord2client(this.getCoordsCenter(feature.geometry.coordinates[0])))
+                    drawText(this.coord2client(this.getBboxCenter(feature.geometry.bbox)))
                 break
             case 'MultiPolygon':
                 for(let coordinates of feature.geometry.coordinates){

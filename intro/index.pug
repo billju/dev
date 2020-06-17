@@ -161,8 +161,8 @@ html(lang="en")
                                         video.my-3(src="assets/mystore.mp4" muted autoplay loop style="height:400px")
                                     .col-sm-6.d-flex.align-items-center
                                         div
-                                            p 故事由來：當創客時參加了ARM競賽，以無人商店為題，因緣際會下自學安卓APP開發，希望寫個APP能夠掃描商品標間，並配合物聯網將客人的需求快速加入購物車，
-                                                | 為了不忘記這些技術概念，將每塊功能以使用範例的方式紀錄下來作為手冊。
+                                            p 故事由來：當創客時參加了ARM競賽，以無人商店為題，因緣際會下自學安卓APP開發，希望寫個APP能夠掃描商品標間，
+                                                | 並配合物聯網將客人的需求快速加入購物車，為了不忘記這些技術概念，將每塊功能以使用範例的方式紀錄下來作為手冊。
                                             p 功能簡介：MyStore APP可以掃描商品上的QR CODE並且連結至後端伺服器進行行動支付，同時具有購物車與餘額查詢功能。
                                             span 網址連結：
                                             a(href="https://github.com/billju/Android-source-code-demo" target="_blank") https://github.com/billju/Android-source-code-demo
@@ -177,7 +177,8 @@ html(lang="en")
                                         img.w-100.my-3(src="assets/packing.png" alt="" loading="lazy")
                                     .col-sm-6.d-flex.align-items-center
                                         div
-                                            p 故事由來：就學期間有門課在研究線性規劃模型，大家都做TSP(traveling sales problem)路徑搜索問題，我想做不一樣的，反而將線性規劃(linear programing)
+                                            p 故事由來：就學期間有門課在研究線性規劃模型，大家都做TSP(traveling sales problem)路徑搜索問題，
+                                                | 我想做不一樣的，反而將線性規劃(linear programing)
                                                 | 套用在物流業界中貨物堆疊的問題，做出不一樣的成果，此模型可設定堆疊條件進行規劃，像是貨物的重量、下方貨物的面積。
                                             span 網址連結：
                                             a(href="https://github.com/billju/gurobi-packing" target="_blank") https://github.com/billju/gurobi-packing
@@ -191,12 +192,13 @@ html(lang="en")
                                 .row
                                     .col-md-6
                                         img.w-100.my-3(src="assets/transcriber.jpg" alt="" loading="lazy")
-                                    .col-md-6
-                                        p 故事由來：開會總是要做會議紀錄，若要在紀錄細節時，邊聽錄音檔邊寫紀錄常常需要切換桌面應用程式，不斷切換播放器與編輯器的頁面，還容易因為沒打時間點，花費許多額外心力尋找關鍵字，
-                                            | 因此我特製了專屬編輯器讓工作變得更方便，後來又靈光乍現地擴充了影片上字幕功能，並且把檔案IO格式轉為通用的SRT，讓影音製作者也能夠享受到這番方便性。
-                                        p 技術層面：因web audio的解碼會佔據大量記憶體的問題，改對即時產出的波峰進行取樣，讓長達數小時的影音也能將波形視覺化，並自製文本編輯器將每段文字加入時戳標籤。
-                                        span 網址連結：
-                                        a(href="https://chuboy.dev/transcriber" target="_blank") https://chuboy.dev/transcriber
+                                    .col-md-6.d-flex.align-items-center
+                                        div
+                                            p 故事由來：開會總是要做會議紀錄，若要在紀錄細節時，邊聽錄音檔邊寫紀錄常常需要切換桌面應用程式，不斷切換播放器與編輯器的頁面，還容易因為沒打時間點，花費許多額外心力尋找關鍵字，
+                                                | 因此我特製了專屬編輯器讓工作變得更方便，後來又靈光乍現地擴充了影片上字幕功能，並且把檔案IO格式轉為通用的SRT，讓影音製作者也能夠享受到這番方便性。
+                                            p 技術層面：因web audio的解碼會佔據大量記憶體的問題，改對即時產出的波峰進行取樣，讓長達數小時的影音也能將波形視覺化，並自製文本編輯器將每段文字加入時戳標籤。
+                                            span 網址連結：
+                                            a(href="https://chuboy.dev/transcriber" target="_blank") https://chuboy.dev/transcriber
                         .w-100.bg-dark.text-light.px-3.py-3(data-once="fade-up")
                             .container
                                 h1 Webpack - 我全包了
@@ -211,19 +213,27 @@ html(lang="en")
                                 span.badge.badge-info.mx-1 OOP
                                 span.badge.badge-info.mx-1 Vanilla JS
                                 span.badge.badge-info.mx-1 WEB GIS
-                                p 全手刻的網頁版輕量地理資訊系統，除了能製作地理美術圖，還能進行數據分析，打開右方開關開啟圖層，拖曳圖層名稱切換先後順序，點擊右鍵開始繪製，可匯入圖片檔與geojson檔，
-                                    | 未來將整合PTX資料，我希望整合交通資訊，讓規劃者能更快速的進行疊圖分析，讓用路人有更多元的運具選擇。
-                                span 網址連結：
-                                a(href="https://chuboy.dev/lightGIS" target="_blank") https://chuboy.dev/lightGIS
+                                .row
+                                    .col-md-6
+                                        img.w-100.my-3(src="assets/lightGIS.png", alt="" loading="lazy")
+                                    .col-md-6.d-flex.align-items-center
+                                        div
+                                            p 全手刻的網頁版輕量地理資訊系統，除了能夠當繪圖軟體、進行圖層分析，還能當圖片檢視器，打開右方開關開啟圖層
+                                                | ，拖曳圖層名稱切換先後順序，點擊右鍵開始繪製，可匯入圖片檔與geojson檔，
+                                                | 未來將整合PTX資料，我希望整合交通資訊，讓規劃者能更快速的進行疊圖分析，讓用路人有更多元的運具選擇，
+                                                | lightGIS可以上傳csv、geojson、圖片等檔案，以及編輯完後可以匯出geojson、png、svg，使其可以相容市面繪圖軟體與GIS軟體。
+                                            span 網址連結：
+                                            a(href="https://chuboy.dev/lightGIS" target="_blank") https://chuboy.dev/lightGIS
                 section
                     .container.pt-3
                         h1 路徑搜索演算法
-                        p 不管是做導航軟體或是遊戲，總是離不開路徑搜索的問題，A*演算法設計了f,g,h三個權重進行比對，能夠快速又有效率地找出通往目的地的方法，以下是個迷宮小遊戲範例，點擊方框可以興建或拆除障礙物，點擊按鈕試試看。
+                        p 不管是做導航軟體或是遊戲，總是離不開路徑搜索的問題，A*演算法設計了f,g,h三個權重進行比對，
+                            | 能夠快速又有效率地找出通往目的地的方法，以下是個迷宮小遊戲範例，點擊方框可以興建或拆除障礙物，點擊按鈕試試看。
                     .btn.btn-success.w-100(onclick="handleMazeClick()") Click me!
                     canvas#maze.w-100.vh-100
                 section
                     svg#pulse.w-100
-                    .w-100.bg-dark.text-light
+                    .w-100.bg-dark.text-light.overflow-hidden
                         h1.text-center(style="font-size:8vw" data-once="fade-left") MORE PROJECTS
                     .container-lg
                         .row
