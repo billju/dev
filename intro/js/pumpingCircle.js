@@ -15,7 +15,6 @@ export default function pumpingConcentricCircle(el){
             transition: `padding ${duration}ms ease-out`
         })
         el.appendChild(div)
-        let keyframes = []
         if(i==1){
             eList.push({i:0,el:div,keyframes:[
                 {padding:'50px'},

@@ -9,10 +9,10 @@ export default class Interaction{
         this.groupTable = document.getElementById('group-table')
         this.gismap.raster = this.getDefaultRaster()
         this.renderRasterTable(document.getElementById('v-for'))
-        this.tabs = ['raster','groups','styles','settings']
+        this.tabs = ['raster','groups','styles','files']
         this.groupIndex = 0
         this.groups = []
-        this.addGroup('手繪')
+        this.addGroup('我的群組')
         this.renderGroupTable()
         this.setActive('raster')
         this.isKeyup = true
@@ -69,55 +69,24 @@ export default class Interaction{
         window.addEventListener('keydown',e=>{
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
             if(this.isKeyup){
-                const deleteSelected = ()=>{
-                    if(this.gismap.selectEvent.features.length){
-                        this.gismap.vector = this.gismap.vector.filter(feature=>!this.gismap.selectEvent.features.includes(feature))
-                        this.recycle.push(this.gismap.selectEvent.features)
-                        this.gismap.selectEvent.features = []
-                        this.gismap.modifyEvent.feature = null
-                        this.renderGroupTable()
-                    }
-                }
-                const copySelected = ()=>{
-                    if(this.gismap.selectEvent.features.length){
-                        this.copied.features = this.gismap.selectEvent.features
-                        let coords = this.gismap.selectEvent.features.flatMap(f=>{
-                            let b = f.geometry.bbox; return [[b[0],b[1]],[b[2],b[3]]]
-                        })
-                        this.copied.center = this.gismap.getBboxCenter(this.gismap.getBbox(coords))
-                    }
-                }
-                const pasteSelected = (stay=false)=>{
-                    const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
-                    let from = this.copied.center
-                    let to = this.gismap.moveEvent.currentCoord
-                    let offset = [to[0]-from[0],to[1]-from[1]]
-                    this.gismap.selectEvent.features = this.copied.features.slice().reverse().map(feature=>{
-                        let f = JSON.parse(JSON.stringify(feature))
-                        if(!stay)
-                            flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
-                        return this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
-                    })
-                    this.renderGroupTable()
-                }
                 if(e.ctrlKey&&e.code=='KeyZ'){
                     let features = this.recycle.pop()
                     if(features)
                         features.map(feature=>{this.gismap.vector.push(feature)})
                 }
                 else if(e.ctrlKey&&e.code=='KeyX'){
-                    copySelected()
-                    deleteSelected()
+                    this.copySelected()
+                    this.deleteSelected()
                 }
                 else if(e.ctrlKey&&e.code=='KeyC'){
-                    copySelected()
+                    this.copySelected()
                 }
                 else if(e.ctrlKey&&e.code=='KeyV'){
-                    pasteSelected(false)
+                    this.pasteSelected(false)
                 }
                 else if(e.ctrlKey&&e.code=='KeyB'){
-                    copySelected()
-                    pasteSelected(true)
+                    this.copySelected()
+                    this.pasteSelected(true)
                 }
                 if(e.code&&!e.code.includes('Control'))
                     this.isKeyup = false
@@ -141,8 +110,10 @@ export default class Interaction{
     setActive(tab){
         for(let tab of this.tabs){
             document.getElementById(tab).style.display = 'none'
+            document.getElementById(`tab-${tab}`).classList.remove('active')
         }
         document.getElementById(tab).style.display = 'block'
+        document.getElementById(`tab-${tab}`).classList.add('active')
     }
     handleSelectFeatures(features){
         this.gismap.selectEvent.styling = false
@@ -154,9 +125,10 @@ export default class Interaction{
             let area = features.reduce((acc,cur)=>{
                 return acc+this.gismap.getFeatureArea(cur)
             },0)
+            area = area<1e4?area.toFixed(0)+'平方公尺':area<1e6?(area/1e4).toFixed(3)+'公頃':(area/1e6).toFixed(3)+'平方公里'
             let properties = {
                 '數量':features.length,
-                '面積合計':area.toFixed(0)+'平方公尺'
+                '面積合計':area
             }
             this.renderPropsTable(properties)
         }else{
@@ -194,7 +166,7 @@ export default class Interaction{
     }
     addGroup(name=document.getElementById('new-group').value,theme='success'){
         if(name&&this.groups.findIndex(g=>g.name==name)==-1){
-            this.groups.push({name,theme,start:0,active:true,opacity:1})
+            this.groups.push({name,theme,start:0,active:true,temp:[],opacity:1})
             this.renderGroupTable()
         }
     }
@@ -203,6 +175,16 @@ export default class Interaction{
             f.properties['群組'] = this.groups[this.groupIndex].name
         })
         this.renderGroupTable()
+    }
+    toggleGroup(groupIndex,active){
+        let group = this.groups[groupIndex]
+        group.active = active
+        if(active){
+            this.gismap.vector.unshift(...group.temp)
+        }else{
+            group.temp = this.gismap.vector.filter(f=>f.properties['群組']==group.name)
+            this.gismap.vector = this.gismap.vector.filter(f=>f.properties['群組']!=group.name)
+        }
     }
     setGroupProps(groupIndex,key,value){
         let group = this.groups[groupIndex]
@@ -243,7 +225,7 @@ export default class Interaction{
             }
             let widgets = tr.insertCell()
             widgets.className = 'custom-control d-flex align-items-center'
-            widgets.innerHTML+= `<input type="checkbox" checked="${group.active}" onchange="interaction.groups[${i}].active=event.target.value"/>`
+            widgets.innerHTML+= `<input type="checkbox" checked="${group.active}" onchange="interaction.toggleGroup(${i},event.target.checked)"/>`
             widgets.innerHTML+= `<input type="range" class="custom-range ml-2" min="0" max="1" step="0.1" value="${group.opacity}" style="direction:rtl" oninput="interaction.setGroupProps(${i},'opacity',event.target.value)"/>`
             widgets.innerHTML+= `<button class="close ml-2" style="margin-top:-4px" onclick="interaction.removeGroup(${i})"><span>&times;</span></button>`
             if(this.groupIndex==i){
@@ -276,11 +258,42 @@ export default class Interaction{
                     let sign = Math.sign(e.deltaY)*maxItems
                     group.start = 
                         group.start+sign<0?0:
-                        group.start+sign>=features.length?features.length-maxItems<0?0:features.length-1:group.start+sign
+                        group.start+sign>=features.length?group.start:group.start+sign
                     renderList()
                 }
             }
         })
+    }
+    copySelected(){
+        if(this.gismap.selectEvent.features.length){
+            this.copied.features = this.gismap.selectEvent.features
+            let coords = this.gismap.selectEvent.features.flatMap(f=>{
+                let b = f.geometry.bbox; return [[b[0],b[1]],[b[2],b[3]]]
+            })
+            this.copied.center = this.gismap.getBboxCenter(this.gismap.getBbox(coords))
+        }
+    }
+    pasteSelected(stay=false){
+        const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
+        let from = this.copied.center
+        let to = this.gismap.moveEvent.currentCoord
+        let offset = [to[0]-from[0],to[1]-from[1]]
+        this.gismap.selectEvent.features = this.copied.features.slice().reverse().map(feature=>{
+            let f = JSON.parse(JSON.stringify(feature))
+            if(!stay)
+                flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
+            return this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
+        })
+        this.renderGroupTable()
+    }
+    deleteSelected(){
+        if(this.gismap.selectEvent.features.length){
+            this.gismap.vector = this.gismap.vector.filter(feature=>!this.gismap.selectEvent.features.includes(feature))
+            this.recycle.push(this.gismap.selectEvent.features)
+            this.gismap.selectEvent.features = []
+            this.gismap.modifyEvent.feature = null
+            this.renderGroupTable()
+        }
     }
     getDefaultRaster(){
         const token = "qn5cMMfaz2E84GbcNlqB2deRwJpO0NfuIorLEzgqLiaQv3lB8mfoVF7VU0u0rJCMbkMjDCBz2xD1JH-8fYMuBg.."

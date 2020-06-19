@@ -309,6 +309,5 @@ export function defaultMazeInteraction(mazeContainer){
         maze.setNodeFill(startNode,color.blue)
         maze.setNodeFill(endNode,color.red)
     }
-    window.addEventListener('resize',()=>{resetMaze()})
     return handleClick
 }

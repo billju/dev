@@ -8,10 +8,10 @@ html(lang="zh_tw")
         table#properties.table.table-striped.table-hover.table-dark(style='max-width:300px;max-height:100vh;position:fixed;left:0;top:0')
         .position-fixed(style='right:0;top:0;max-height:100%;width:300px;overflow-y:scroll;background:rgba(255,255,255,0.3')
             .btn-group.w-100
-                button.btn.btn-secondary(onclick="interaction.setActive('raster')") 底圖
-                button.btn.btn-secondary(onclick="interaction.setActive('groups')") 群組
-                button.btn.btn-secondary(onclick="interaction.setActive('styles')") 樣式
-                button.btn.btn-secondary(onclick="interaction.setActive('settings')") 檔案
+                button.btn.btn-outline-secondary#tab-raster(onclick="interaction.setActive('raster')") 底圖
+                button.btn.btn-outline-secondary#tab-groups(onclick="interaction.setActive('groups')") 群組
+                button.btn.btn-outline-secondary#tab-styles(onclick="interaction.setActive('styles')") 樣式
+                button.btn.btn-outline-secondary#tab-files(onclick="interaction.setActive('files')") 檔案  
             table#raster
                 tr#v-for(draggable='true' ondragstart='dragged=event.target' ondrop='handleDrop(event,this)' ondragover='event.preventDefault()')
                     td.pb-1.pr-1
@@ -23,20 +23,19 @@ html(lang="zh_tw")
                         input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction: rtl;')
             input#file(type='file' style='display: none' onchange='handleFiles(event.target.files)' multiple='')
             #groups
-                table#group-table.w-100.table(style="margin-bottom:0")
+                .w-100.btn-group
+                    .btn.btn-outline-success(onclick='interaction.fitExtent()') 聚焦
+                    .btn.btn-outline-success(onclick="interaction.moveLayerTo('top')") 置頂
+                    .btn.btn-outline-success(onclick="interaction.moveLayerTo('bottom')") 置底
+                    .btn.btn-outline-success(onclick="interaction.deleteSelected()") 刪除
+                .w-100.btn.btn-outline-success(onclick="interaction.moveGroup()") 移動選取項目至作用中群組
                 .input-group
                     .input-group-prepend
                         .btn.btn-outline-success(onclick="interaction.addGroup()") 新增群組
                     input#new-group.form-control.btn.btn-outline-success(type='text' name='new-group')
-                .w-100.btn.btn-outline-success(onclick="interaction.moveGroup()") 移動選取項目至作用中群組
+                table#group-table.w-100.table(style="margin-bottom:0")
             table#styles.table.table-striped.table-hover.table-dark
                 tbody
-                    tr
-                        td(colspan='2')
-                            .btn-group.w-100
-                                .btn.btn-dark(onclick='interaction.fitExtent()') 聚焦
-                                .btn.btn-dark(onclick="interaction.moveLayerTo('top')") 置頂
-                                .btn.btn-dark(onclick="interaction.moveLayerTo('bottom')") 置底
                     tr
                         td text
                         td
@@ -96,7 +95,7 @@ html(lang="zh_tw")
                         td fill
                         td
                             input#fill(type='color' oninput="interaction.setFeatureProps('fill',event.target.value)")
-            #settings
+            #files
                 .btn.btn-outline-primary.w-100(onclick="document.getElementById('file').click()") 選取檔案或拖曳匯入
                 .input-group
                     .input-group-prepend

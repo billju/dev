@@ -462,8 +462,11 @@ export default class GisMap{
         if(length)
             properties['周長'] = length.toFixed(0)+'公尺'
         let area = this.getFeatureArea(feature)
-        if(area)
-            properties['面積'] = area.toFixed(0)+'平方公尺'
+        if(area){
+            properties['面積'] = area<1e4?area.toFixed(0)+'平方公尺':
+                area<1e6?(area/1e4).toFixed(3)+'公頃':
+                (area/1e6).toFixed(3)+'平方公里'
+        }
         return properties
     }
     handleDblclick(e){
@@ -855,12 +858,12 @@ export default class GisMap{
             this.ctx.beginPath()
             this.ctx.moveTo(c[0]+style.radius,c[1])
             this.ctx.arc(c[0],c[1],style.radius,0,Math.PI*2,false)
+            if(style.lineWidth){
+                drawStroke()
+            }
             if(style.fill){
                 this.ctx.fillStyle = style.fill
                 this.ctx.fill()
-            }
-            if(style.lineWidth){
-                drawStroke()
             }
             if(style.text){
                 drawText(c)
@@ -876,12 +879,12 @@ export default class GisMap{
                 else
                     this.ctx.lineTo(c[0],c[1])
             })
+            if(style.lineWidth){
+                drawStroke()
+            }
             if(style.fill){
                 this.ctx.fillStyle = style.fill
                 this.ctx.fill()
-            }
-            if(style.lineWidth){
-                drawStroke()
             }
             this.ctx.closePath()
         }
