@@ -68,6 +68,20 @@ export default class Interaction{
         })
         window.addEventListener('keydown',e=>{
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
+            if(e.code.includes('Arrow')){
+                let offset = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.code]
+                const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
+                this.gismap.selectEvent.features.map(feature=>{
+                    let coords = flatten(feature.geometry.coordinates).map(coord=>{
+                        let client = this.gismap.coord2client(coord)
+                        let newCoord = this.gismap.client2coord([client[0]+offset[0],client[1]+offset[1]])
+                        coord[0] = newCoord[0]
+                        coord[1] = newCoord[1]
+                        return coord
+                    })
+                    feature.geometry.bbox = this.gismap.getBbox(coords)
+                })
+            }
             if(this.isKeyup){
                 if(e.ctrlKey&&e.code=='KeyZ'){
                     let features = this.recycle.pop()

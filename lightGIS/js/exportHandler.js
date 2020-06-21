@@ -1,87 +1,24 @@
-import GisMap from './GisMap.js'
-import ImageShape from './ImageShape.js'
-import Interaction from './interaction.js'
-import PTX from './ptx.js'
-import {readFileAsText,downloadCanvas,downloadText} from './fileHandler.js'
-import '../css/lightGIS.css'
-import '../css/bootstrap.css'
-import Vue from 'vue'
-import App from './app.vue'
-import ElementUI from 'element-ui';
-import 'element-ui/lib/theme-chalk/index.css';
-Vue.use(ElementUI)
-new Vue({
-    el: '#app',
-    render: h => h(App)
-})
-window.onload = ()=>{
-    window.canvas = document.getElementById('canvas')
-    window.gm = new GisMap(canvas)
-    window.interaction = new Interaction(gm)
-    window.PTX = new PTX(gm,interaction)
+function downloadLink(href,filename){
+    let a = document.createElement('a')
+    a.href = href
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
 }
-window.handleDrop = function(e){
-    e.preventDefault()
-    const files = [...e.dataTransfer.items].filter(item=>item.kind=='file').map(item=>item.getAsFile())
-    handleFiles(files)
+export function downloadText(text,filename='downlaod.txt'){
+    let href = "data:text/plain;charset=UTF-8," + encodeURIComponent(text)
+    downloadLink(href,filename)
 }
-window.handleFiles = function(files){
-    for(let file of files){
-        handleFile(file)
-    }
-    document.getElementById('file').value = null
+export function downloadCanvas(canvas,filename='downlaod.png'){
+    let ext = filename.split('.')[1]
+    let href = canvas.toDataURL(`image/${ext}`).replace('image/png','image/octet-stream')
+    downloadLink(href,filename)
 }
-async function handleFile(file){
-    let filename = file.name.split('.')[0]
-    let extension = file.name.match(/\.\w+$/i)[0]
-    if(file.type.includes('image')){
-        let img = new Image()
-        img.src = URL.createObjectURL(file)
-        img.onload = ()=>{
-            let imageShape = new ImageShape(img,canvas.width/2,canvas.height/2,gm)
-            interaction.imageShapes.unshift(imageShape)
-        }
-    }
-    if(extension=='.geojson'){
-        let text = await readFileAsText(file)
-        let geojson = JSON.parse(text)
-        geojson.features.map(f=>{f.properties['群組']=f.properties['群組']??filename})
-        let groups = [...new Set(geojson.features.map(f=>f.properties['群組']))].filter(g=>g)
-        if(groups.length)
-            groups.map(group=>{interaction.addGroup(group)})
-        else
-            interaction.addGroup(group)
-        gm.geojson(geojson)
-        interaction.fitExtent(geojson.features)
-    }else if(extension=='.kml'){
-        let xjson = xml_string_to_json(await readFileAsText(file))
-        let placemarks = []
-        function findPlacemark(obj){
-            if(typeof obj=='object'){
-                for(let key in obj){
-                    if(key=='Placemark')
-                        placemarks.push(obj[key])
-                    else
-                        findPlacemark(obj[key])
-                }
-            }
-        }
-        findPlacemark(xjson)
-        console.log(placemarks)
-    }else if(extension=='.wkt'){
-        gm.WKT(await readFileAsText(file))
-    }else if(extension=='.json'){
-        const dir = {0:'去程',1:'返程',2:'迴圈',255:'未知'}
-        JSON.parse(await readFileAsText(file)).map(row=>{
-            gm.WKT(row.Geometry,{'路線':row.RouteName.Zh_tw,'方向':dir[row.Direction]})
-        })
-    }
-    interaction.renderGroupTable()
-}
-window.exportFile = function(){
+
+function exportFile(features=gm.selectEvent.features.length?gm.selectEvent.features:gm.vector){
     let filename = document.getElementById('file-export').value||'lightGIS'
     let extension = document.getElementById('file-extension').value
-    let features = gm.selectEvent.features.length?gm.selectEvent.features:gm.vector
     if(extension=='.geojson'){
         const unproject = gm.toLnglat
         features = features.map(feature=>{

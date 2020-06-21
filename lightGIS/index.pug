@@ -4,6 +4,7 @@ html(lang="zh_tw")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         title lightGIS
     body
+        #app
         canvas#canvas(ondrop='handleDrop(event)' ondragover='event.preventDefault()')
         div(style='max-width:300px;max-height:100vh;overflow-y:scroll;position:fixed;left:0;top:0')
             table#properties.table.table-striped.table-hover.table-dark(style="margin-bottom:0")
@@ -38,7 +39,6 @@ html(lang="zh_tw")
                     input#new-group.form-control.btn.btn-outline-success(type='text' name='new-group')
                 table#group-table.w-100.table(style="margin-bottom:0")
             #styles
-                
                 table#custom-style.table.table-striped.table-hover.table-dark
                     tbody
                         tr
@@ -117,4 +117,4 @@ html(lang="zh_tw")
                         option(value='.geojson') .geojson
                         option(value='.png') .png
                         option(value='.svg') .svg
-        #loading-page.position-fixed.w-100.h-100(style="top:0;left:0").bg-dark
+        //- #loading-page.position-fixed.w-100.h-100(style="top:0;left:0").bg-dark

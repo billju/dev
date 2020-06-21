@@ -3,6 +3,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin')
 const dir = 'lightGIS'
 module.exports = {
     entry: ['@babel/polyfill',`./${dir}/js/index.js`],
@@ -10,7 +11,19 @@ module.exports = {
         rules: [
             {
                 test: /\.pug$/,
-                use: ['html-loader','pug-html-loader']
+                oneOf: [
+                    {
+                        resourceQuery:/^\?vue/, 
+                        use: 'pug-plain-loader'
+                    },
+                    {
+                        use:['html-loader','pug-html-loader']
+                    }
+                ]
+            },
+            {
+                test: /\.vue$/,
+                loader: 'vue-loader'
             },
             {
                 test: /\.(sa|sc|c)ss$/,
@@ -27,7 +40,7 @@ module.exports = {
                                 require('cssnano')
                             ])
                         }
-                    }
+                    },
                 ]
             },
             {
@@ -51,10 +64,22 @@ module.exports = {
                     }
                 }
             },
+            {
+                test: /\.(eot|woff|woff2|[ot]tf)$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: '[name].[ext]',
+                        outputPath: './fonts/',
+                        publicPath: '/fonts/'
+                    }
+                }
+            },
         ]
     },
     plugins: [
         // new CleanWebpackPlugin(),
+        new VueLoaderPlugin(),
         new MiniCssExtractPlugin({ filename: '[name].css' }),
         new TerserPlugin(),
         new HtmlWebpackPlugin({
@@ -76,10 +101,10 @@ module.exports = {
             },
         }),
     ],
-    resolve: {
-        alias: {
-            'vue$': 'vue/dist/vue.esm.js'
-        }
+    resolve: { 
+        alias: { 
+            'vue': 'vue/dist/vue.js' 
+        } 
     },
     output: {
         path: path.resolve(__dirname, 'dist'),

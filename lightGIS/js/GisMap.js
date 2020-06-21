@@ -365,7 +365,7 @@ export default class GisMap{
             if(this.modifyEvent.geomType=='Point')
                 this.modifyEvent.feature.geometry.coordinates = this.modifyEvent.coords[0]
             if(this.modifyEvent.geomType=='Polygon'&&i==0)
-                this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0]
+                this.modifyEvent.coords[this.modifyEvent.coords.length-1] = this.modifyEvent.coords[0].slice()
                 Object.assign(this.modifyEvent.feature.properties,this.getDerivedProperties(this.modifyEvent.feature))
         }else{
             if(this.moveEvent.active&&this.moveEvent.moved){
@@ -481,7 +481,7 @@ export default class GisMap{
                     path = path[0]
                 }else{
                     geomType = 'Polygon'
-                    path[path.length-1] = path[0]
+                    path[path.length-1] = path[0].slice()
                     path = [path]
                 }
             }
@@ -771,9 +771,9 @@ export default class GisMap{
                 case 'MultiPoint':
                     isInGeometry = geom.coordinates.some(coord=>Euclidean(client,this.coord2client(coord)) < 5);break;
                 case 'LineString':
-                    isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:this.perpendicular(client,coords[i-1],coord).distance<5);break;
+                    isInGeometry = geom.coordinates.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:this.perpendicular(client,coords[i-1],coord).distance<(feature.properties.lineWidth/2||5));break;
                 case 'MultiLineString':
-                    isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:this.perpendicular(client,coords[i-1],coord).distance<5));break;
+                    isInGeometry = geom.coordinates.some(arr=>arr.map(c=>this.coord2client(c)).some((coord,i,coords)=>i==0?false:this.perpendicular(client,coords[i-1],coord).distance<(feature.properties.lineWidth/2||5)));break;
                 case 'Polygon':
                     isInGeometry = geom.coordinates.every((arr,i)=>i==0?this.isInPolygon(point,arr):!this.isInPolygon(point,arr));break;
                 case 'MultiPolygon':
