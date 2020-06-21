@@ -1,4 +1,5 @@
 function radialDistFilter(points, epsilon){
+    if(!epsilon) return points
     var epsilon_squ = epsilon*epsilon
     return points.filter((point,i)=>{
         if(i==0) return true
@@ -294,7 +295,7 @@ export default class GisMap{
         })
     }
     panTo(coord,zoom=this.view.zoom,duration=1000){
-        // let coord = this.toCoord(lnglat)
+        // let coord = this.lnglat2coord(lnglat)
         this.panEvent.before = {...this.view.center,z:this.view.zoom}
         this.panEvent.after = {x:coord[0],y:coord[1],z:zoom}
         this.panEvent.frames = Math.round(duration/1000*60)
@@ -345,6 +346,7 @@ export default class GisMap{
                 this.drawEvent.active = true
             }
         }
+        this.panEvent.t = 0
         this.moveEvent.x = e.clientX
         this.moveEvent.y = e.clientY
     }
@@ -434,23 +436,23 @@ export default class GisMap{
     }
     getFeatureLength(feature){
         if(feature.geometry.type=='LineString')
-            return getLength(feature.geometry.coordinates.map(this.toLnglat))
+            return getLength(feature.geometry.coordinates.map(this.coord2lnglat))
         if(feature.geometry.type=='Polygon')
-            return getLength(feature.geometry.coordinates[0].map(this.toLnglat))
+            return getLength(feature.geometry.coordinates[0].map(this.coord2lnglat))
         return 0
     }
     getFeatureArea(feature){
         if(feature.geometry.type=='Polygon'){
             return feature.geometry.coordinates.reduce((acc,cur,i)=>{
-                if(i==0) return acc+getArea(cur.map(this.toLnglat))
-                else return acc-getArea(cur.map(this.toLnglat))
+                if(i==0) return acc+getArea(cur.map(this.coord2lnglat))
+                else return acc-getArea(cur.map(this.coord2lnglat))
             },0)
         }
         if(feature.geometry.type=='MultiPolygon'){
             return feature.geometry.coordinates.reduce((accArea,coords)=>{
                 return accArea+coords.reduce((acc,cur,i)=>{
-                    if(i==0) return acc+getArea(cur.map(this.toLnglat))
-                    else return acc-getArea(cur.map(this.toLnglat))
+                    if(i==0) return acc+getArea(cur.map(this.coord2lnglat))
+                    else return acc-getArea(cur.map(this.coord2lnglat))
                 },0)
             },0)
         }
@@ -460,7 +462,7 @@ export default class GisMap{
         let properties = {}
         let length = this.getFeatureLength(feature)
         if(length)
-            properties['周長'] = length.toFixed(0)+'公尺'
+            properties['周長'] = length<1e3?length.toFixed(0)+'公尺':(length/1e3).toFixed(3)+'公里'
         let area = this.getFeatureArea(feature)
         if(area){
             properties['面積'] = area<1e4?area.toFixed(0)+'平方公尺':
@@ -693,7 +695,7 @@ export default class GisMap{
     getBboxCenter(bbox){
         return [(bbox[0]+bbox[2])/2,(bbox[1]+bbox[3])/2]
     }
-    toCoord(lnglat) {
+    lnglat2coord(lnglat) {
         var d = Math.PI / 180,
             max = 85.0511287798,
             lat = Math.max(Math.min(max, lnglat[1]), -max),
@@ -703,7 +705,7 @@ export default class GisMap{
             6378137 * Math.log((1 + sin) / (1 - sin)) / 2 
         ]
     }
-    toLnglat(point) {
+    coord2lnglat(point) {
         var d = 180 / Math.PI
         return [
             point[0] * d / 6378137,
@@ -726,7 +728,7 @@ export default class GisMap{
             let geom = feature.geometry
             geom.bbox = [Infinity,Infinity,-Infinity,-Infinity]
             const project = lnglat=>{
-                let [x,y] = projected?lnglat:this.toCoord(lnglat)
+                let [x,y] = projected?lnglat:this.lnglat2coord(lnglat)
                 geom.bbox[0] = Math.min(geom.bbox[0],x)
                 geom.bbox[1] = Math.min(geom.bbox[1],y)
                 geom.bbox[2] = Math.max(geom.bbox[2],x)
@@ -793,10 +795,10 @@ export default class GisMap{
             'opacity': feature.properties['opacity']?parseFloat(feature.properties['opacity']):1,
             'text': feature.properties['text'],
             'textAnchor': feature.properties['textAnchor']||'[0,0]',
-            'textFill': feature.properties['textFill']||'#ffffff',
+            'textFill': feature.properties['textFill']||'#000000',
             'textStroke': feature.properties['textStroke']||'#000000',
             'fontFamily': feature.properties['fontFamily']||'arial',
-            'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):1,
+            'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):0,
             'fontSize': feature.properties['fontSize']?parseInt(feature.properties['fontSize']):12,
         }
     }
@@ -833,11 +835,11 @@ export default class GisMap{
             this.ctx.strokeStyle = style.textStroke
             let x = client[0]+(anchor[0]/2-0.5)*metric.width+style.radius*anchor[0]
             let y = client[1]+anchor[1]/2*style.fontSize+style.radius*anchor[1]
-            this.ctx.fillText(style.text,x,y)
             if(style.fontWeight){
                 this.ctx.lineWidth = style.fontWeight
                 this.ctx.strokeText(style.text,x,y)
             }
+            this.ctx.fillText(style.text,x,y)
         }
         const drawStroke = ()=>{
             this.ctx.setLineDash(style.lineDash)
@@ -901,13 +903,15 @@ export default class GisMap{
                 drawPath(feature.geometry.coordinates)
                 if(feature.geometry.coordinates.length==2){
                     let coords = feature.geometry.coordinates
-                    let x = (coords[0][0]+coords[1][0])/2
-                    let y = (coords[0][1]+coords[1][1])/2
-                    let client = this.coord2client([x,y])
-                    this.ctx.font = '12px 微軟正黑體'
-                    this.ctx.fillStyle = 'black'
-                    let metric = this.ctx.measureText(feature.properties['周長'])
-                    this.ctx.fillText(feature.properties['周長'],client[0]-metric.width/2,client[1]+6)
+                    let c1 = this.coord2client(coords[0])
+                    let c2 = this.coord2client(coords[1])
+                    let rad = Math.atan2(c2[1]-c1[1],c2[0]-c1[0])
+                    this.ctx.save()
+                    this.ctx.translate((c1[0]+c2[0])/2,(c1[1]+c2[1])/2)
+                    this.ctx.rotate(rad)
+                    style.text = feature.properties['周長']
+                    drawText([0,0])
+                    this.ctx.restore()
                 }
                 break
             case 'MultiLineString':
@@ -928,6 +932,8 @@ export default class GisMap{
                         drawPath(this.DouglasPeucker(coords,tolerance))
                     }
                 }
+                if(style.text)
+                    drawText(this.coord2client(this.getBboxCenter(feature.geometry.bbox)))
                 break
         }
     }
@@ -942,10 +948,11 @@ export default class GisMap{
         return this.geojson(geojson, projected)[0]
     }
     WKT(wkt,properties){
-        let type = wkt.match(/\w+/)[0]
-        let jsonString = wkt.slice(type.length).replace(/[\d.]+\s[\d.]+/g,'[$&]').replace(/\s/g,',').replace(/\(/g,'[').replace(/\)/g,']')
+        let wkt2geojson = {'POINT':'Point','MULTIPOINT':'MultiPoint','LINESTRING':'LineString','MULTILINESTRING':'MultiLineString','POLYGON':'Polygon','MULTIPOLYGON':'MultiPolygon'}
+        let geomType = wkt2geojson[wkt.match(/\w+/)[0]]
+        let jsonString = wkt.slice(geomType.length).replace(/[\d.]+\s[\d.]+/g,'[$&]').replace(/\s/g,',').replace(/\(/g,'[').replace(/\)/g,']')
         let coordinates = JSON.parse(jsonString)
-        this.addVector(type,coordinates,properties)
+        return this.addVector(geomType,coordinates,properties,false)
     }
     perpendicular(p,p1,p2){
         var x = p1[0],

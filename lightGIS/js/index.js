@@ -2,16 +2,16 @@ import makeElementMovable from './makeElementMovable.js'
 import GisMap from './GisMap.js'
 import ImageShape from './ImageShape.js'
 import Interaction from './interaction.js'
-import {Bike_Station} from './ptx.js'
+import PTX from './ptx.js'
 import {readFileAsText,downloadCanvas,downloadText,svgAnimation} from './fileHandler.js'
 import '../css/lightGIS.css'
 import '../css/bootstrap.css'
-window.getPTX = Bike_Station
 // makeElementMovable(document.getElementById('styles'))
 window.onload = ()=>{
     window.canvas = document.getElementById('canvas')
     window.gm = new GisMap(canvas)
     window.interaction = new Interaction(gm)
+    window.PTX = new PTX(gm,interaction)
 }
 window.handleDrop = function(e){
     e.preventDefault()
