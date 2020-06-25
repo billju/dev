@@ -1,3 +1,4 @@
+import ImageShape from './imageShape.js'
 function radialDistFilter(points, epsilon){
     if(!epsilon) return points
     var epsilon_squ = epsilon*epsilon
@@ -135,33 +136,31 @@ var EasingFunctions = {
 export default class GisMap{
     constructor(element){
         this.canvas = element
+        this.ctx = this.canvas.getContext('2d')
         this.tilePixel = {w:256,h:256}
         this.world = {
             bbox: [-6378137*Math.PI,-6378137*Math.PI,6378137*Math.PI,6378137*Math.PI],
             w: 2*6378137*Math.PI,
             h: 2*6378137*Math.PI,
         }
-        var rect = canvas.getBoundingClientRect()
         this.view = {
             bbox: [],
             center: {x: 13437548.485305637, y: 2772337.9239074644},
-            w: rect.width,
-            h: rect.height,
+            w: this.canvas.clientWidth,
+            h: this.canvas.clientHeight,
             zoom: 9,
             minZoom: 0,
             maxZoom: 20,
-        }   
-        this.updateView()
-        this.vector = []
-        this.raster = []
+        }
+        this.handleResize()
+        this.vectors = []
+        this.rasters = []
         this.overlay = []
+        this.imageShapes = []
         this.tiles = {}
-        this.canvas.height = rect.height
-        this.canvas.width = rect.width
-        this.ctx = canvas.getContext('2d')
         let xyz = {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom}
         this.zoomEvent = {before:xyz,after:xyz,t:0,frames:25,delta:0.5,zStep:1}
-        this.moveEvent = {x:0,y:0,vx:0,vy:0,active:false,moved:false,currentCoord:[0,0]}
+        this.moveEvent = {x:0,y:0,vx:0,vy:0,t:0,frames:90,active:false,moved:false,currentCoord:[0,0]}
         this.panEvent = {before:xyz,after:xyz,t:0,frames:60}
         this.drawEvent = {path:[],active:false,snap:false}
         this.selectEvent = {x:0,y:0,bbox:[0,0,0,0],features:[],ctrlKey:false,active:false,styling:false}
@@ -182,7 +181,7 @@ export default class GisMap{
             if(this.zoomEvent.t>0){
                 var t = 1-(this.zoomEvent.t-1)/this.zoomEvent.frames
                 // ease function = { easeOutQuad: t => t*(2-t) }
-                var dt = (2-2*t)/this.zoomEvent.frames
+                var dt = this.zoomEvent.frames==1?1:(2-2*t)/this.zoomEvent.frames
                 t = t*(2-t)
                 var dz = (this.zoomEvent.after.z-this.zoomEvent.before.z)*dt
                 var scale = Math.pow(2,dz)
@@ -207,16 +206,21 @@ export default class GisMap{
             // raster
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
             // this.renderGrids()
-            for(let raster of this.raster.slice().reverse()){
+            for(let raster of this.rasters.slice().reverse()){
                 if(!raster.active) continue
                 this.ctx.globalAlpha = raster.opacity
                 this.renderRaster(raster)
             }
-            // vector
+            // image shapes
+            for(let i=this.imageShapes.length-1;i>=0;i--){
+                this.imageShapes[i].updateGisClient()
+                this.imageShapes[i].draw(this.ctx)
+            }
+            // vectors
             let tolerance = Math.pow(2,18-this.view.zoom)
             tolerance = tolerance<1?0:tolerance
-            for(let i=this.vector.length-1;i>=0;i--){
-                this.renderVector(this.vector[i],tolerance)
+            for(let i=this.vectors.length-1;i>=0;i--){
+                this.renderVector(this.vectors[i],tolerance)
             }
             if(this.drawEvent.active){
                 this.renderDraw()
@@ -230,11 +234,13 @@ export default class GisMap{
                 this.ctx.strokeStyle = 'dodgerblue'
                 this.ctx.strokeRect(lb[0],lb[1],ub[0]-lb[0],ub[1]-lb[1])
             }
-            this.canvas.dispatchEvent(new CustomEvent('render',{}))
             this.animationFrame = window.requestAnimationFrame(this.render)
         }
         this.render()
-    }
+    }// set function for vue
+    setRasters(rasters){this.rasters=rasters}
+    setSelectedFeatures(features){this.selectEvent.features=features}
+    addImageShape(img){this.imageShapes.push(new ImageShape(img,this.view.w/2,this.view.h/2,this))}
     renderModify(){
         let coords = this.modifyEvent.feature.geometry.coordinates
         let geomType = this.modifyEvent.feature.geometry.type
@@ -312,6 +318,8 @@ export default class GisMap{
         this.panTo([bx,by],newZoom,duration)
     }
     handleMousedown(e){
+        let rect = this.canvas.getBoundingClientRect()
+        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
         if(this.modifyEvent.feature){
             let coords = this.modifyEvent.feature.geometry.coordinates
             let geomType = this.modifyEvent.feature.geometry.type
@@ -323,11 +331,11 @@ export default class GisMap{
             this.modifyEvent.anchor = -1
             let buffer = geomType=='Point'?parseInt(this.modifyEvent.feature.properties['radius'])||10:10
             for(let i=0;i<clients.length;i++){
-                if(Euclidean([e.clientX,e.clientY],clients[i]) < buffer){
+                if(Euclidean([clientX,clientY],clients[i]) < buffer){
                     this.modifyEvent.anchor = i; break;
                 }
                 if(i>0){
-                    let perpendicular = this.perpendicular([e.clientX,e.clientY],clients[i-1],clients[i])
+                    let perpendicular = this.perpendicular([clientX,clientY],clients[i-1],clients[i])
                     if(perpendicular.distance < 5){
                         coords.splice(i,0,this.client2coord(perpendicular.closest))
                         this.modifyEvent.anchor = i; break;
@@ -337,7 +345,7 @@ export default class GisMap{
         }
         if(this.selectEvent.ctrlKey){
             this.selectEvent.active = true
-            let coord = this.client2coord([e.clientX,e.clientY])
+            let coord = this.client2coord([clientX,clientY])
             this.selectEvent.bbox = [coord[0],coord[1],coord[0],coord[1]]
         }else{
             this.moveEvent.active = true
@@ -347,21 +355,23 @@ export default class GisMap{
             }
         }
         this.panEvent.t = 0
-        this.moveEvent.x = e.clientX
-        this.moveEvent.y = e.clientY
+        this.moveEvent.x = clientX
+        this.moveEvent.y = clientY
     }
     handleMousemove(e){
-        let vx = - e.clientX + this.moveEvent.x
-        let vy = e.clientY - this.moveEvent.y
+        let rect = this.canvas.getBoundingClientRect()
+        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
+        let vx = - clientX + this.moveEvent.x
+        let vy = clientY - this.moveEvent.y
         if((this.moveEvent.active||this.modifyEvent.active||this.selectEvent.active)&&Math.sqrt(vx*vx+vy*vy)>3)
             this.moveEvent.moved = true
         if(this.moveEvent.moved||this.drawEvent.active){
-            this.moveEvent.x = e.clientX
-            this.moveEvent.y = e.clientY
+            this.moveEvent.x = clientX
+            this.moveEvent.y = clientY
         }
         if(this.modifyEvent.anchor!=-1){
             let i = this.modifyEvent.anchor
-            this.modifyEvent.coords[i] = this.client2coord([e.clientX,e.clientY])
+            this.modifyEvent.coords[i] = this.client2coord([clientX,clientY])
             if(this.modifyEvent.geomType=='Point')
                 this.modifyEvent.feature.geometry.coordinates = this.modifyEvent.coords[0]
             if(this.modifyEvent.geomType=='Polygon'&&i==0)
@@ -370,17 +380,19 @@ export default class GisMap{
         }else{
             if(this.moveEvent.active&&this.moveEvent.moved){
                 this.setView([vx,vy])
-                Object.assign(this.moveEvent,{vx, vy, t:90})
+                Object.assign(this.moveEvent,{vx, vy, t:this.moveEvent.frames})
             }
             if(this.selectEvent.active){
-                let coord = this.client2coord([e.clientX,e.clientY])
+                let coord = this.client2coord([clientX,clientY])
                 this.selectEvent.bbox[2] = coord[0]
                 this.selectEvent.bbox[1] = coord[1]
             }
         }
-        this.moveEvent.currentCoord = this.client2coord([e.clientX,e.clientY])
+        this.moveEvent.currentCoord = this.client2coord([clientX,clientY])
     }
     handleMouseup(e){
+        let rect = this.canvas.getBoundingClientRect()
+        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
         if(this.modifyEvent.anchor!=-1){
             if(!this.moveEvent.moved&&this.modifyEvent.coords.length>2){
                 this.modifyEvent.coords.splice(this.modifyEvent.anchor,1)
@@ -391,7 +403,7 @@ export default class GisMap{
             this.modifyEvent.feature.geometry.bbox = this.getBbox(this.modifyEvent.coords)
         }
         if(this.drawEvent.active&&!this.moveEvent.moved){
-            this.drawEvent.path.push(this.client2coord([e.clientX,e.clientY])) 
+            this.drawEvent.path.push(this.client2coord([clientX,clientY])) 
         }
         const dispatchSelectEvent = (features)=>{
             if(!this.drawEvent.active){
@@ -414,9 +426,9 @@ export default class GisMap{
                     let fgb = feature.geometry.bbox
                     return fgb[0]>=bbox[0]&&fgb[1]>=bbox[1]&&fgb[2]<=bbox[2]&&fgb[3]<=bbox[3]
                 }
-                dispatchSelectEvent(this.vector.filter(feature=>isInBbox(feature)))
+                dispatchSelectEvent(this.vectors.filter(feature=>isInBbox(feature)))
             }else{ //toggle selection
-                let feature = this.detectClient([e.clientX,e.clientY])
+                let feature = this.detectClient([clientX,clientY])
                 if(feature){
                     if(this.selectEvent.features.includes(feature))
                         dispatchSelectEvent(this.selectEvent.features.filter(x=>x!=feature))
@@ -425,7 +437,7 @@ export default class GisMap{
                 }
             }
         }else if(!this.moveEvent.moved){
-            let feature = this.detectClient([e.clientX,e.clientY])
+            let feature = this.detectClient([clientX,clientY])
             dispatchSelectEvent(feature?[feature]:[])
         }
         this.moveEvent.active = false
@@ -521,11 +533,10 @@ export default class GisMap{
         }
     }
     handleResize(){
-        var rect = this.canvas.getBoundingClientRect()
-        this.canvas.height = rect.height
-        this.canvas.width = rect.width
-        this.view.w = rect.width
-        this.view.h = rect.height
+        this.canvas.width = this.canvas.clientWidth
+        this.canvas.height = this.canvas.clientHeight
+        this.view.w = this.canvas.clientWidth
+        this.view.h = this.canvas.clientHeight
         this.updateView()
     }
     updateView(){
@@ -752,7 +763,7 @@ export default class GisMap{
             }
             return feature
         })
-        this.vector.unshift(...features)
+        this.vectors.unshift(...features)
         return features
     }
     detectClient(client){
@@ -760,7 +771,7 @@ export default class GisMap{
         const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
         const isInBbox = (p,bbox)=>p[0]>=bbox[0]&&p[0]<=bbox[2]&&p[1]>=bbox[1]&&p[1]<=bbox[3]
         let point = this.client2coord(client)
-        let features = this.vector.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox))
+        let features = this.vectors.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox))
             .filter(feature=>['Point','MultiPoint'].includes(feature.geometry.type)?true:isInBbox(point,feature.geometry.bbox))
         for(let feature of features){
             let geom = feature.geometry

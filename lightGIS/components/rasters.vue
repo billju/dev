@@ -1,20 +1,22 @@
 <template lang="pug">
-.px-2
-    draggable(v-model="rasters" :options="{animation:150}")
-        .d-flex.align-items-center(v-for="raster,i in rasters" :key="i" style="margin-top:-5px")
+.px-1
+    Draggable(v-model="rasters" @update="gismap.setRasters(rasters)" :options="{animation:150}")
+        .d-flex.align-items-center(v-for="raster,i in rasters" :key="raster.name")
             span(style="flex:1") {{raster.name}}
-            el-switch.mx-2(v-model="raster.active")
-            el-slider(v-model.number="raster.opacity" :min="0" :max="1" :step="0.1" style="width:100px")
+            .custom-control.custom-switch.mx-1
+                input.custom-control-input(type='checkbox' v-model="raster.active" :id="raster.name" @input="gismap.setRasters(rasters)")
+                label.custom-control-label(:for="raster.name")
+            .input-text(draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
+                input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' v-model.number="raster.opacity" @input="gismap.setRasters(rasters)")
 </template>
 
 <script>
-import draggable from 'vuedraggable'
+import Draggable from 'vuedraggable'
 export default {
     name: 'Rasters',
-    components: {draggable},
-    data: ()=>({
-        rasters: []
-    }),
+    components: {Draggable},
+    props: ['gismap'],
+    data:()=>({rasters:[]}),
     methods: {
         getDefaultRaster(){
             const token = "qn5cMMfaz2E84GbcNlqB2deRwJpO0NfuIorLEzgqLiaQv3lB8mfoVF7VU0u0rJCMbkMjDCBz2xD1JH-8fYMuBg.."
@@ -46,9 +48,9 @@ export default {
                 raster.url = raster.url.replace('{token}',token)
                 return raster
             })
-        }
+        },
     },
-    mounted(){
+    created(){
         this.rasters = this.getDefaultRaster()
     }
 }

@@ -1,8 +1,7 @@
 <template lang="pug">
 .px-2
-    input#file(type='file' style='display: none' onchange='handleFiles(event.target.files)' multiple='true')
-    .btn.btn-outline-primary.w-100(onclick="document.getElementById('file').click()") 選取檔案或拖曳匯入
-    .btn.btn-outline-secondary.w-100(onclick="PTX.BusRoutes()") 公車路線
+    input(ref="file" type='file' style='display: none' @change='handleFiles(event.target.files)' multiple='true')
+    .btn.btn-outline-primary.w-100(@click="$refs['file'].click()") 選取檔案或拖曳匯入
     .input-group
         .input-group-prepend
             .btn.btn-outline-success(onclick="exportFile('geojson')") 匯出
@@ -14,8 +13,11 @@
 </template>
 
 <script>
+import importHandler from '../js/importHandler.js'
+import exportHandler from '../js/exportHandler.js'
 export default {
-    
+    name: 'Files',
+    mixins: [importHandler,exportHandler]
 }
 </script>
 

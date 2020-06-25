@@ -1,35 +1,9 @@
-import Vue from 'vue'
 export default class Interaction{
     constructor(gismap){
         this.gismap = gismap
-        this.imageShapes = []
         this.recycle = []
-        this.propsTable = document.getElementById('properties')
         this.copied = {features:[],center:[0,0]}
-        this.groupTable = document.getElementById('group-table')
-        this.gismap.raster = this.getDefaultRaster()
-        this.renderRasterTable()
-        this.tabs = ['raster','groups','styles','files']
-        this.groupIndex = 0
-        this.groups = []
-        this.addGroup('我的群組')
-        this.renderGroupTable()
-        this.setActive('raster')
         this.isKeyup = true
-        // custom events
-        this.gismap.canvas.addEventListener('select',e=>{
-            this.handleSelectFeatures(e.detail.features)
-        })
-        this.gismap.canvas.addEventListener('drawend',e=>{
-            e.detail.feature.properties['群組'] = this.groups[this.groupIndex].name
-            this.renderGroupTable()
-        })
-        this.gismap.canvas.addEventListener('render',()=>{
-            for(let imageShape of this.imageShapes.slice().reverse()){
-                imageShape.updateGisClient()
-                imageShape.draw(this.gismap.ctx)
-            }
-        })
         // native events
         this.gismap.canvas.oncontextmenu = e=>{e.preventDefault()}
         this.gismap.canvas.addEventListener('dblclick',e=>{
@@ -37,7 +11,7 @@ export default class Interaction{
         })
         this.gismap.canvas.addEventListener('mousedown',e=>{
             let noImageShapeSelected = true
-            for(let imageShape of this.imageShapes){
+            for(let imageShape of this.gismap.imageShapes){
                 if(noImageShapeSelected&&imageShape.handleMousedown(e)){
                     imageShape.editing = true
                     noImageShapeSelected = false
@@ -49,7 +23,7 @@ export default class Interaction{
                 this.gismap.handleMousedown(e)
         })
         this.gismap.canvas.addEventListener('mousemove',e=>{
-            for(let imageShape of this.imageShapes){
+            for(let imageShape of this.gismap.imageShapes){
                 if(imageShape.editing){
                     imageShape.handleMousemove(e)
                 }
@@ -57,12 +31,12 @@ export default class Interaction{
             this.gismap.handleMousemove(e)
         })   
         this.gismap.canvas.addEventListener('mouseup',e=>{
-            for(let imageShape of this.imageShapes)
+            for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleMouseup(e)
             this.gismap.handleMouseup(e)
         })
         this.gismap.canvas.addEventListener('mouseleave',e=>{
-            for(let imageShape of this.imageShapes)
+            for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleMouseup(e)
             this.gismap.handleMouseleave(e)
         })
@@ -86,7 +60,7 @@ export default class Interaction{
                 if(e.ctrlKey&&e.code=='KeyZ'){
                     let features = this.recycle.pop()
                     if(features)
-                        features.map(feature=>{this.gismap.vector.push(feature)})
+                        features.map(feature=>{this.gismap.vectors.push(feature)})
                 }
                 else if(e.ctrlKey&&e.code=='KeyX'){
                     this.copySelected()
@@ -105,13 +79,13 @@ export default class Interaction{
                 if(e.code&&!e.code.includes('Control'))
                     this.isKeyup = false
             }
-            for(let imageShape of this.imageShapes)
+            for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleKeydown(e)
         })
         window.addEventListener('keyup',e=>{
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
             this.isKeyup = true
-            for(let imageShape of this.imageShapes)
+            for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleKeyup(e)
         })
         this.gismap.canvas.addEventListener('wheel',e=>{
@@ -121,39 +95,26 @@ export default class Interaction{
             this.gismap.handleResize()
         })
     }
-    setActive(tab){
-        for(let tab of this.tabs){
-            document.getElementById(tab).style.display = 'none'
-            document.getElementById(`tab-${tab}`).classList.remove('active')
+    setSelectedFeaturesProp(key,value){
+        this.gismap.selectEvent.styling = true
+        for(let feature of this.gismap.selectEvent.features){
+            feature.properties[key] = value
         }
-        document.getElementById(tab).style.display = 'block'
-        document.getElementById(`tab-${tab}`).classList.add('active')
     }
-    handleSelectFeatures(features){
-        this.gismap.selectEvent.styling = false
+    getFeaturesProp(features){
         if(features.length==1){
-            this.renderStyleTable(features[0])
-            this.renderPropsTable({...this.gismap.getDerivedProperties(features[0]),...features[0].properties})
+            return {...this.gismap.getDerivedProperties(features[0]),...features[0].properties}
         }else if(features.length>1){
-            this.renderStyleTable(features[0])
             let area = features.reduce((acc,cur)=>{
                 return acc+this.gismap.getFeatureArea(cur)
             },0)
             area = area<1e4?area.toFixed(0)+'平方公尺':area<1e6?(area/1e4).toFixed(3)+'公頃':(area/1e6).toFixed(3)+'平方公里'
-            let properties = {
+            return {
                 '數量':features.length,
                 '面積合計':area
             }
-            this.renderPropsTable(properties)
         }else{
-            this.renderPropsTable({})
-        }
-        this.renderGroupTable()
-    }
-    setFeatureProps(key,value){
-        this.gismap.selectEvent.styling = true
-        for(let feature of this.gismap.selectEvent.features){
-            feature.properties[key] = value
+            return {}
         }
     }
     renderStyleTable(feature){
@@ -188,40 +149,21 @@ export default class Interaction{
             }
         })
     }
-    addGroup(name=document.getElementById('new-group').value,theme='success'){
-        if(name&&this.groups.findIndex(g=>g.name==name)==-1){
-            this.groups.push({name,theme,start:0,active:true,temp:[],opacity:1})
-            this.renderGroupTable()
-        }
+    addGroup(groupName){
+        
     }
-    moveGroup(){
+    moveGroup(groupName){
         this.gismap.selectEvent.features.map(f=>{
-            f.properties['群組'] = this.groups[this.groupIndex].name
+            f.properties['群組'] = groupName
         })
-        this.renderGroupTable()
     }
-    toggleGroup(groupIndex,active){
-        let group = this.groups[groupIndex]
-        group.active = active
-        if(active){
-            this.gismap.vector.unshift(...group.temp)
-        }else{
-            group.temp = this.gismap.vector.filter(f=>f.properties['群組']==group.name)
-            this.gismap.vector = this.gismap.vector.filter(f=>f.properties['群組']!=group.name)
-        }
+    setGroupProps(groupName,key,value){
+        
+        this.gismap.vectors.filter(f=>f.properties['群組']==groupName).map(f=>{f.properties[key]=value})
     }
-    setGroupProps(groupIndex,key,value){
-        let group = this.groups[groupIndex]
-        group[key] = value
-        this.gismap.vector.filter(f=>f.properties['群組']==group.name).map(f=>{f.properties[key]=value})
-    }
-    removeGroup(groupIndex){
-        if(this.groups.length==1){
-            alert('至少要留一個群組！')
-        }else if(confirm('確定要移除群組？移除後資料將無法復原')){
-            this.gismap.vector = this.gismap.vector.filter(f=>f.properties['群組']!=this.groups[groupIndex].name)
-            this.groups.splice(groupIndex,1)            
-            this.renderGroupTable()
+    removeGroup(groupName){
+        if(confirm('確定要移除群組？移除後資料將無法復原')){
+            this.gismap.vectors = this.gismap.vectors.filter(f=>f.properties['群組']!=groupName)
         }
     }
     renderGroupTable(){
@@ -229,7 +171,7 @@ export default class Interaction{
         this.groupTable.innerHTML = ''
         const maxItems = 20
         this.groups.map((group,i)=>{
-            let features = this.gismap.vector.filter(f=>f.properties['群組']==group.name)
+            let features = this.gismap.vectors.filter(f=>f.properties['群組']==group.name)
             let tr = this.groupTable.insertRow()
             tr.className = this.groupIndex==i?`bg-${group.theme} text-light`:''
             let tdName = tr.insertCell()
@@ -245,7 +187,7 @@ export default class Interaction{
                 this.renderGroupTable()
             }
             tdName.ondblclick = ()=>{
-                this.fitExtent(this.gismap.vector.filter(f=>f.properties['群組']==group.name))
+                this.fitExtent(this.gismap.vectors.filter(f=>f.properties['群組']==group.name))
             }
             let widgets = tr.insertCell()
             widgets.className = 'custom-control d-flex align-items-center'
@@ -308,67 +250,14 @@ export default class Interaction{
                 flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
             return this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
         })
-        this.renderGroupTable()
     }
     deleteSelected(){
         if(this.gismap.selectEvent.features.length){
-            this.gismap.vector = this.gismap.vector.filter(feature=>!this.gismap.selectEvent.features.includes(feature))
+            this.gismap.vectors = this.gismap.vectors.filter(feature=>!this.gismap.selectEvent.features.includes(feature))
             this.recycle.push(this.gismap.selectEvent.features)
             this.gismap.selectEvent.features = []
             this.gismap.modifyEvent.feature = null
-            this.renderGroupTable()
         }
-    }
-    getDefaultRaster(){
-        const token = "qn5cMMfaz2E84GbcNlqB2deRwJpO0NfuIorLEzgqLiaQv3lB8mfoVF7VU0u0rJCMbkMjDCBz2xD1JH-8fYMuBg.."
-        return [
-            {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/URBAN3857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'臺中都市計畫',opacity:0.8,active:false},
-            {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/Land3857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'地段及地籍圖',opacity:0.8,active:false},
-            {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/LandPriceMapAA163857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'公告現值',opacity:0.8,active:false},
-            {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/LandPriceMapAA173857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'公告地價',opacity:0.8,active:false},
-            {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_policy/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'特殊管制',opacity:0.8,active:false},
-            {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_water/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'水源水質',opacity:0.8,active:false},
-            {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_geo/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'地質敏感',opacity:0.8,active:false},
-            {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_environment/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'環保與汙染',opacity:0.8,active:false},
-            {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/SlopeTW3857_fix/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'坡度示意圖',opacity:0.8,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/LUIMAP/default/EPSG:3857/{z}/{y}/{x}',name:'國土利用',opacity:0.8,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/LAND_OPENDATA/default/EPSG:3857/{z}/{y}/{x}',name:'公有土地',opacity:0.8,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/SCHOOL/default/EPSG:3857/{z}/{y}/{x}',name:'學校',opacity:0.8,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/Village/default/EPSG:3857/{z}/{y}/{x}',name:'村里界',opacity:0.8,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/TOWN/default/EPSG:3857/{z}/{y}/{x}',name:'鄉市鎮界',opacity:0.8,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/CITY/default/EPSG:3857/{z}/{y}/{x}',name:'縣市界',opacity:0.8,active:false},
-            {url:'https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png',name:'OSM',opacity:1,active:false,max:18},
-            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP5/default/EPSG:3857/{z}/{y}/{x}',name:'通用',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/EMAP01/default/EPSG:3857/{z}/{y}/{x}',name:'灰階',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/PHOTO2/default/EPSG:3857/{z}/{y}/{x}',name:'航照',opacity:1,active:false},
-            {url:'https://mts1.google.com/vt/lyrs=s@186112443&hl=x-local&src=app&x={x}&y={y}&z={z}&s=Galile',name:'Google衛星',opacity:1,active:false},
-            {url:'https://mts1.google.com/vt/lyrs=p@186112443&hl=x-local&src=app&x={x}&y={y}&z={z}&s=Galile',name:'Google地形',opacity:1,active:false},
-            {url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',name:'ESRI衛星',opacity:1,active:false},
-            {url:'https://wmts.nlsc.gov.tw/wmts/EMAPX99/default/EPSG:3857/{z}/{y}/{x}',name:'交通路網',opacity:1,active:false},
-        ].map(raster=>{
-            raster.url = raster.url.replace('{token}',token)
-            return raster
-        })
-    }
-    renderRasterTable(){
-        let rasters = this.gismap.raster
-        new Vue({
-            el: '#raster',
-            data: ()=>({
-                dragged: 0, rasters
-            }),
-            methods: {
-                swap(idx){
-                    if(this.dragged!=idx){
-                        let tmp = this.rasters[this.dragged]
-                        this.rasters[this.dragged] = this.rasters[idx]
-                        this.rasters[idx] = tmp
-                        this.dragged = idx
-                        this.$set(this.rasters,0,this.rasters[0])
-                    }
-                }
-            }
-        })
     }
     fitExtent(features=this.gismap.selectEvent.features){
         let bound = 6378137*Math.PI
@@ -387,11 +276,11 @@ export default class Interaction{
     }
     moveLayerTo(position='top'){
         let features = this.gismap.selectEvent.features
-        this.gismap.vector = this.gismap.vector.filter(f=>!features.includes(f))
+        this.gismap.vectors = this.gismap.vectors.filter(f=>!features.includes(f))
         if(position=='top'){
-            this.gismap.vector.unshift(...features)
+            this.gismap.vectors.unshift(...features)
         }else if(position=='bottom'){
-            this.gismap.vector.push(...features)
+            this.gismap.vectors.push(...features)
         }
     }
     // simplify(){
