@@ -101,6 +101,12 @@ export default class Interaction{
             feature.properties[key] = value
         }
     }
+    mapSelectedFeaturesProp(fKey,tKey){
+        this.gismap.selectEvent.styling = true
+        for(let feature of this.gismap.selectEvent.features){
+            feature.properties[fKey] = feature.properties[tKey]
+        }
+    }
     getFeaturesProp(features){
         if(features.length==1){
             return {...this.gismap.getDerivedProperties(features[0]),...features[0].properties}
@@ -146,87 +152,6 @@ export default class Interaction{
                 td.contentEditable = true
                 td.textContent = val
                 td.oninput = e=>{properties[key] = e.target.textContent}
-            }
-        })
-    }
-    addGroup(groupName){
-        
-    }
-    moveGroup(groupName){
-        this.gismap.selectEvent.features.map(f=>{
-            f.properties['群組'] = groupName
-        })
-    }
-    setGroupProps(groupName,key,value){
-        
-        this.gismap.vectors.filter(f=>f.properties['群組']==groupName).map(f=>{f.properties[key]=value})
-    }
-    removeGroup(groupName){
-        if(confirm('確定要移除群組？移除後資料將無法復原')){
-            this.gismap.vectors = this.gismap.vectors.filter(f=>f.properties['群組']!=groupName)
-        }
-    }
-    renderGroupTable(){
-        this.allVector = []
-        this.groupTable.innerHTML = ''
-        const maxItems = 20
-        this.groups.map((group,i)=>{
-            let features = this.gismap.vectors.filter(f=>f.properties['群組']==group.name)
-            let tr = this.groupTable.insertRow()
-            tr.className = this.groupIndex==i?`bg-${group.theme} text-light`:''
-            let tdName = tr.insertCell()
-            tdName.style.width = '100px'
-            tdName.textContent = group.name
-            tdName.onclick = ()=>{
-                if(this.groupIndex==i){
-                    this.gismap.selectEvent.features = features
-                    this.handleSelectFeatures(features)
-                }else{
-                    this.groupIndex = i
-                }
-                this.renderGroupTable()
-            }
-            tdName.ondblclick = ()=>{
-                this.fitExtent(this.gismap.vectors.filter(f=>f.properties['群組']==group.name))
-            }
-            let widgets = tr.insertCell()
-            widgets.className = 'custom-control d-flex align-items-center'
-            widgets.innerHTML+= `<input type="checkbox" ${group.active?'checked':''} onchange="interaction.toggleGroup(${i},event.target.checked)"/>`
-            widgets.innerHTML+= `<input type="range" class="custom-range ml-2" min="0" max="1" step="0.1" value="${group.opacity}" style="direction:rtl" oninput="interaction.setGroupProps(${i},'opacity',event.target.value)"/>`
-            widgets.innerHTML+= `<button class="close ml-2" style="margin-top:-4px" onclick="interaction.removeGroup(${i})"><span>&times;</span></button>`
-            if(this.groupIndex==i){
-                let trFeature = this.groupTable.insertRow()
-                let tdCount = trFeature.insertCell()
-                let tdFeature = trFeature.insertCell()
-                tdFeature.className = 'bg-light'
-                const renderList = ()=>{
-                    let end = group.start+maxItems>features.length?features.length:group.start+maxItems
-                    tdCount.textContent = `${group.start}~${end} / ${features.length}`
-                    tdFeature.innerHTML = ''
-                    features.slice(group.start,end).map((feature,i)=>{                    
-                        let li = document.createElement('div')
-                        li.style.cursor = 'pointer'
-                        li.textContent = `${feature.geometry.type} ${group.start+i}`
-                        li.className = this.gismap.selectEvent.features.includes(feature)?'text-danger':''
-                        li.onclick = ()=>{
-                            this.gismap.selectEvent.features = [feature]
-                            this.handleSelectFeatures([feature])
-                        }
-                        li.ondblclick = ()=>{
-                            this.fitExtent([feature])
-                        }
-                        tdFeature.appendChild(li)
-                    })
-                }
-                renderList()
-                tdFeature.onwheel = e=>{
-                    e.preventDefault()
-                    let sign = Math.sign(e.deltaY)*maxItems
-                    group.start = 
-                        group.start+sign<0?0:
-                        group.start+sign>=features.length?group.start:group.start+sign
-                    renderList()
-                }
             }
         })
     }

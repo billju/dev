@@ -17,9 +17,9 @@ export default {
             let href = canvas.toDataURL(`image/${ext}`).replace('image/png','image/octet-stream')
             this.downloadLink(href,filename)
         },
-        exportFile(features=this.gismap.selectEvent.features.length?this.gismap.selectEvent.features:this.gismap.vector){
-            let filename = document.getElementById('file-export').value||'lightGIS'
-            let extension = document.getElementById('file-extension').value
+        exportFile(features=this.selectedFeatures.length?this.selectedFeatures:this.gismap.vectors){
+            let filename = this.fileName||'lightGIS'
+            let extension = this.fileExtension
             if(extension=='.geojson'){
                 const unproject = this.gismap.toLnglat
                 features = features.map(feature=>{
@@ -44,7 +44,7 @@ export default {
                 let geojson = {type:'FeatureCollection',features}
                 this.downloadText(JSON.stringify(geojson),filename+extension)
             }else if(extension=='.png'){
-                this.downloadCanvas(canvas,filename+extension)
+                this.downloadCanvas(this.gismap.canvas,filename+extension)
             }else if(extension=='.svg'){
                 let paths = ''
                 const canvasStyle2svgStyle = (style)=>{

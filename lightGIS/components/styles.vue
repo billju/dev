@@ -1,7 +1,10 @@
 <template lang="pug">
 .px-2
-    .btn.btn-outline(@click="interaction.moveLayerTo('top')") 置頂
-    .btn.btn-outline(@click="interaction.moveLayerTo('bottom')") 置底
+    .btn-group
+        .btn.btn-outline-info(@click="interaction.moveLayerTo('top')") 置頂
+        .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')") 置底
+        .btn.btn-outline-info(@click="interaction.fitExtent(selectedFeatures)") 聚焦
+        .btn.btn-outline-info(@click="addFavorite()") 最愛
     table#custom-style.table.table-striped.table-hover
         tbody
             tr
@@ -47,7 +50,7 @@
             tr
                 td lineDash
                 td
-                    input(type='number' :value="style['lineDash']" min="0" @input="setSFP('lineDash',JSON.stringify([$event.target.value*1,$event.target.value*1]))")
+                    input(type='number' :value="style['lineDash'][0]" min="0" @input="setSFP('lineDash',[$event.target.value*1,$event.target.value*1])")
                     input(type='number' :value="style['lineDashOffset']" min="0" @input="setSFP('lineDashOffset',$event.target.value*1)")
             tr
                 td lineWidth
@@ -66,47 +69,56 @@
             tr
                 td propText
                 td
-                    select#propText(name="propt-text")
+                    select(name="propt-text" @change="mapSFP('text',$event.target.value)")
+                        option(value="")
+                        option(v-for="prop in properties" :value="prop") {{prop}}
+    .btn(v-for="fav,i in favorites" :key="i" @click="setFavorite(fav)"
+        :style="{border:`solid ${fav.lineWidth}px ${fav.stroke}`,background:fav.fill}"
+        @contextmenu.prevent="favorites=favorites.filter(f=>f!=fav)") {{i}}
 </template>
 
 <script>
 export default {
     name: 'Styles',
-    props: ['gismap','interaction'],
+    props: ['gismap','interaction','selectedFeatures'],
     data:  ()=>({
-        defaultStyle: {lineWidth:1},
+        defaultStyle: {lineWidth:1,lineDash:[]}, featureIndex:0, favorites: [],
         fontFamilies: ['arial','monospace','微軟正黑體'],
     }),
     methods: {
         setSFP(key,value){
-            return this.interaction.setSelectedFeaturesProp(key,value)
+            this.interaction.setSelectedFeaturesProp(key,value)
         },
-        renderStyleTable(feature){
-            let style = this.gismap.getDefaultStyle(feature)
-            for(let key in style){
-                if(key=='lineDash')
-                    document.getElementById(key).value = style[key][0]||''
-                else
-                    document.getElementById(key).value = style[key]||''
-            }
-            let options = Object.keys(feature.properties).filter(key=>!(key in style))
-            let propText = document.getElementById('propText')
-            // propText.innerHTML = options.map(option=>
-            //     `<option value="${option}">${option}</option>`
-            // ).join('')
-            // propText.@input = ()=>{
-            //     this.gismap.selectEvent.features.map(f=>{
-            //         f.properties['text'] = f.properties[propText.value]
-            //     })
-            // }
+        mapSFP(fKey,tKey){
+            this.interaction.mapSelectedFeaturesProp(fKey,tKey)
+            this.featureIndex=1;this.featureIndex=0 // force update
+        },
+        addFavorite(){
+            this.featureIndex=1;this.featureIndex=0 // force update
+            let newFav = Object.assign({},this.style)
+            delete newFav.text
+            this.favorites.push(newFav)
+        },
+        setFavorite(style){
+            this.defaultStyle = style
+            for(let key in style)
+                this.setSFP(key,style[key])
         }
     },
     computed:{
         style(){
-            if(this.gismap.selectEvent&&this.gismap.selectEvent.features.length){
-                let feature = this.gismap.selectEvent.features[0]
+            if(this.selectedFeatures.length>this.featureIndex){
+                let feature = this.selectedFeatures[this.featureIndex]
                 return this.gismap.getDefaultStyle(feature)
             }else{return this.defaultStyle}
+        },
+        properties(){
+            if(this.selectedFeatures.length){
+                let feature = this.selectedFeatures[this.featureIndex]
+                return Object.keys(feature.properties).filter(key=>!(key in this.style))
+            }else{
+                return []
+            }
         }
     }
 }

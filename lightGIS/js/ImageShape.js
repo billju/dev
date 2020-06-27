@@ -205,14 +205,14 @@ export default class ImageShape{
                     default: break;
                 }
                 this.event.type = key
-                return true
+                return this.editable?true:false
             }
         }
         if(this.contains([e.clientX,e.clientY])){
             this.editing = true
             this.event.type = 'M'
             this.event.point = {x:e.clientX,y:e.clientY}
-            return true
+            return this.editable?true:false
         }
     }
     handleMousemove(e){

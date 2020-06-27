@@ -59,20 +59,16 @@ export default {
                 let img = new Image()
                 img.src = URL.createObjectURL(file)
                 img.onload = ()=>{
-                    this.gismap.addImageShape(img)
+                    this.gismap.addImageShape(img,filename)
                 }
             }
             if(extension=='.geojson'){
                 let text = await this.readFileAsText(file)
                 let geojson = JSON.parse(text)
-                geojson.features.map(f=>{f.properties['群組']=f.properties['群組']??filename})
-                let groups = [...new Set(geojson.features.map(f=>f.properties['群組']))].filter(g=>g)
-                if(groups.length)
-                    groups.map(group=>{this.interaction.addGroup(group)})
-                else
-                    this.interaction.addGroup(group)
-                this.gismap.geojson(geojson)
-                this.interaction.fitExtent(geojson.features)
+                this.tmpFeatures = geojson.features
+                this.renderTable(this.tmpFeatures.map(f=>f.properties))
+                this.dialog = true
+                this.tmpFeatures.map(f=>{f.properties['群組']=f.properties['群組']??filename})
             }else if(extension=='.kml'){
                 let xjson = xml_string_to_json(await readFileAsText(file))
                 let placemarks = []

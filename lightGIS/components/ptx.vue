@@ -1,41 +1,73 @@
 <template lang="pug">
-div
-    .btn.btn-outline-primary(@click="Bike()") iBike
-    .btn.btn-outline-primary(@click="TRALiveBoard()") TRALiveBoard
-    .btn.btn-outline-primary(@click="BusETA()") BusETA
-    input(type="text" v-model="route" placeholder="路線")
-    select(v-model="city")
-        option(v-for="(val,key) in cities" :key="key" :value="key") {{val}}
-    table.table
-        tbody
-            tr
-                th(v-for="col in cols" :key="col") {{col}}
-            tr(v-for="row,i in rows" :key="i")
-                td(v-for="col in cols" :key="col") {{row[col]}}
-    ul.list-group
-        li.list-group-item.d-flex.justify-content-between.align-items-center(v-for="eta,i in busETA.filter(x=>x.dir==direction)" :key="i")
-            span.badge.badge-primary.badge-pill.text-center(style="font-size: 16px;width:60px") {{eta.time}}
-            span.px-2(style="flex:1") {{eta.stop}}
-            span.badge.badge-primary {{eta.plate}}
+.px-1
+    .input-group
+        .input-group-prepend
+            .btn.btn-outline-primary(@click="Tourism(city,tourType)") {{tourTypes[tourType]}}位址
+        select.form-control(v-model="tourType")
+            option(v-for="(val,key) in tourTypes" :key="key" :value="key") {{val}}
+    .input-group
+        .input-group-prepend
+            .btn.btn-outline-primary(@click="Bike()") iBike即時站位
+        select.form-control(v-model="city")
+            option(v-for="(val,key) in cities" :key="key" :value="key") {{val}}
+    .btn-group
+        .btn.btn-outline-primary(@click="TRAShape()") 台鐵線型
+        .btn.btn-outline-primary(@click="TRAStation()") 台鐵車站
+    .input-group
+        .input-group-prepend
+            .btn.btn-outline-primary(@click="TRALiveBoard(TRAStationID)") 台鐵動態
+        input.form-control.btn.btn-outline-primary(type='text' style='width:50px' v-model="TRAStationID")
+    .input-group
+        .input-group-prepend
+            .btn.btn-outline-success(@click="BusRoutes(city)") 公車路線
+        select.form-control.btn.btn-outline-success(v-model="city")
+            option(v-for="(val,key) in cities" :key="key" :value="key") {{val}}
+    .input-group
+        .input-group-prepend
+            .btn.btn-outline-success(@click="BusETA(city,UID)") 公車抵達時間
+        input.form-control.btn.btn-outline-success(type='text' style='width:50px' v-model="UID")
+    .position-fixed.h-100(v-if="rows.length" style="left:0;top:0;max-width:500px;overflow-y:scroll")
+        table.table.table-striped.table-hover.table-responsive.bg-light
+            thead.thead-light
+                tr
+                    th(v-for="col in cols" :key="col") {{col}}
+            tbody
+                tr(v-for="row,i in rows" :key="i" @click="row.handleClick()")
+                    td(v-for="col in cols" :key="col") {{row[col]}}
+    el-tabs(v-model="tab" stretch)
+        el-tab-pane(label="去程" name="去程")
+            ETA(:busETA="busETA.filter(x=>x.dir==0)")
+        el-tab-pane(label="返程" name="返程")
+            ETA(:busETA="busETA.filter(x=>x.dir==1)")
+        el-tab-pane(label="環狀" name="環狀")
+            ETA(:busETA="busETA.filter(x=>x.dir==2)")
 </template>
 
 <script>
+import ETA from './eta.vue'
 export default {
     name: 'PTX',
-    props: ['gismap'],
+    props: ['gismap','interaction'],
+    components: {ETA},
     data:()=>({
-        route:9, city:'Taichung', cities: {
+        UID:'TXG9', city:'Taichung', cities: {
             Taipei:'臺北市',NewTaipei:'新北市',Taoyuan:'桃園市',Taichung:'臺中市',Tainan:'臺南市',
             Kaohsiung:'高雄市',Keelung:'基隆市',Hsinchu:'新竹市',HsinchuCounty:'新竹縣',MiaoliCounty:'苗栗縣',
             ChanghuaCounty:'彰化縣',NantouCounty:'南投縣',YunlinCounty:'雲林縣',ChiayiCounty:'嘉義縣',
             Chiayi:'嘉義市',PingtungCounty:'屏東縣',YilanCounty:'宜蘭縣',HualienCounty:'花蓮縣',
             TaitungCounty:'臺東縣',KinmenCounty:'金門縣',PenghuCounty:'澎湖縣',LienchiangCounty:'連江縣'
-        }, cols: [], rows:[], busETA:[], direction:0,
+        }, cols: [], rows:[], busETA:[], tab: '去程', TRAStationID:'0900', 
+        tourType: 'ScenicSpot', tourTypes:{
+            ScenicSpot:'景點',Restaurant:'餐廳',Hotel:'飯店',Activity:'活動'
+        }
     }),
     methods:{
-        renderTable(array){
-            this.cols = [...new Set(array.flatMap(obj=>Object.keys(obj)))]
-            this.rows = array
+        renderTable(rows){
+            for(let row of rows)
+                if(!row.handleClick) row.handleClick = ()=>{}
+            this.cols = [...new Set(rows.flatMap(obj=>Object.keys(obj)))].filter(col=>col!='handleClick')
+            let key = this.cols[0]
+            this.rows = rows.sort((a,b)=>a[key].toString().localeCompare(b[key]))
         },
         fetchJSON(url){
             return new Promise((resolve,reject)=>{
@@ -96,9 +128,11 @@ export default {
             }[type]
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Tourism/${type}/${city}?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
+            let group = this.cities[city]+this.tourTypes[type]
             this.renameArray(json,props).map(row=>{
-                this.gismap.addVector('Point',[row['經度'],row['緯度']],row)
+                this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':group})
             })
+            this.$emit('addGroup',group)
         },
         async BikeAvaiable(city='Taichung'){
             let props = {
@@ -140,6 +174,16 @@ export default {
             }
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Bus/Route/City/${city}?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
+            let rows = this.renameArray(json,props)
+            rows.map(row=>{
+                row.handleClick = async ()=>{
+                    let shape = await this.BusShape(city,row.UID)
+                    let stops = await this.BusStops(city,row.UID)
+                    this.interaction.fitExtent([...shape,...stops])
+                    this.$emit('addGroup',row.UID)
+                }
+            })
+            this.renderTable(rows)
         },
         async BusStops(city='Taichung',UID='TXG9'){
             let props = {
@@ -155,7 +199,11 @@ export default {
             let routeName = route['SubRouteName']['Zh_tw']
             let direction = route['Direction']
             return this.renameArray(route['Stops'],props).map(row=>{
-                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'路線':routeName,'方向':direction,'群組':UID})
+                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{
+                    ...row,'路線':routeName,'方向':direction,'群組':UID,
+                    fontWeight:3,fontFamily:'微軟正黑體',textFill:'rgba(255,255,255,1)',
+                    textStroke:'rgba(0,0,0,1)',radius:6,lineWidth:3,text:row['站名']
+                })
             })
         },
         async BusShape(city='Taichung',UID='TXG9'){
@@ -167,14 +215,16 @@ export default {
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Bus/Shape/City/${city}?$select=${this.props2select(props)}&$filter=RouteUID eq '${UID}'&$format=JSON`)
             if(json instanceof Error) return
             return this.renameArray(json,props).map(row=>{
-                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'方向':row['方向'],'群組':UID})
+                return this.gismap.WKT(row['WKT'],{
+                    '路線':row['路線'],'方向':row['方向'],'群組':UID, lineWidth: 6
+                })
             })
         },
         async BusSchedule(city='Taichung',route=9){
 
         },
-        async BusETA(city=this.city,route=this.route){
-            let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Bus/EstimatedTimeOfArrival/City/${city}/${route}?$select=PlateNumb,StopName,EstimateTime&$filter=NextBusTime ne null and RouteID eq '${route}'&$orderby=Direction,StopSequence&$format=JSON`)
+        async BusETA(city=this.city,UID='TXG9'){
+            let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Bus/EstimatedTimeOfArrival/City/${city}?$select=PlateNumb,StopName,EstimateTime&$filter=NextBusTime ne null and RouteUID eq '${UID}'&$orderby=Direction,StopSequence&$format=JSON`)
             if(json instanceof Error) return
             this.busETA = json.map(row=>{
                 let date = new Date(row['NextBusTime'])

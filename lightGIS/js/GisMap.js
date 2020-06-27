@@ -1,14 +1,4 @@
 import ImageShape from './imageShape.js'
-function radialDistFilter(points, epsilon){
-    if(!epsilon) return points
-    var epsilon_squ = epsilon*epsilon
-    return points.filter((point,i)=>{
-        if(i==0) return true
-        var dx = point[i][0]-point[i-1][0]
-        var dy = point[i][1]-point[i-1][1]
-        return dx*dx+dy*dy > epsilon_squ
-    })
-}
 function getShiftedCoords(coords,width){
     var x2, y2, x42, y42
     var shift_coord=[]
@@ -155,7 +145,6 @@ export default class GisMap{
         this.handleResize()
         this.vectors = []
         this.rasters = []
-        this.overlay = []
         this.imageShapes = []
         this.tiles = {}
         let xyz = {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom}
@@ -173,9 +162,8 @@ export default class GisMap{
                 var vx = this.moveEvent.vx*(1-fricion)
                 var vy = this.moveEvent.vy*(1-fricion)
                 Object.assign(this.moveEvent,{vx,vy})
-                if(this.moveEvent.active==false){
+                if(this.moveEvent.active==false)
                     this.setView([vx,vy])
-                }
                 this.moveEvent.t--
             }
             if(this.zoomEvent.t>0){
@@ -188,15 +176,17 @@ export default class GisMap{
                 this.view.center.x+= (this.zoomEvent.after.x-this.view.center.x)*(1-1/scale)
                 this.view.center.y+= (this.zoomEvent.after.y-this.view.center.y)*(1-1/scale)
                 this.view.zoom = this.zoomEvent.before.z*(1-t)+this.zoomEvent.after.z*t
+                this.view.zoom = Math.round(this.view.zoom*1e3)/1e3
                 this.updateView()
                 this.zoomEvent.t--
             }
             if(this.panEvent.t>0){
                 let t = 1-(this.panEvent.t-1)/this.panEvent.frames
-                t = t<.5 ? 2*t*t : -1+(4-2*t)*t
+                t = t<.5 ? 2*t*t : -1+(4-2*t)*t //easeInOutQuad
                 let x = this.panEvent.before.x*(1-t)+this.panEvent.after.x*t
                 let y = this.panEvent.before.y*(1-t)+this.panEvent.after.y*t
                 let z = this.panEvent.before.z*(1-t)+this.panEvent.after.z*t
+                z = Math.round(z*1e2)/1e2
                 this.zoomEvent.after = {x,y,z}
                 this.view.center = {x,y}
                 this.view.zoom = z
@@ -209,7 +199,7 @@ export default class GisMap{
             for(let raster of this.rasters.slice().reverse()){
                 if(!raster.active) continue
                 this.ctx.globalAlpha = raster.opacity
-                this.renderRaster(raster)
+                this.renderRaster(raster) 
             }
             // image shapes
             for(let i=this.imageShapes.length-1;i>=0;i--){
@@ -240,7 +230,11 @@ export default class GisMap{
     }// set function for vue
     setRasters(rasters){this.rasters=rasters}
     setSelectedFeatures(features){this.selectEvent.features=features}
-    addImageShape(img){this.imageShapes.push(new ImageShape(img,this.view.w/2,this.view.h/2,this))}
+    addImageShape(img,filename){
+        let imageShape = new ImageShape(img,this.view.w/2,this.view.h/2,this)
+        imageShape.filename = filename
+        this.imageShapes.push(imageShape)
+    }
     renderModify(){
         let coords = this.modifyEvent.feature.geometry.coordinates
         let geomType = this.modifyEvent.feature.geometry.type
@@ -300,14 +294,18 @@ export default class GisMap{
             this.ctx.closePath()
         })
     }
-    panTo(coord,zoom=this.view.zoom,duration=1000){
-        // let coord = this.lnglat2coord(lnglat)
+    panTo(coord,newZoom=this.view.zoom){
+        // Object.assign(this.zoomEvent,{
+        //     before: {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom},
+        //     after: {x:coord[0],y:coord[1],z:newZoom},
+        //     t: this.zoomEvent.frames,
+        //     zStep: newZoom<this.view.zoom?-1:1,
+        // })
         this.panEvent.before = {...this.view.center,z:this.view.zoom}
-        this.panEvent.after = {x:coord[0],y:coord[1],z:zoom}
-        this.panEvent.frames = Math.round(duration/1000*60)
+        this.panEvent.after = {x:coord[0],y:coord[1],z:newZoom}
         this.panEvent.t = this.panEvent.frames
     }
-    fitBound(bbox,duration=1500,padding=50){
+    fitBound(bbox,padding=50){
         let vw = this.view.bbox[2]-this.view.bbox[0], vh = this.view.bbox[3]-this.view.bbox[1]
         let bw = bbox[2]-bbox[0], bh = bbox[3]-bbox[1], bx = bbox[0]+bw/2, by = bbox[1]+bh/2
         vw*= (this.view.w-padding)/this.view.w
@@ -315,7 +313,7 @@ export default class GisMap{
         let ratio = Math.min(vw/bw,vh/bh)
         let newZoom = this.view.zoom+Math.log2(ratio)
         newZoom = this.minmax(newZoom,this.view.minZoom,this.view.maxZoom)
-        this.panTo([bx,by],newZoom,duration)
+        this.panTo([bx,by],newZoom)
     }
     handleMousedown(e){
         let rect = this.canvas.getBoundingClientRect()
@@ -518,19 +516,15 @@ export default class GisMap{
     handleWheel(e){
         e.preventDefault()
         var coord = this.client2coord([e.clientX,e.clientY])
-        var view = this.view
         var delta = this.zoomEvent.delta
-        var frames = this.zoomEvent.frames
         var newZoom = this.zoomEvent.after.z - Math.sign(e.deltaY)*delta
-        newZoom = this.minmax(newZoom,view.minZoom,view.maxZoom)
-        this.zoomEvent = {
+        newZoom = this.minmax(newZoom,this.view.minZoom,this.view.maxZoom)
+        Object.assign(this.zoomEvent,{
             before: {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom},
             after: {x:coord[0],y:coord[1],z:newZoom},
-            t: frames,
-            frames, 
-            delta,
-            zStep: newZoom<view.zoom?-1:1,
-        }
+            t: this.zoomEvent.frames,
+            zStep: newZoom<this.view.zoom?-1:1,
+        })
     }
     handleResize(){
         this.canvas.width = this.canvas.clientWidth
@@ -656,7 +650,7 @@ export default class GisMap{
             z-= zStep
             if(z-view.zoom>=2) break //prevent from exponential explotion
         }
-        tilesLoaded.map(tile=>{
+        return tilesLoaded.map(tile=>{
             var scale = Math.pow(2,view.zoom-tile.z)
             let W = tp.w*scale
             let H = tp.h*scale
@@ -664,15 +658,9 @@ export default class GisMap{
             let Y = origin.y+tile.y*H
             let xyz = [tile.x,tile.y,tile.z]
             let img = this.tiles[raster.url][xyz]
-            try{
-                this.ctx.drawImage(img,X,Y,W,H)
-            }catch{}
+            this.ctx.drawImage(img,X,Y,W,H)
+            return {img,X,Y,W,H}
         })
-        this.ctx.fillStyle = 'black'
-        // tilesLoaded.map((t,i)=>{
-        //     let text = t.x+'-'+t.y+'-'+t.z
-        //     this.ctx.fillText(text,10,10*i)
-        // })
     }
     getXYZ(z){
         z = Math.floor(z||this.view.zoom)
@@ -798,7 +786,7 @@ export default class GisMap{
     getDefaultStyle(feature){
         return {
             'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
-            'lineDash': feature.properties['lineDash']?JSON.parse(feature.properties['lineDash']):[],
+            'lineDash': feature.properties['lineDash']?feature.properties['lineDash']:[],
             'lineDashOffset': feature.properties['lineDashOffset']?parseInt(feature.properties['lineDashOffset']):0,
             'stroke': feature.properties['stroke']||'dodgerblue',
             'fill': ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:feature.properties['fill']||'rgba(0,0,255,0.3)',
@@ -987,7 +975,18 @@ export default class GisMap{
             closest: [x,y]
         }
     }
+    radialDistFilter(points, epsilon){
+        if(epsilon==0) return points
+        var epsilon_squ = epsilon*epsilon
+        return points.filter((point,i,points)=>{
+            if(i==0) return true
+            var dx = point[0]-points[i-1][0]
+            var dy = point[1]-points[i-1][1]
+            return dx*dx+dy*dy > epsilon_squ
+        })
+    }
     DouglasPeucker(points, epsilon){
+        // points = this.radialDistFilter(points,epsilon)
         if(epsilon==0) return points
         var dmax=0, index=-1, firstPoint = points[0], lastPoint = points[points.length-1]
         for(var i=1;i<points.length;i++){
