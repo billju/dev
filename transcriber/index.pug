@@ -4,7 +4,8 @@ html(lang="en")
         meta(charset="UTF-8")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         title VizTranscriber
-        link(rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css")
+        link(rel="shortcut icon", href="assets/favicon.ico", type="image/x-icon")
+        //- link(rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css")
     body
         input#file(type="file" style="display:none;" onchange="handleFile(event.target.files[0])" accept="audio/*,video/*")
         #drop-field(ondrop="handleDrop(event)" ondragover="event.preventDefault()"
@@ -36,11 +37,14 @@ html(lang="en")
                     #audio-control-text
             span.px-2.position-relative.show-only-hover(style="cursor:pointer")
                 i#settings.fa.fa-cog.text-light
-                ul.list-group.list-group-flush.position-absolute(style="right:0;min-width:200px")
-                    li.list-group-item.list-group-item-action(onclick="editor.importSrt()") import .srt
-                    li.list-group-item.list-group-item-action(onclick="editor.exportSrt()") export .srt
+                ul.list-group.list-group-flush.position-absolute.bg-dark.text-light(style="right:0;min-width:200px")
+                    li.list-group-item.list-group-item-primary(onclick="editor.sort()") sort
+                    li.list-group-item.list-group-item-success(onclick="editor.importSrt()") import .srt
+                    li.list-group-item.list-group-item-info(onclick="editor.exportSrt()") export .srt
         canvas#waveform(style="display:none")
-        video#video(style="position:fixed;cursor:move;max-height:300px;right:10px;bottom:10px;display:none")
+        #video-container.position-fixed(style="cursor:move;right:10px;bottom:10px;display:none")
+            video#video(style="max-height:300px")
+            span#video-subtitle.position-absolute.text-center.px-1.py-1.text-light(style="bottom:5px;left:0;right:0;background:rgba(0,0,0,0.6)")
         ul#shortcuts.list-group(style="position:fixed;cursor:move;left:10px;top:100px")
             li.list-group-item.list-group-item-info 快捷鍵
             li.list-group-item(contenteditable="") ctrl+1

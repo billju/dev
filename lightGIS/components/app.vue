@@ -4,7 +4,7 @@
     //el-dialog(title="新增群組" :visible.sync="dialog" width="300px" :modal-append-to-body="false")
         el-input(v-model="newGroup" placeholder="新群組名稱")
         el-button(slot="footer" @click="addGroup(newGroup)") 新增
-    .position-fixed.h-100(v-if="!dialog" style="right:0;top:0;width:300px;overflow-y:scroll")
+    .position-fixed(v-if="!dialog" style="right:0;top:0;width:300px;max-height:100%;overflow-y:scroll;background:rgba(255,255,255,0.3)")
         el-tabs(v-model="tab" type="card")
             el-tab-pane(label="底圖" name="底圖")
                 Draggable(v-model="gismap.imageShapes" :options="{animation:150}")
@@ -21,7 +21,7 @@
                     .btn.btn-outline-info(@click="addGroupPrompt()") 新增群組
                     .btn.btn-outline-info(@click="moveGroup(groupName)") 移動至{{groupName}}
                 .d-flex
-                    div(style="width:100px")
+                    div(style="width:80px")
                         Draggable(v-model="groups" :options="{animation:150}")
                             .btn.w-100(v-for="group,i in groups" :key="i" :class="groupIndex==i?`btn-${group.theme}`:`btn-outline-${group.theme}`"
                                 @dblclick="interaction.fitExtent(gismap.vectors.filter(f=>f.properties['群組']==group.name))"
@@ -33,9 +33,20 @@
                                 v-model.number="groups[groupIndex].opacity" @input="setGroupProps(groupName,'opacity',$event.target.value)")
                             button.close(@click="removeGroupPrompt()")
                                 span &times;
-                        span {{groups[groupIndex].start}} - {{groups[groupIndex].start+maxItems}}
+                        
+                        ul.pagination
+                            li.page-item.cursor-pointer(@click="scrollGroupFeatures(-20)")
+                                a.page-link
+                                    span &laquo;
+                            li.page-item
+                                a.page-link
+                                    span {{groupRange.start}}~{{groupRange.end}} / {{groupRange.length}}
+                            li.page-item.cursor-pointer(@click="scrollGroupFeatures(20)")
+                                a.page-link
+                                    span &raquo;
                         ol
                             li.cursor-pointer(v-for="feature,i in this.limitedGroupFeatures" :key="i" 
+                                :value="groups[groupIndex].start+i+1"
                                 :class="selectedFeatures.includes(feature)?'text-danger':''"
                                 @click="handleClickSelect(feature)"
                                 @dblclick="interaction.fitExtent([feature])"
@@ -81,8 +92,8 @@
             tr(v-for="val,key in properties")
                 td {{key}}
                 td {{val}}
-    .position-fixed(v-if="dialog" style="left:0;top:0;max-width:100%;max-height:100%")
-        table.table.table-striped.table-hover.table-responsive
+    .position-fixed(v-if="dialog" style="left:0;top:0;max-width:100%;max-height:100%;overflow:scroll")
+        table.table.table-striped.table-hover.w-100.h-100(style="background:rgba(255,255,255,0.3)")
             thead.thead-light
                 tr
                     th(v-for="col,ci in cols" :key="ci")
@@ -189,11 +200,14 @@ export default {
         },
         handleWheel(e){
             e.preventDefault()
-            let sign = Math.sign(e.deltaY)*this.maxItems
+            let offset = Math.sign(e.deltaY)*this.maxItems
+            this.scrollGroupFeatures(offset)
+        },
+        scrollGroupFeatures(offset){
             let group = this.groups[this.groupIndex]
             group.start = 
-                group.start+sign<0?0:
-                group.start+sign>=this.groupFeatures.length?group.start:group.start+sign
+                group.start+offset<0?0:
+                group.start+offset>=this.groupFeatures.length?group.start:group.start+offset
         },
         handleGroupClick(groupIndex){
             if(this.groupIndex==groupIndex){
@@ -241,6 +255,13 @@ export default {
         },
         groupName(){
             return this.groups[this.groupIndex].name
+        },
+        groupRange(){
+            let group = this.groups[this.groupIndex]
+            let length = this.groupFeatures.length
+            let start = group.start>=length?0:group.start+1
+            let end = group.start+this.maxItems>length?length:group.start+this.maxItems
+            return {start,end,length}
         },
         limitedGroupFeatures(){
             let start = this.groups[this.groupIndex].start

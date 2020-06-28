@@ -64,12 +64,10 @@
                 td fill
                 td
                     el-color-picker(show-alpha :value="style['fill']" @active-change="setSFP('fill',$event)")
-    table#data-driven
-        tbody
             tr
                 td propText
                 td
-                    select(name="propt-text" @change="mapSFP('text',$event.target.value)")
+                    select(@change="mapSFP('text',$event.target.value)")
                         option(value="")
                         option(v-for="prop in properties" :value="prop") {{prop}}
     .btn(v-for="fav,i in favorites" :key="i" @click="setFavorite(fav)"

@@ -36,6 +36,7 @@ export default class Interaction{
             this.gismap.handleMouseup(e)
         })
         this.gismap.canvas.addEventListener('mouseleave',e=>{
+            this.gismap.selectEvent.ctrlKey = false
             for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleMouseup(e)
             this.gismap.handleMouseleave(e)

@@ -106,15 +106,20 @@ export default {
                 'Description':'敘述',
                 'Phone':'電話',
                 'Address':'地址',
-                'OpenTime':'開放時間',
                 'Picture.PictureUrl1':'圖片網址',
                 'Picture.PictureDescription1':'圖片簡介',
                 'Position.PositionLat':'緯度',
                 'Position.PositionLon':'經度'
             }
             let props = {
-                ScenicSpot: basicInfo,
-                Restaurant: basicInfo,
+                ScenicSpot: {
+                    ...basicInfo,
+                    'OpenTime':'開放時間',
+                },
+                Restaurant: {
+                    ...basicInfo,
+                    'OpenTime':'開放時間',
+                },
                 Hotel: {
                     ...basicInfo,
                     'WebsiteUrl':'飯店網址',

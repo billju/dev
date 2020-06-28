@@ -31,10 +31,50 @@ export default class Editor{
         let seconds = matches[1]*3600+matches[2]*60+matches[3]*1+matches[4]*0.001
         return parseFloat(seconds)
     }
-    update(){
-        this.lineNumbers.innerHTML = ''
+    getSubtitles(){
+        let subtitles = []
         for(let i=0;i<this.textEditor.childNodes.length;i++){
+            let text = this.textEditor.childNodes[i].textContent
+            let time = this.textEditor.childNodes[i].dataset.time*1
+            subtitles.push({time,text})
+        }
+        return subtitles.sort((a,b)=>a.time-b.time)
+    }
+    getTextAtTime(time){
+        let subtitles = this.getSubtitles()
+        let lastText = subtitles[0].text
+        for(let subtitle of subtitles){
+            if(subtitle.time>=time){
+                return lastText
+            }
+            lastText = subtitle.text
+        }
+        return lastText
+    }
+    sort(){
+        this.getSubtitles().map((subtitle,i)=>{
+            this.textEditor.childNodes[i].dataset.time = subtitle.time
+            if(subtitle.text)
+                this.textEditor.childNodes[i].textContent = subtitle.text
+            else
+            this.textEditor.childNodes[i].innerHTML = '<br>'
+        })
+        this.updateLineNumbers()
+    }
+    updateLineNumbers(){
+        this.lineNumbers.innerHTML = ''
+        for(let childNode of this.textEditor.childNodes){
             let div = document.createElement('div')
+            div.innerText = this.getFormatTime(childNode.dataset.time)
+            div.style.height = childNode.clientHeight+'px'
+            div.onclick = ()=>{
+                this.oncue({time})
+            }
+            this.lineNumbers.appendChild(div)
+        }
+    }
+    update(){
+        for(let i=0;i<this.textEditor.childNodes.length;i++){
             let time = parseFloat(this.textEditor.childNodes[i].dataset.time)
             if(i==0){
                 time = 0
@@ -42,13 +82,8 @@ export default class Editor{
                 time = this.currentTime
             }
             this.textEditor.childNodes[i].dataset.time = time
-            div.innerText = this.getFormatTime(time)
-            div.style.height = this.textEditor.childNodes[i].clientHeight+'px'
-            div.onclick = ()=>{
-                this.oncue({time})
-            }
-            this.lineNumbers.appendChild(div)
         }
+        this.updateLineNumbers()
     }
     resize(){
         for(let i=0;i<this.textEditor.childNodes.length&&this.lineNumbers.childNodes.length;i++){

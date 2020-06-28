@@ -1,5 +1,6 @@
 import '../css/bootstrap.css'
 import '../css/transcriber.css'
+import 'font-awesome/css/font-awesome.css'
 import Visualizer from './visualizer.js'
 import MediaPlayer from './mediaplayer.js'
 import makeElementMovable from './makeElementMovable.js'
@@ -19,11 +20,13 @@ function handleDrop(e){
 }
 async function handleFile(file){
     if(file.type.includes('video')||file.type.includes('audio')){
+        let videoContainer = document.getElementById('video-container')
+        let subtitle = document.getElementById('video-subtitle')
         if(file.type.includes('video')){
             let video = document.getElementById('video')
-            video.style.display = 'block'
-            makeElementMovable(video)
             player.setMediaElement(video)
+            makeElementMovable(videoContainer)
+            videoContainer.style.display = 'block'
         }
         player.createAudioContext()
         visualizer.connect(player)
@@ -43,8 +46,13 @@ async function handleFile(file){
         editor.oncue = e=>{
             player.currentTime = e.time
         }
+        visualizer.subtitles = editor.getSubtitles()
+        editor.textEditor.addEventListener('keydown',e=>{
+            visualizer.subtitles = editor.getSubtitles()
+        })
         player.addEventListener('timeupdate',()=>{
             editor.currentTime = player.currentTime
+            subtitle.textContent = editor.getTextAtTime(player.currentTime)
         })
     }
 }
@@ -67,6 +75,7 @@ textEditor.addEventListener('keydown',e=>{
 // set global variables
 window.player = player
 window.editor = editor
+window.visualizer = visualizer
 window.setPlaybackRate = setPlaybackRate
 window.handleDrop = handleDrop
 window.handleFile = handleFile

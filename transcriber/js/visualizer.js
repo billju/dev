@@ -2,6 +2,13 @@ export default class Visualizer{
     constructor(){
         this.player = undefined
         this.analyser = undefined
+        this.subtitles = [
+            // {text:'lorem ipsum',time:0},   
+        ]
+        this.colors = [
+            '#b71c1c','#880e4f','#4a148c','#311b92','#1a237e','#0d47a1','#01579b','#006064','#004d40','#1b5e20',
+            '#33691e','#827717','#f57f17','#ff6f00','#e65100','#bf360c','#3e2723','#212121','#263238',
+        ]
     }
     connect(player){
         this.player = player
@@ -35,7 +42,7 @@ export default class Visualizer{
                 if(textElement) textElement.textContent = this.getFormatTime(pct*media.duration)
             }
         })
-        function handleEnd(e){
+        const handleEnd = (e)=>{
             if(barElement.active){
                 let pct = (e.clientX-container.offsetLeft)/container.clientWidth
                 media.currentTime = pct*media.duration
@@ -71,7 +78,6 @@ export default class Visualizer{
         const analyser = this.analyser
         const data = new Uint8Array(this.analyser.frequencyBinCount)
         const media = this.player.media
-        const getPeaks = this.getPeaks
         const getFormatTime = this.getFormatTime
         const peaks = [], peakWidth = 10, peakFPS = 20
         var peakScrollRate = 1
@@ -104,18 +110,22 @@ export default class Visualizer{
             peakScrollRate-= Math.sign(e.deltaY)
             peakScrollRate = peakScrollRate>20?20:peakScrollRate<1?1:peakScrollRate
         }
-        loop()
-        function loop(){
+        const loop = ()=>{
             window.requestAnimationFrame(loop)
             analyser.getByteTimeDomainData(data)
             let timeIndex = Math.floor(media.currentTime*peakFPS)*peakWidth
+            let endIndex = timeIndex+Math.floor(canvas.width*peakWidth/peakScrollRate)
             if(!mouseEvent.active){
-                getPeaks(Math.ceil(peakWidth*media.playbackRate), data).map((peak,i)=>{
-                    if(peaks[timeIndex+i]==undefined) peaks[timeIndex+i] = peak
+                this.getPeaks(Math.ceil(peakWidth*media.playbackRate), data).map((peak,i)=>{
+                    if(peaks[timeIndex+i]==undefined){
+                        peaks[timeIndex+i] = peak
+                    }
                 })
             }
+            // background
             ctx.fillStyle = '#607d8b'
             ctx.fillRect(0,0,canvas.width,canvas.height)
+            // waveform
             ctx.beginPath()
             let moved = false
             for(let x=0;x<=canvas.width;x++){
@@ -137,8 +147,7 @@ export default class Visualizer{
             ctx.strokeStyle = 'white'
             ctx.stroke()
             ctx.closePath()
-            ctx.beginPath()
-            ctx.font = "12px arial"
+            // timestamps
             let timestamps = [], interval = Math.max(Math.ceil(5/peakScrollRate),1)
             for(let x=-20;x<=canvas.width+20;x++){
                 let i = timeIndex+Math.floor((x-canvas.width+1)*peakWidth/peakScrollRate)
@@ -147,6 +156,8 @@ export default class Visualizer{
                     timestamps.push({seconds,x})
                 }
             }
+            ctx.beginPath()
+            ctx.font = "12px 微軟正黑體"
             ctx.fillStyle = 'white'
             for(let ts of timestamps){
                 let format = ts.seconds<3600?'mm:ss':'hh:mm:ss'
@@ -160,6 +171,25 @@ export default class Visualizer{
             }
             ctx.stroke()
             ctx.closePath()
+            // subtitles
+            this.subtitles.map((subtitle,i,arr)=>{
+                let startX = (subtitle.time-media.currentTime)*peakFPS*peakScrollRate+canvas.width
+                let endX = i==arr.length-1?
+                    (media.duration-media.currentTime)*peakFPS*peakScrollRate+canvas.width:
+                    (arr[i+1].time-media.currentTime)*peakFPS*peakScrollRate+canvas.width
+                return {startX,endX,text:subtitle.text}
+            }).map((sub,i)=>{
+                if(sub.text){
+                    ctx.fillStyle = this.colors[i%this.colors.length]
+                    ctx.fillRect(sub.startX,0,sub.endX-sub.startX,14)
+                    ctx.strokeStyle = 'white'
+                    ctx.strokeRect(sub.startX,0,sub.endX-sub.startX,14)
+                    ctx.fillStyle = 'white'
+                    ctx.fillText(sub.text,sub.startX+4,10)
+                }
+            })
+            
         }
+        loop()
     }
 }
