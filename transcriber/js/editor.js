@@ -68,7 +68,7 @@ export default class Editor{
             div.innerText = this.getFormatTime(childNode.dataset.time)
             div.style.height = childNode.clientHeight+'px'
             div.onclick = ()=>{
-                this.oncue({time})
+                this.oncue({time:parseFloat(childNode.dataset.time)})
             }
             this.lineNumbers.appendChild(div)
         }

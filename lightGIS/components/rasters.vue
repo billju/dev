@@ -1,13 +1,18 @@
 <template lang="pug">
 .px-1
     Draggable(v-model="rasters" @update="gismap.setRasters(rasters)" :options="{animation:150}")
-        .d-flex.align-items-center(v-for="raster,i in rasters" :key="raster.name")
-            span(style="flex:1") {{raster.name}}
+        .d-flex.align-items-center.shadow-sm(v-for="raster,i in rasters" :key="raster.name")
+            span.text-shadow(style="flex:1") {{raster.name}}
             .custom-control.custom-switch.mx-1
                 input.custom-control-input(type='checkbox' v-model="raster.active" :id="raster.name" @input="gismap.setRasters(rasters)")
                 label.custom-control-label(:for="raster.name")
             .input-text(draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
                 input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' v-model.number="raster.opacity" @input="gismap.setRasters(rasters)")
+    .input-group
+        .input-group-prepend(@click="addWMS()")
+            .btn.btn-outline-success 新增
+        input.form-control.btn.btn-outline-success(type='text' v-model="name" placeholder="名稱")
+        input.form-control.btn.btn-outline-success(type='text' style="flex:3" v-model="url" placeholder="https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png")
 </template>
 
 <script>
@@ -16,7 +21,10 @@ export default {
     name: 'Rasters',
     components: {Draggable},
     props: ['gismap'],
-    data:()=>({rasters:[]}),
+    data:()=>({
+        rasters:[],
+        url: '', name:''
+    }),
     methods: {
         getDefaultRaster(){
             const token = "qn5cMMfaz2E84GbcNlqB2deRwJpO0NfuIorLEzgqLiaQv3lB8mfoVF7VU0u0rJCMbkMjDCBz2xD1JH-8fYMuBg.."
@@ -49,6 +57,12 @@ export default {
                 return raster
             })
         },
+        addWMS(){
+            if(this.url&&this.name){
+                this.rasters.push({url:this.url,name:this.name,opacity:1,active:false})
+                this.gismap.setRasters(this.rasters)
+            }
+        }
     },
     created(){
         this.rasters = this.getDefaultRaster()

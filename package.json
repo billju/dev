@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@mapbox/togeojson": "^0.16.0",
     "bootstrap": "^4.5.0",
     "element-ui": "^2.13.2",
     "font-awesome": "^4.7.0",

@@ -1,3 +1,4 @@
+import toGeojson from '@mapbox/togeojson'
 function beautifiedJsonHtml(){
     let json = JSON.stringify(this.rows,null,2)
     json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -36,10 +37,6 @@ function handleUpload(){
     //     }
     // }
 }
-// window.addEventListener('paste',e=>{
-//     let blob = e.clipboardData.items[0].getAsFile()
-// })
-
 export default {
     methods: {
         async handleDrop(e){
@@ -53,44 +50,40 @@ export default {
             }
         },
         async handleFile(file){
-            let filename = file.name.split('.')[0]
+            this.filename = file.name.split('.')[0]
             let extension = file.name.match(/\.\w+$/i)[0]
             if(file.type.includes('image')){
                 let img = new Image()
                 img.src = URL.createObjectURL(file)
                 img.onload = ()=>{
-                    this.gismap.addImageShape(img,filename)
+                    this.gismap.addImageShape(img,this.filename)
                 }
             }
             if(extension=='.geojson'){
                 let text = await this.readFileAsText(file)
                 let geojson = JSON.parse(text)
-                this.tmpFeatures = geojson.features
-                this.renderTable(this.tmpFeatures.map(f=>f.properties))
-                this.dialog = true
-                this.tmpFeatures.map(f=>{f.properties['群組']=f.properties['群組']??filename})
+                this.handleGeojson(geojson,this.filename)
             }else if(extension=='.kml'){
-                let xjson = xml_string_to_json(await readFileAsText(file))
-                let placemarks = []
-                function findPlacemark(obj){
-                    if(typeof obj=='object'){
-                        for(let key in obj){
-                            if(key=='Placemark')
-                                placemarks.push(obj[key])
-                            else
-                                findPlacemark(obj[key])
-                        }
-                    }
-                }
-                findPlacemark(xjson)
-                console.log(placemarks)
-            }else if(extension=='.wkt'){
-                this.gismap.WKT(await readFileAsText(file))
+                let text = await this.readFileAsText(file)
+                let kml = (new DOMParser()).parseFromString(text,'text/xml')
+                let geojson = toGeojson.kml(kml)
+                this.handleGeojson(geojson,this.filename)
+            }else if(extension=='.csv'){
+                let text = await this.readFileAsText(file)
+                let aoa = this.handleCSV(text,',')
+                let cols = aoa[0]
+                let rows = aoa.slice(1).map(arr=>Object.fromEntries(arr.map((a,i)=>([cols[i],a]))))
+                this.renderTable(rows)
+                this.dialog = true
             }else if(extension=='.json'){
-                const dir = {0:'去程',1:'返程',2:'迴圈',255:'未知'}
-                JSON.parse(await readFileAsText(file)).map(row=>{
-                    this.gismap.WKT(row.Geometry,{'路線':row.RouteName.Zh_tw,'方向':dir[row.Direction]})
-                })
+                let text = await this.readFileAsText(file)
+                let json = JSON.parse(text)
+                if(Array.isArray(json)){
+                    this.renderTable(json)
+                    this.dialog = true
+                }else if(typeof json=='object'&&json.type=='FeatureCollection'){
+                    this.handleGeojson(geojson,this.filename)   
+                }
             }
         },
         async readFileAsText(file){
@@ -99,51 +92,66 @@ export default {
                 reader.onload = ()=>{
                     resolve(reader.result)
                 }
-                reader.readAsText(file)
+                reader.readAsText(file,this.encoding)
             })
-        }
-    },
-    handleCSV(text){
-        // copied from https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
-        var pattern = new RegExp(
-            // Delimiters.
-            "(\\" + this.delimiter + "|\\r?\\n|\\r|^)" +
-            // Quoted fields.
-            "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
-            // Standard fields.
-            "([^\"\\" + this.delimiter + "\\r\\n]*))"
-        ,"gi")
-        var aoa = [[]], matches
-        while(matches = pattern.exec(text)){
-            if(matches[1].length&&matches[1]!=this.delimiter){
-                aoa.push([])
-            }
-            var matched = matches[2]?matches[2].replace(new RegExp('\"\"','g'),'\"'):matches[3]
-            aoa[aoa.length-1].push(matched)
-        }
-        return aoa
-    },
-    xml_string_to_json(xmlstr) {
-        let parser = new DOMParser();
-        let srcDOM = parser.parseFromString(xmlstr, "application/xml");
-        function xml2json(srcDOM) {
-            let children = [...srcDOM.children];
-            if (!children.length) { return srcDOM.innerHTML } 
-            let jsonResult = {};
-            for (let child of children) {
-                let childIsArray = children.filter(eachChild => eachChild.nodeName === child.nodeName).length > 1;
-                if (childIsArray) {
-                    if (jsonResult[child.nodeName] === undefined) {
-                        jsonResult[child.nodeName] = [xml2json(child)];
-                    } else {
-                        jsonResult[child.nodeName].push(xml2json(child));
-                    }
-                } else {
-                    jsonResult[child.nodeName] = xml2json(child);
+        },
+        handleGeojson(geojson,filename){
+            this.tmpFeatures = geojson.features.filter(f=>f.geometry)
+            this.renderTable(this.tmpFeatures.map(f=>f.properties))
+            this.dialog = true
+            this.tmpFeatures.map(f=>{f.properties['群組']=f.properties['群組']??filename})
+        },
+        handleCSV(text,delimiter){
+            // copied from https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
+            var pattern = new RegExp(
+                // Delimiters.
+                "(\\" + delimiter + "|\\r?\\n|\\r|^)" +
+                // Quoted fields.
+                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+                // Standard fields.
+                "([^\"\\" + delimiter + "\\r\\n]*))"
+            ,"gi")
+            var aoa = [[]], matches
+            while(matches = pattern.exec(text)){
+                if(matches[1].length&&matches[1]!=delimiter){
+                    aoa.push([])
                 }
+                var matched = matches[2]?matches[2].replace(new RegExp('\"\"','g'),'\"'):matches[3]
+                aoa[aoa.length-1].push(matched)
             }
-            return jsonResult;
-        }
-        return xml2json(srcDOM)
+            return aoa
+        },
+        xml_string_to_json(xmlstr) {
+            let parser = new DOMParser();
+            let srcDOM = parser.parseFromString(xmlstr, "application/xml");
+            function xml2json(srcDOM) {
+                let children = [...srcDOM.children];
+                if (!children.length) { return srcDOM.innerHTML } 
+                let jsonResult = {};
+                for (let child of children) {
+                    let childIsArray = children.filter(eachChild => eachChild.nodeName === child.nodeName).length > 1;
+                    if (childIsArray) {
+                        if (jsonResult[child.nodeName] === undefined) {
+                            jsonResult[child.nodeName] = [xml2json(child)];
+                        } else {
+                            jsonResult[child.nodeName].push(xml2json(child));
+                        }
+                    } else {
+                        jsonResult[child.nodeName] = xml2json(child);
+                    }
+                }
+                return jsonResult;
+            }
+            return xml2json(srcDOM)
+        },
+    },
+    mounted(){
+        // window.addEventListener('paste',e=>{
+        //     for(let item of e.clipboardData.items){
+        //         let blob = item.getAsFile()
+        //         if(blob)
+        //             this.handleFile(blob)
+        //     }
+        // })
     }
 }

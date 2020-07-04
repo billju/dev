@@ -1,46 +1,57 @@
 <template lang="pug">
-.px-1
+div
     .input-group
-        .input-group-prepend
-            .btn.btn-outline-primary(@click="Tourism(city,tourType)") {{tourTypes[tourType]}}位址
-        select.form-control(v-model="tourType")
-            option(v-for="(val,key) in tourTypes" :key="key" :value="key") {{val}}
-    .input-group
-        .input-group-prepend
-            .btn.btn-outline-primary(@click="Bike()") iBike即時站位
+        .input-group-prepend 
+            span.input-group-text 所在縣市
         select.form-control(v-model="city")
             option(v-for="(val,key) in cities" :key="key" :value="key") {{val}}
-    .btn-group
+    .btn-group.w-100
+        .btn.btn-outline-warning(v-for="(val,key) in tourTypes" :key="key" @click="Tourism(city,key)") {{val}}
+    .btn-group.w-100
+        .btn.btn-outline-danger(@click="Bike(city)") iBike即時站位
+        .btn.btn-outline-success(@click="BusRoutes(city)") 公車路線
+    .btn-group.w-100
         .btn.btn-outline-primary(@click="TRAShape()") 台鐵線型
         .btn.btn-outline-primary(@click="TRAStation()") 台鐵車站
     .input-group
         .input-group-prepend
             .btn.btn-outline-primary(@click="TRALiveBoard(TRAStationID)") 台鐵動態
-        input.form-control.btn.btn-outline-primary(type='text' style='width:50px' v-model="TRAStationID")
+        input.form-control.btn.btn-outline-primary(type='text' style='width:50px' v-model="TRAStationID" placeholer="台鐵車站UID")
+    .btn-group.w-100
+        .btn.btn-outline-primary(@click="THSRShape()") 高鐵線型
+        .btn.btn-outline-primary(@click="THSRStation()") 高鐵車站
     .input-group
-        .input-group-prepend
-            .btn.btn-outline-success(@click="BusRoutes(city)") 公車路線
-        select.form-control.btn.btn-outline-success(v-model="city")
-            option(v-for="(val,key) in cities" :key="key" :value="key") {{val}}
-    .input-group
-        .input-group-prepend
-            .btn.btn-outline-success(@click="BusETA(city,UID)") 公車抵達時間
-        input.form-control.btn.btn-outline-success(type='text' style='width:50px' v-model="UID")
-    .position-fixed.h-100(v-if="rows.length" style="left:0;top:0;max-width:500px;overflow-y:scroll")
-        table.table.table-striped.table-hover.table-responsive.bg-light
-            thead.thead-light
-                tr
-                    th(v-for="col in cols" :key="col") {{col}}
-            tbody
-                tr(v-for="row,i in rows" :key="i" @click="row.handleClick()")
-                    td(v-for="col in cols" :key="col") {{row[col]}}
-    el-tabs(v-model="tab" stretch)
-        el-tab-pane(label="去程" name="去程")
-            ETA(:busETA="busETA.filter(x=>x.dir==0)")
-        el-tab-pane(label="返程" name="返程")
-            ETA(:busETA="busETA.filter(x=>x.dir==1)")
-        el-tab-pane(label="環狀" name="環狀")
-            ETA(:busETA="busETA.filter(x=>x.dir==2)")
+        .input-group-prepend 
+            span.input-group-text 捷運類型
+        select.form-control(v-model="metroOperator")
+            option(v-for="(val,key) in metroOperators" :key="key" :value="key") {{val}}
+    .btn-group.w-100
+        .btn.btn-outline-primary(@click="MetroShape(metroOperator)") 捷運線型
+        .btn.btn-outline-primary(@click="MetroStation(metroOperator)") 捷運車站
+    .position-fixed.d-flex(v-if="rows.length||busETA.length" style="left:0;top:0;max-height:100%")
+        div(style="max-width:350px;max-height:100%;overflow-y:auto")
+            table.table.table-striped.table-hover.table-responsive.bg-light
+                thead.thead-light
+                    tr
+                        th(v-for="col in cols" :key="col") {{col}}
+                tbody
+                    tr(v-for="row,i in rows" :key="i")
+                        td(v-for="col in cols" :key="col") {{row[col]}}
+        div(style="width:300px;max-height:100%;overflow-y:auto")
+            .input-group
+                .btn.btn-outline-success.form-control(@click="searchBus(city,UID)") 搜尋公車
+                div(style="flex:1")
+                    el-select(v-model="UID" filterable placeholder="站牌UID")
+                        template(slot="empty")
+                            .px-1.text-secondary 空空如也
+                        el-option(v-for="uid in busUID" :key="uid" :value="uid" :label="uid")
+            el-tabs(v-model="tab" stretch)
+                el-tab-pane(label="去程" name="去程")
+                    ETA(:busETA="busETA.filter(x=>x.dir==0)")
+                el-tab-pane(label="返程" name="返程")
+                    ETA(:busETA="busETA.filter(x=>x.dir==1)")
+                el-tab-pane(label="環狀" name="環狀")
+                    ETA(:busETA="busETA.filter(x=>x.dir==2)")
 </template>
 
 <script>
@@ -56,16 +67,17 @@ export default {
             ChanghuaCounty:'彰化縣',NantouCounty:'南投縣',YunlinCounty:'雲林縣',ChiayiCounty:'嘉義縣',
             Chiayi:'嘉義市',PingtungCounty:'屏東縣',YilanCounty:'宜蘭縣',HualienCounty:'花蓮縣',
             TaitungCounty:'臺東縣',KinmenCounty:'金門縣',PenghuCounty:'澎湖縣',LienchiangCounty:'連江縣'
-        }, cols: [], rows:[], busETA:[], tab: '去程', TRAStationID:'0900', 
-        tourType: 'ScenicSpot', tourTypes:{
+        }, cols: [], rows:[], busETA:[], tab: '去程', TRAStationID:'0900', busUID: [],
+        tourTypes:{
             ScenicSpot:'景點',Restaurant:'餐廳',Hotel:'飯店',Activity:'活動'
+        },
+        metroOperator:'TRTC',metroOperators: {
+            TRTC:'台北捷運', KRTC:'高雄捷運', TYMC:'桃園捷運', 
         }
     }),
     methods:{
         renderTable(rows){
-            for(let row of rows)
-                if(!row.handleClick) row.handleClick = ()=>{}
-            this.cols = [...new Set(rows.flatMap(obj=>Object.keys(obj)))].filter(col=>col!='handleClick')
+            this.cols = [...new Set(rows.flatMap(obj=>Object.keys(obj)))]
             let key = this.cols[0]
             this.rows = rows.sort((a,b)=>a[key].toString().localeCompare(b[key]))
         },
@@ -134,9 +146,10 @@ export default {
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Tourism/${type}/${city}?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
             let group = this.cities[city]+this.tourTypes[type]
-            this.renameArray(json,props).map(row=>{
-                this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':group})
+            let features = this.renameArray(json,props).map(row=>{
+                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':group})
             })
+            this.interaction.fitExtent(features)
             this.$emit('addGroup',group)
         },
         async BikeAvaiable(city='Taichung'){
@@ -163,12 +176,22 @@ export default {
             let avails = await this.BikeAvaiable(city)
             if(avails instanceof Error) return
             let group = 'iBike'+city
-            this.renameArray(json,props).map(row=>{
+            let features = this.renameArray(json,props).map(row=>{
                 let idx = avails.findIndex(x=>x['UID']==row['UID'])
                 let extProps = idx==-1?{}:avails[idx]
-                this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,...extProps,radius:row['容量']/10,'群組':group})
+                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{
+                    ...row,...extProps,radius:row['容量']/10,'群組':group
+                })
             })
+            this.interaction.fitExtent(features)
             this.$emit('addGroup',group)
+        },
+        async searchBus(city,UID){
+            let shape = await this.BusShape(city,UID)
+            let stops = await this.BusStops(city,UID)
+            this.BusETA(city,UID)
+            this.interaction.fitExtent([...shape,...stops])
+            this.$emit('addGroup',UID)
         },
         async BusRoutes(city='Taichung'){
             let props = {
@@ -180,14 +203,7 @@ export default {
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Bus/Route/City/${city}?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
             let rows = this.renameArray(json,props)
-            rows.map(row=>{
-                row.handleClick = async ()=>{
-                    let shape = await this.BusShape(city,row.UID)
-                    let stops = await this.BusStops(city,row.UID)
-                    this.interaction.fitExtent([...shape,...stops])
-                    this.$emit('addGroup',row.UID)
-                }
-            })
+            this.busUID = rows.map(row=>row.UID)
             this.renderTable(rows)
         },
         async BusStops(city='Taichung',UID='TXG9'){
@@ -221,7 +237,7 @@ export default {
             if(json instanceof Error) return
             return this.renameArray(json,props).map(row=>{
                 return this.gismap.WKT(row['WKT'],{
-                    '路線':row['路線'],'方向':row['方向'],'群組':UID, lineWidth: 6
+                    '路線':row['路線'],'方向':row['方向'],'群組':UID, lineWidth: 6, stroke:row['方向']?'green':'red'
                 })
             })
         },
@@ -250,9 +266,11 @@ export default {
             }
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/TRA/Shape?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
-            this.renameArray(json,props).map(row=>{
-                this.gismap.WKT(row['WKT'],{'路線':row['路線']})
+            let features = this.renameArray(json,props).map(row=>{
+                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'群組':'台鐵路線'})
             })
+            this.interaction.fitExtent(features)
+            this.$emit('addGroup','台鐵路線')
         },
         async TRAStation(){
             let props = {
@@ -260,13 +278,17 @@ export default {
                 'StationName.Zh_tw':'車站',
                 'StationPosition.PositionLon':'經度',
                 'StationPosition.PositionLat':'緯度',
-                'StationAddress':'地址'
+                'StationAddress':'地址',
+                'StationPhone':'聯絡電話',
+                'StationClass':'車站級別'
             }
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/TRA/Station?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
-            this.renameArray(json,props).map(row=>{
-                this.gismap.addVector('Point',[row['經度'],row['緯度']],row)
+            let features = this.renameArray(json,props).map(row=>{
+                this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':'台鐵路線'})
             })
+            this.interaction.fitExtent(features)
+            this.$emit('addGroup','台鐵路線')
         },
         async TRALiveBoard(StationID='0900'){
             let props = {
@@ -282,7 +304,70 @@ export default {
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/TRA/LiveBoard?$select=${this.props2select(props)}&$filter=StationID eq '${StationID}'&$format=JSON`)
             if(json instanceof Error) return
             this.renderTable(this.renameArray(json,props))
-        }
+        },
+        async THSRShape(){
+            let props = {
+                'LineName.Zh_tw':'路線',
+                'Geometry':'WKT'
+            }
+            let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/THSR/Shape?$select=${this.props2select(props)}&$format=JSON`)
+            if(json instanceof Error) return
+            let features = this.renameArray(json,props).map(row=>{
+                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'群組':'高鐵路線'})
+            })
+            this.interaction.fitExtent(features)
+            this.$emit('addGroup','高鐵路線')
+        },
+        async THSRStation(){
+            let props = {
+                'StationID':'UID',
+                'StationName.Zh_tw':'車站',
+                'StationPosition.PositionLon':'經度',
+                'StationPosition.PositionLat':'緯度',
+                'StationAddress':'地址',
+                'StationPhone':'聯絡電話',
+            }
+            let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/THSR/Station?$select=${this.props2select(props)}&$format=JSON`)
+            if(json instanceof Error) return
+            let features = this.renameArray(json,props).map(row=>{
+                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':'高鐵路線'})
+            })
+            this.interaction.fitExtent(features)
+            this.$emit('addGroup','高鐵路線')
+        },
+        async MetroShape(operator='TRTC'){
+            let props = {
+                'LineID':'編號',
+                'LineName.Zh_tw':'路線',
+                'Geometry':'WKT'
+            }
+            let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/Metro/Shape/${operator}?$select=${this.props2select(props)}&$format=JSON`)
+            if(json instanceof Error) return
+            let group = this.metroOperators[operator]+'路線'
+            let features = this.renameArray(json,props).map(row=>{
+                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'群組':group})
+            })
+            this.interaction.fitExtent(features)
+            this.$emit('addGroup',group)
+        },
+        async MetroStation(operator='TRTC'){
+            let props = {
+                'StationID':'UID',
+                'StationName.Zh_tw':'車站',
+                'StationPosition.PositionLon':'經度',
+                'StationPosition.PositionLat':'緯度',
+                'StationAddress':'地址',
+                'BikeAllowOnHoliday':'假日放單車',
+            }
+            let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/Metro/Station/${operator}?$select=${this.props2select(props)}&$format=JSON`)
+            if(json instanceof Error) return
+            let group = this.metroOperators[operator]+'路線'
+            let features = this.renameArray(json,props).map(row=>{
+                this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':group})
+            })
+            this.interaction.fitExtent(features)
+            this.$emit('addGroup',group)
+        },
     },
     mounted(){
 

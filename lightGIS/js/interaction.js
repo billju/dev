@@ -43,7 +43,7 @@ export default class Interaction{
         })
         window.addEventListener('keydown',e=>{
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
-            if(e.code.includes('Arrow')){
+            if(e.code&&e.code.includes('Arrow')){
                 let offset = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.code]
                 const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
                 this.gismap.selectEvent.features.map(feature=>{
@@ -102,10 +102,11 @@ export default class Interaction{
             feature.properties[key] = value
         }
     }
-    mapSelectedFeaturesProp(fKey,tKey){
+    mapSelectedFeaturesProp(fKey,tKey,rule=undefined){
         this.gismap.selectEvent.styling = true
+        rule = rule?rule:(input)=>input
         for(let feature of this.gismap.selectEvent.features){
-            feature.properties[fKey] = feature.properties[tKey]
+            feature.properties[fKey] = rule(feature.properties[tKey])
         }
     }
     getFeaturesProp(features){

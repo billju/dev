@@ -8,8 +8,8 @@ export default {
             a.click()
             document.body.removeChild(a)
         },
-        downloadText(text,filename='downlaod.txt'){
-            let href = "data:text/plain;charset=UTF-8," + encodeURIComponent(text)
+        downloadText(text,filename='downlaod.txt',textType='plain'){
+            let href = `data:text/${textType};charset=${this.encoding},` + encodeURIComponent(text)
             this.downloadLink(href,filename)
         },
         downloadCanvas(canvas,filename='downlaod.png'){
@@ -18,10 +18,10 @@ export default {
             this.downloadLink(href,filename)
         },
         exportFile(features=this.selectedFeatures.length?this.selectedFeatures:this.gismap.vectors){
-            let filename = this.fileName||'lightGIS'
+            let filename = this.filename||'lightGIS'
             let extension = this.fileExtension
             if(extension=='.geojson'){
-                const unproject = this.gismap.toLnglat
+                const unproject = this.gismap.coord2lnglat
                 features = features.map(feature=>{
                     let f = JSON.parse(JSON.stringify(feature))
                     let coords = f.geometry.coordinates
@@ -57,29 +57,44 @@ export default {
                     }
                     return Object.keys(mapper).reduce((acc,cur)=>acc+` ${cur}="${mapper[cur]}"`,'').slice(1)
                 }
+                const clients2path = (clients)=>clients.reduce((acc,cur,i)=>{
+                    if(i==0) return acc+`M${cur[0]} ${cur[1]}`
+                    else return acc+`L${cur[0]} ${cur[1]}`
+                },'')
                 for(let feature of features){
                     let style = canvasStyle2svgStyle(this.gismap.getDefaultStyle(feature))
                     if(feature.geometry.type=='Point'){
                         let client = this.gismap.coord2client(feature.geometry.coordinates).map(c=>parseInt(c))
                         paths+= `<circle cx="${client[0]}" cy="${client[1]}" ${style}/>`
+                    }else if(feature.geometry.type=='MultiPoint'){
+                        for(let coords of feature.geometry.coordinates){
+                            let client = this.gismap.coord2client(coords).map(c=>parseInt(c))
+                            paths+= `<circle cx="${client[0]}" cy="${client[1]}" ${style}/>`
+                        }
                     }else if(feature.geometry.type=='LineString'){
                         let clients = feature.geometry.coordinates.map(coord=>this.gismap.coord2client(coord).map(c=>parseInt(c)))
-                        let d = clients.reduce((acc,cur,i)=>{
-                            if(i==0) return acc+`M${cur[0]} ${cur[1]}`
-                            else return acc+`L${cur[0]} ${cur[1]}`
-                        },'')
+                        let d = clients2path(clients)
                         paths+= `<path d="${d}" ${style}/>`
-                    }else if(feature.geometry.type=='Polygon'){
-                        let clients = feature.geometry.coordinates[0].map(coord=>this.gismap.coord2client(coord).map(c=>parseInt(c)))
-                        let d = clients.reduce((acc,cur,i)=>{
-                            if(i==0) return acc+`M${cur[0]} ${cur[1]}`
-                            else return acc+`L${cur[0]} ${cur[1]}`
-                        },'')
+                    }else if(feature.geometry.type=='Polygon'||feature.geometry.type=='MultiLineString'){
+                        let clients = feature.geometry.coordinates.flatMap(cs=>cs.map(coord=>this.gismap.coord2client(coord).map(c=>parseInt(c))))
+                        let d = clients2path(clients)
                         paths+= `<path d="${d}" ${style}/>`
+                    }else if(feature.geometry.type=='MultiPolygon'){
+                        for(let coords of feature.geometry.coordinates){
+                            let clients = coords.flatMap(cs=>cs.map(coord=>this.gismap.coord2client(coord).map(c=>parseInt(c))))
+                            let d = clients2path(clients)
+                            paths+= `<path d="${d}" ${style}/>`
+                        }
                     }
                 }
                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.gismap.view.w} ${this.gismap.view.h}">${paths}</svg>`
                 this.downloadText(svg,filename+extension)
+            }else if(extension=='.csv'){
+                let array = features.map(f=>f.properties)
+                let cols = [...new Set(array.flatMap(obj=>Object.keys(obj)))]
+                let aoa = array.map(obj=>cols.map(col=>obj[col]))
+                let text = aoa.reduce((acc,cur)=>acc+cur.join(',')+'\r\n','')
+                this.downloadText(text,filename+extension,'csv')
             }
         }
     }

@@ -658,7 +658,9 @@ export default class GisMap{
             let Y = origin.y+tile.y*H
             let xyz = [tile.x,tile.y,tile.z]
             let img = this.tiles[raster.url][xyz]
-            this.ctx.drawImage(img,X,Y,W,H)
+            try{
+                this.ctx.drawImage(img,X,Y,W,H)
+            }catch{}
             return {img,X,Y,W,H}
         })
     }
@@ -796,26 +798,13 @@ export default class GisMap{
             'textAnchor': feature.properties['textAnchor']||'[0,0]',
             'textFill': feature.properties['textFill']||'#000000',
             'textStroke': feature.properties['textStroke']||'#000000',
-            'fontFamily': feature.properties['fontFamily']||'arial',
+            'fontFamily': feature.properties['fontFamily']||'微軟正黑體',
             'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):0,
             'fontSize': feature.properties['fontSize']?parseInt(feature.properties['fontSize']):12,
         }
     }
     renderVector(feature,tolerance=0){
         let style = this.getDefaultStyle(feature)
-         // customize
-         if(feature.geometry.type =='MultiPolygon'){
-            let fillMap = {
-                '公': 'rgba(254,255,191,1)',
-                '私': 'rgba(188,233,252,1)',
-                '公私共有': 'rgba(202,214,159,1)',
-                '公法人': 'rgba(215,177,158,1)',
-                '糖': 'rgba(239,177,208,1)'
-            }
-            let owner = feature.properties['權屬']
-            style.fill = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
-            this.ctx.globalAlpha = 1
-        }
         // selected style
         if(!this.selectEvent.styling&&this.selectEvent.features.includes(feature)){
             Object.assign(style,{
