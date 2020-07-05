@@ -1,8 +1,8 @@
 <template lang="pug">
-.px-1
+.px-1(v-if="show")
     Draggable(v-model="rasters" @update="gismap.setRasters(rasters)" :options="{animation:150}")
         .d-flex.align-items-center.shadow-sm(v-for="raster,i in rasters" :key="raster.name")
-            span.text-shadow(style="flex:1") {{raster.name}}
+            span.text-shadow.flex-grow-1 {{raster.name}}
             .custom-control.custom-switch.mx-1
                 input.custom-control-input(type='checkbox' v-model="raster.active" :id="raster.name" @input="gismap.setRasters(rasters)")
                 label.custom-control-label(:for="raster.name")
@@ -20,7 +20,7 @@ import Draggable from 'vuedraggable'
 export default {
     name: 'Rasters',
     components: {Draggable},
-    props: ['gismap'],
+    props: ['gismap','show'],
     data:()=>({
         rasters:[],
         url: '', name:''

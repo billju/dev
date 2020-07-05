@@ -787,7 +787,7 @@ export default class GisMap{
     }
     getDefaultStyle(feature){
         return {
-            'lineWidth': feature.properties['lineWidth']?parseInt(feature.properties['lineWidth']):1,
+            'lineWidth': feature.properties['lineWidth']==undefined?1:parseInt(feature.properties['lineWidth']),
             'lineDash': feature.properties['lineDash']?feature.properties['lineDash']:[],
             'lineDashOffset': feature.properties['lineDashOffset']?parseInt(feature.properties['lineDashOffset']):0,
             'stroke': feature.properties['stroke']||'dodgerblue',

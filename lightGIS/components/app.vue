@@ -4,8 +4,8 @@
     .position-fixed(v-if="!dialog" style="right:0;top:0;max-height:100%")
         el-tabs(v-model="tab" tab-position="left")
             el-tab-pane(label="網格" name="網格")
-                Rasters(:gismap="gismap")
-            el-tab-pane(label="向量" name="向量")
+                Rasters(:gismap="gismap" :show="tab=='網格'")
+            el-tab-pane(label="向量" name="向量" lazy)
                 .d-flex
                     .border-right.pr-1(style="width:80px")
                         Draggable(v-model="groups" :options="{animation:150}")
@@ -15,7 +15,7 @@
                                     @click="handleGroupClick(i)") {{group.name}}
                         .w-100.border.my-2
                         .btn.btn-outline-danger.w-100(@click="addGroupPrompt()") 新增
-                    .px-1(style="flex:1")
+                    .px-1.flex-grow-1
                         .btn-group.w-100
                             .btn.btn-outline-info(@click="moveGroup(groupName)") 移動至此
                             .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)") 聚焦
@@ -28,7 +28,7 @@
                         .d-flex.w-100
                             .btn.btn-outline-primary(@click="scrollGroupFeatures(-20)")
                                 span &laquo;
-                            .border.d-flex.align-items-center.justify-content-center(style="flex:1")
+                            .border.d-flex.align-items-center.justify-content-center.flex-grow-1
                                 span {{groupRange.start}}~{{groupRange.end}} / {{groupRange.length}}
                             .btn.btn-outline-primary(@click="scrollGroupFeatures(20)")
                                 span &raquo;
@@ -46,7 +46,7 @@
                                     i(:class="type2icon[feature.geometry.type]") 
                                     span.mr-1 {{feature.properties[groups[groupIndex].propKey]}}
             el-tab-pane(label="樣式" name="樣式")
-                Styles(:gismap="gismap" :interaction="interaction" :selectedFeatures="selectedFeatures")
+                Styles(:gismap="gismap" :interaction="interaction" :selectedFeatures="selectedFeatures" :show="tab=='樣式'")
             el-tab-pane(label="檔案" name="檔案" lazy)
                 input(ref="file" type='file' style='display: none' @change='handleFiles($event.target.files)' multiple='true')
                 .btn.btn-outline-primary.w-100(@click="$refs['file'].click()") 選取檔案或拖曳匯入
@@ -83,6 +83,7 @@
                                 el-slider(v-model="zoomRange" range show-stops :max="20"
                     @input="gismap.view.minZoom=zoomRange[0];gismap.view.maxZoom=zoomRange[1]")
                 .w100.border.mx-2.my-1
+                // 圖片底圖
                 Draggable(v-model="gismap.imageShapes" :options="{animation:150}")
                     .d-flex.align-items-center.shadow-sm.px-1.py-1.cursor-pointer(v-for="imageShape,i in gismap.imageShapes" :key="i" 
                             :class="imageShape.editing?'bg-danger text-light':''" @click="imageShape.editing=!imageShape.editing")
@@ -95,7 +96,7 @@
                         button.close(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
                             span &times;
             el-tab-pane(label="PTX" name="PTX")
-                PTX(:gismap="gismap" :interaction="interaction" @addGroup="addGroup($event)")
+                PTX(:gismap="gismap" :interaction="interaction" @addGroup="addGroup($event)" :show="tab=='PTX'")
             el-tab-pane(label="說明" name="說明" lazy)
                 Tutorial
             el-tab-pane(label="隱藏" name="隱藏")
@@ -108,49 +109,77 @@
                         td(v-html="val")
     transition(name="fade-up")
         .position-fixed(v-if="dialog" style="left:0;top:0;max-width:100%;max-height:100%;overflow:auto")
-            table.table.table-striped.table-hover.w-100.h-100.pb-0(style="background:rgba(255,255,255,0.3)")
-                thead.thead-light
+            table.table.table-dark.w-100
+                thead
                     tr
                         th(v-for="col,ci in cols" :key="ci")
-                            .d-flex.justify-content-between.align-items-center
-                                span(style="white-space:nowrap") {{col.key}}
+                            .d-flex.align-items-center
+                                span.flex-grow-1(style="white-space:nowrap") {{col.key}}
                                 span.d-flex
-                                    i.el-icon-sort-down(@click="col.sort=col.sort==-1?0:-1" :class="col.sort==-1?'text-danger':'text-secondary'")
-                                    i.el-icon-sort-up(@click="col.sort=col.sort==1?0:1" :class="col.sort==1?'text-danger':'text-secondary'")
-                                button.close(@click="removeColumn(col.key);$event.stopPropagation()")
-                                    span &times;
+                                    i.el-icon-d-caret(v-if="col.sort==0" @click="col.sort=1")
+                                    i.el-icon-top(v-else-if="col.sort==1" @click="col.sort=-1")
+                                    i.el-icon-bottom(v-else @click="col.sort=0")
+                                i.el-icon-close.cursor-pointer(@click="removeColumn(col.key);$event.stopPropagation()")
                             select.w-100(v-model="col.filter" @change="updateColumnList()")
                                 option(value="")
                                 option(v-for="li in col.list" :key="li" :value="li") {{li}}
-                        th
-                            .d-flex
-                                .btn.btn-success(@click="confirmImport()") 匯入
-                                button.close(@click="dialog=false")
-                                    span &times;
-                            .d-flex
-                                label 緯度
-                                select(v-model="importParams.lat")
-                                    option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                            .d-flex
-                                label 經度
-                                select(v-model="importParams.lng")
-                                    option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                            .d-flex
-                                label WKT
-                                select(v-model="importParams.WKT")
-                                    option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                            .btn.btn-success(@click="leftJoin()") LEFT JOIN LIKE NOW
-                            select(v-model="importParams.rightTableColumn")
-                                option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                            select.btn.btn-outline-info(v-model="groups[groupIndex].propKey")
-                                option(v-for="key in propKeys" :key="key" :value="key") {{key}}
+                        th.d-flex
+                            .btn.btn-sm.btn-success(v-if="filename!=groupName" @click="confirmImport()") 匯入
+                            .btn.btn-sm.btn-success(v-else @click="confirmSelect()") 選取
+                            el-popover(placement="bottom" trigger="click")
+                                .btn.btn-sm.btn-info(slot="reference") 其他
+                                .w-100(v-if="filename==groupName")
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            .btn.btn-outline-success(
+                                                @click="rows.map(row=>{row[newColumn]=''});renderTable(groupFeatures.map(f=>f.properties))") 新增欄位
+                                        input.form-control(type="text" v-model="newColumn")
+                                .w-100(v-else)
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            span.input-group-text 圖層名稱
+                                        input.form-control(v-model="filename")
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            span.input-group-text 緯度
+                                        select.form-control(v-model="importParams.lat")
+                                            option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            span.input-group-text 經度
+                                        select.form-control(v-model="importParams.lng")
+                                            option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            span.input-group-text WKT
+                                        select.form-control(v-model="importParams.WKT")
+                                            option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                                    .btn.btn-sm.btn-outline-info(@click="leftJoin()") LEFT JOIN LIKE NOW
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            span.input-group-text 輸入欄位
+                                        select.form-control(v-model="importParams.rightTableColumn")
+                                            option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            span.input-group-text 目標群組
+                                        select.form-control(v-model="groupIndex")
+                                            option(v-for="group,gi in groups" :key="gi" :value="gi") {{group.name}}
+                                    .input-group.input-group-sm
+                                        .input-group-prepend
+                                            span.input-group-text 合併欄位
+                                        select.form-control(v-model="groups[groupIndex].propKey")
+                                            option(v-for="key in propKeys" :key="key" :value="key") {{key}}
+                            .btn.btn-sm.btn-danger(@click="dialog=false") 關閉
                 tbody
                     tr(v-for="row,ri in filterdRows.slice(0,maxRows)" :key="ri")
-                        td(v-for="col,ci in cols" :key="ci" style="max-width:150px;text-overflow:ellipsis;") {{row[col.key]}}
+                        td(v-for="col,ci in cols" :key="ci" style="max-width:150px;text-overflow:ellipsis;" 
+                            contenteditable @blur="row[col.key]=$event.target.textContent") {{row[col.key]}}
                         td.d-flex
-                            .btn.btn-outline-success(@click="addRowFeature(row)" style="white-space:nowrap") 試水溫
-                            button.close(@click="rows=rows.filter(r=>r!=row)")
-                                span &times;
+                            .btn.btn-sm.btn-outline-success(@click="addRowFeature(row)" style="white-space:nowrap")
+                                i.el-icon-plus
+                            .btn.btn-sm.btn-outline-danger(@click="rows=rows.filter(r=>r!=row)")
+                                i.el-icon-close
     //- LoadingPage
 </template>
 
@@ -173,7 +202,7 @@ export default {
     data: ()=>({
         tab: '網格', gismap: GisMap, interaction: Interaction, fileExtension: '.geojson', filename: '', 
         extensions:['.geojson','.png','.svg','.csv'], encoding:'utf-8', encodings: ['utf-8','big5'],
-        dialog: false, newGroup: '', maxRows: 50, maxItems:20, zoomRange: [0,20], zoomDelta:0.5,
+        dialog: false, newGroup: '', newColumn:'', maxRows: 50, maxItems:20, zoomRange: [0,20], zoomDelta:0.5,
         selectedFeatures: [], groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
         tmpFeatures:[], rows: [], cols:[], properties: [], allowAnimation: true, 
         type2icon: {
@@ -181,30 +210,49 @@ export default {
             LineString:'el-icon-data-line',MultiLineString:'el-icon-data-line',
             Polygon:'el-icon-picture',MultiPolygon:'el-icon-picture'
         },
+        loading: false,
     }),
     methods: {
         confirmImport(){
+            let {lng,lat,WKT} = this.importParams
             if(this.tmpFeatures.length){
                 this.tmpFeatures = this.tmpFeatures.filter(f=>this.filterdRows.includes(f.properties))
+                // add group name
+                this.tmpFeatures.map(f=>{f.properties['群組']=f.properties['群組']??this.filename})
                 let groupNames = [...new Set(this.tmpFeatures.map(f=>f.properties['群組']))].filter(g=>g)
                 for(let groupName of groupNames)
                     this.addGroup(groupName)
+                // add vector
                 this.gismap.geojson({type:'FeatureCollection',features:this.tmpFeatures})
                 this.interaction.fitExtent(this.tmpFeatures)
                 this.tmpFeatures = []
-            }else if(this.importParams.lng&&this.importParams.lat){
-                let {lng,lat} = this.importParams
+            }else if(lng&&lat){
                 let features = this.rows.filter(row=>!(isNaN(row[lng])||isNaN(row[lat]))).map(row=>{
                     return this.gismap.addVector('Point',[row[lng],row[lat]],{...row,'群組':this.filename})
+                })
+                this.interaction.fitExtent(features)
+                this.addGroup(this.filename)
+            }else if(WKT){
+                let features = this.rows.filter(row=>row[WKT]).map(row=>{
+                    let props = {...row,'群組':this.filename}
+                    delete props[WKT]
+                    return this.gismap.WKT(row[WKT],props)
                 })
                 this.interaction.fitExtent(features)
                 this.addGroup(this.filename)
             }
             this.dialog = false
         },
+        confirmSelect(){
+            let features = this.groupFeatures.filter(f=>this.filterdRows.includes(f.properties))
+            this.handleSelect(features)
+            this.dialog=false
+            this.interaction.fitExtent(features)
+        },
         addRowFeature(row){
             let idx = this.tmpFeatures.findIndex(f=>f.properties==row)
             let feature = JSON.parse(JSON.stringify(this.tmpFeatures[idx]))
+            feature.properties['群組'] = feature.properties['群組']??this.filename
             this.gismap.geojson({type:'FeatureCollection',features:[feature]})
             this.interaction.fitExtent([feature])
             this.addGroup(feature.properties['群組'])
@@ -270,6 +318,7 @@ export default {
                 this.propKey = this.groups[groupIndex].propKey
                 this.groupIndex = groupIndex
             }
+            this.filename = this.groupName
         },
         addGroup(name,theme='success'){
             if(name&&this.groups.findIndex(g=>g.name==name)==-1)
@@ -345,10 +394,10 @@ export default {
         filterdRows(){
             let rows = this.rows.slice()
             for(let col of this.cols)
-                if(col.filter)
+                if(col.filter!='')
                     rows = rows.filter(row=>row[col.key]==col.filter)
             for(let col of this.cols)
-                if(col.sort)
+                if(col.sort!=0)
                     rows.sort((a,b)=>this.sortRule(a,b,col.key,col.sort))
             return rows
         },

@@ -1,5 +1,5 @@
 <template lang="pug">
-.px-2
+.px-2(v-if="show")
     .btn-group
         .btn.btn-outline-info(@click="interaction.moveLayerTo('top')") 置頂
         .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')") 置底
@@ -68,26 +68,41 @@
                         option(value="")
                         option(v-for="prop in properties" :value="prop") {{prop}}
             tr
-                td 填滿欄位
+                td {{rule.isGradient?'漸':'分'}}層設色
                 td 
-                    select(v-model="rule.col" @change="mapSFP('fill',rule.col,gradientFill)")
+                    select(v-model="rule.col" @change="handleSelect()")
                         option(value="")
                         option(v-for="prop in properties" :value="prop") {{prop}}
-    .d-flex.align-items-center(v-for="gd,i in rule.gradients" :key="i")
-        el-color-picker(show-alpha size="mini" v-model="gd.rgba" @change="mapSFP('fill',rule.col,gradientFill)")
-        input.custom-range(type="range" v-model.number="gd.pct" min="0" max="1" step="0.1"  @input="mapSFP('fill',rule.col,gradientFill)")
-        button.close(@click="rule.gradients.splice(i,1)")
-            span &times;
-    .btn.btn-success(@click="rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})")
+                    el-switch(v-model="rule.isGradient")
+    .w-100(v-if="rule.isGradient")
+        .d-flex.align-items-center(v-for="gd,i in rule.gradients" :key="i")
+            el-color-picker(show-alpha size="mini" v-model="gd.rgba" 
+                @change="updateRule();mapSFP('fill',rule.col,gradientColor)")
+            input.custom-range(type="range" v-model.number="gd.pct" min="0" max="1" step="0.1" 
+                @input="updateRule();mapSFP('fill',rule.col,gradientColor)")
+            button.close(@click="rule.gradients.splice(i,1)")
+                span &times;
+    .w-100(v-else)
+        .d-flex.align-items-center(v-for="(val,key) in rule.categories" :key="key")
+            span.flex-grow-1 {{key}}
+            el-color-picker(show-alpha size="mini" v-model="rule.categories[key]" 
+                @change="mapSFP('fill',rule.col,categoryColor);mapSFP('stroke',rule.col,categoryColor)")
+            button.close(@click="$delete(rule.categories,key)")
+                span &times;
+    .btn.btn-success(@click="addRule()")
         i.el-icon-plus
+    .btn.btn-secondary(v-if="!rule.isGradient" v-for="fav,i in favCategories" :key="`cat${i}`" 
+        @click="rule.categories={...fav};mapSFP('fill',rule.col,categoryColor);mapSFP('stroke',rule.col,categoryColor)"
+        @contextmenu.prevent="$delete(favCategories,i)") 設定{{i+1}}
+    .w-100.border.mx-1.my-1
     .btn(v-for="fav,i in favorites" :key="`fav${i}`" @click="setFavorite(fav)" :style="getFavorite(fav)"
-        @contextmenu.prevent="favorites=favorites.filter(f=>f!=fav)") {{i}}
+        @contextmenu.prevent="$delete(favorites,i)") {{i+1}}
 </template>
 
 <script>
 export default {
     name: 'Styles',
-    props: ['gismap','interaction','selectedFeatures'],
+    props: ['gismap','interaction','selectedFeatures','show'],
     data:  ()=>({
         defaultStyle: {
             lineWidth:3,lineDash:[],stroke:'rgba(3,169,244,1)',
@@ -96,15 +111,32 @@ export default {
         }, 
         featureIndex:0, favorites: [],
         fontFamilies: ['微軟正黑體','serif','sans-serif','fantasy','monospace','標楷體'],
-        rule:{min:0,max:100,col:'',gradients:[
+        rule:{min:0,max:100,col:'',categories:{},isGradient:true,gradients:[
             {pct:0,rgba:'rgba(244,67,54,1)'},
             {pct:0.3,rgba:'rgba(255,152,0,1)'},
             {pct:0.6,rgba:'rgba(255,235,59,1)'},
             {pct:1,rgba:'rgba(76,175,80,1)'},
-        ]},
+        ]}, 
+        favCategories: [
+            {'公':'rgba(254,255,191,1)','私':'rgba(188,233,252,1)','公私共有':'rgba(202,214,159,1)',
+            '公法人':'rgba(215,177,158,1)','糖':'rgba(239,177,208,1)','預設':'rgba(204,204,204,1)'},
+        ],
+        colors:['rgba(244,67,54,1)','rgba(233,30,99,1)','rgba(156,39,176,1)','rgba(103,58,183,1)',
+        'rgba(63,81,181,1)','rgba(33,150,243,1)','rgba(3,169,244,1)','rgba(0,188,212,1)','rgba(0,150,136,1)',
+        'rgba(76,175,80,1)','rgba(139,195,74,1)','rgba(205,220,57,1)','rgba(255,235,59,1)','rgba(255,193,7,1)',
+        'rgba(255,152,0,1)','rgba(255,87,34,1)','rgba(121,85,72,1)','rgba(158,158,158,1)','rgba(96,125,139,1)'],
     }),
     methods: {
-        gradientFill(input){
+        handleSelect(){
+            this.updateRule()
+            if(this.rule.isGradient){
+                this.mapSFP('fill',this.rule.col,this.gradientColor)
+            }else{
+                this.mapSFP('fill',this.rule.col,this.categoryColor)
+                this.mapSFP('stroke',this.rule.col,this.categoryColor)
+            }
+        },
+        gradientColor(input){
             if(isNaN(input)||!this.rule.gradients.length) return this.style.fill
             const mapRange = (num,min,max,MIN,MAX)=>(num-min)/(max-min)*(MAX-MIN)+MIN
             let pct = mapRange(input,this.rule.min,this.rule.max,0,1)
@@ -121,31 +153,33 @@ export default {
             let arr = gd1.arr.map((min,i)=>mapRange(pct,gd1.pct,gd2.pct,min,gd2.arr[i])).map(x=>parseInt(x))
             return `rgba(${arr[0]},${arr[1]},${arr[2]},${arr[3]})`
         },
-        categoryFill(){
-            // let fillMap = {
-            //     '公': 'rgba(254,255,191,1)',
-            //     '私': 'rgba(188,233,252,1)',
-            //     '公私共有': 'rgba(202,214,159,1)',
-            //     '公法人': 'rgba(215,177,158,1)',
-            //     '糖': 'rgba(239,177,208,1)'
-            // }
-            // let owner = feature.properties['權屬']
-            // style.fill = fillMap[owner]?fillMap[owner]:'rgba(204,204,204,1)'
+        categoryColor(input){
+            return this.rule.categories[input]||this.rule.categories['預設']
         },
         setSFP(key,value){
             this.interaction.setSelectedFeaturesProp(key,value)
             this.featureIndex=1;this.featureIndex=0 // force update
         },
+        addRule(){
+            if(this.rule.isGradient)
+                this.rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})
+            else
+                this.favCategories.push({...this.rule.categories})
+        },
+        updateRule(){
+            let props = this.selectedFeatures.map(f=>f.properties[this.rule.col])
+            let entries = [...new Set(props)].slice(0,this.colors.length).map((key,i)=>([key,this.colors[i%this.colors.length]]))
+            this.rule.categories = Object.fromEntries(entries)
+            this.rule.categories['預設'] = ''
+            let values = props.filter(v=>!isNaN(v))
+            this.rule.max = Math.max(...values)
+            this.rule.min = Math.min(...values)
+            this.rule.gradients.sort((a,b)=>a.pct-b.pct)
+            this.rule.gradients.map(gd=>{
+                gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map(x=>parseInt(x))
+            })
+        },
         mapSFP(fKey,tKey,rule=undefined){
-            if(rule){
-                let values = this.selectedFeatures.map(f=>f.properties[tKey]).filter(v=>!isNaN(v))
-                this.rule.max = Math.max(...values)
-                this.rule.min = Math.min(...values)
-                this.rule.gradients.sort((a,b)=>a.pct-b.pct)
-                this.rule.gradients.map(gd=>{
-                    gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map(x=>parseInt(x))
-                })
-            }
             this.interaction.mapSelectedFeaturesProp(fKey,tKey,rule)
             this.featureIndex=1;this.featureIndex=0 // force update
         },
@@ -187,11 +221,7 @@ export default {
         }
     },
     created(){
-        let colors =['rgba(244,67,54,1)','rgba(233,30,99,1)','rgba(156,39,176,1)','rgba(103,58,183,1)',
-        'rgba(63,81,181,1)','rgba(33,150,243,1)','rgba(3,169,244,1)','rgba(0,188,212,1)','rgba(0,150,136,1)',
-        'rgba(76,175,80,1)','rgba(139,195,74,1)','rgba(205,220,57,1)','rgba(255,235,59,1)','rgba(255,193,7,1)',
-        'rgba(255,152,0,1)','rgba(255,87,34,1)','rgba(121,85,72,1)','rgba(158,158,158,1)','rgba(96,125,139,1)']
-        this.favorites = colors.map(color=>{
+        this.favorites = this.colors.map(color=>{
             return Object.assign({...this.defaultStyle},{stroke:color,fill:color.replace('1)','0.6)')})
         })
     }

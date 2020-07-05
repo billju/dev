@@ -42,7 +42,7 @@ export default {
                     return f
                 })
                 let geojson = {type:'FeatureCollection',features}
-                this.downloadText(JSON.stringify(geojson),filename+extension)
+                this.downloadText(JSON.stringify(geojson),filename+extension,'plain')
             }else if(extension=='.png'){
                 this.downloadCanvas(this.gismap.canvas,filename+extension)
             }else if(extension=='.svg'){
@@ -88,11 +88,12 @@ export default {
                     }
                 }
                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.gismap.view.w} ${this.gismap.view.h}">${paths}</svg>`
-                this.downloadText(svg,filename+extension)
+                this.downloadText(svg,filename+extension,'plain')
             }else if(extension=='.csv'){
                 let array = features.map(f=>f.properties)
                 let cols = [...new Set(array.flatMap(obj=>Object.keys(obj)))]
                 let aoa = array.map(obj=>cols.map(col=>obj[col]))
+                aoa.unshift(cols)
                 let text = aoa.reduce((acc,cur)=>acc+cur.join(',')+'\r\n','')
                 this.downloadText(text,filename+extension,'csv')
             }

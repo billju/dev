@@ -79,7 +79,20 @@ export default {
                 let text = await this.readFileAsText(file)
                 let json = JSON.parse(text)
                 if(Array.isArray(json)){
-                    this.renderTable(json)
+                    function deepParse(obj){
+                        let shouldKeepParse = false
+                        for(let key in obj){
+                            if(typeof obj[key]=='object'){
+                                shouldKeepParse = true
+                                for(let ok in obj[key]){
+                                    obj[`${key}.${ok}`] = obj[key][ok]
+                                }
+                                delete obj[key]
+                            }
+                        }
+                        return shouldKeepParse?deepParse(obj):obj
+                    }
+                    this.renderTable(json.map(obj=>deepParse(obj)))
                     this.dialog = true
                 }else if(typeof json=='object'&&json.type=='FeatureCollection'){
                     this.handleGeojson(geojson,this.filename)   
@@ -95,11 +108,10 @@ export default {
                 reader.readAsText(file,this.encoding)
             })
         },
-        handleGeojson(geojson,filename){
+        handleGeojson(geojson){
             this.tmpFeatures = geojson.features.filter(f=>f.geometry)
             this.renderTable(this.tmpFeatures.map(f=>f.properties))
             this.dialog = true
-            this.tmpFeatures.map(f=>{f.properties['群組']=f.properties['群組']??filename})
         },
         handleCSV(text,delimiter){
             // copied from https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm
