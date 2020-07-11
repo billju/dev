@@ -50,6 +50,7 @@ export default {
             }
         },
         async handleFile(file){
+            this.importing = true
             this.filename = file.name.split('.')[0]
             let extension = file.name.match(/\.\w+$/i)[0]
             if(file.type.includes('image')){
@@ -74,7 +75,7 @@ export default {
                 let cols = aoa[0]
                 let rows = aoa.slice(1).map(arr=>Object.fromEntries(arr.map((a,i)=>([cols[i],a]))))
                 this.renderTable(rows)
-                this.dialog = true
+                this.showDataTable = true
             }else if(extension=='.json'){
                 let text = await this.readFileAsText(file)
                 let json = JSON.parse(text)
@@ -93,7 +94,7 @@ export default {
                         return shouldKeepParse?deepParse(obj):obj
                     }
                     this.renderTable(json.map(obj=>deepParse(obj)))
-                    this.dialog = true
+                    this.showDataTable = true
                 }else if(typeof json=='object'&&json.type=='FeatureCollection'){
                     this.handleGeojson(geojson,this.filename)   
                 }
@@ -111,7 +112,7 @@ export default {
         handleGeojson(geojson){
             this.tmpFeatures = geojson.features.filter(f=>f.geometry)
             this.renderTable(this.tmpFeatures.map(f=>f.properties))
-            this.dialog = true
+            this.showDataTable = true
         },
         handleCSV(text,delimiter){
             // copied from https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm

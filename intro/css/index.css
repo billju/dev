@@ -172,7 +172,7 @@ a.neon-btn{
     text-align: center;
     text-transform: uppercase;
     text-decoration: none;
-    overflow: hidden;
+    /* overflow: hidden; */
     transition: 0.2s;
 }
 .neon-btn:hover{

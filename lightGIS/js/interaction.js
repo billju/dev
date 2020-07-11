@@ -220,5 +220,5 @@ export default class Interaction{
     //             feature.geometry.coordinates = coords.map(cs=>cs.map(c=>simplifyVisvalingam(c,Math.round(c.length*percentage))))
     //         }
     //     }
-    // }
+    // }   
 }

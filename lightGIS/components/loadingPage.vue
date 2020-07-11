@@ -22,6 +22,7 @@ export default {
             xhr.open("GET",url,false);
             xhr.overrideMimeType("image/svg+xml");
             xhr.onload = function() {
+                xhr.responseText
                 let svg = xhr.responseXML.documentElement
                 Object.assign(svg.style,style)
                 container.appendChild(svg);

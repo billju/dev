@@ -1,16 +1,18 @@
 <template lang="pug">
 .px-2(v-if="show")
-    .btn-group
-        .btn.btn-outline-info(@click="interaction.moveLayerTo('top')") 置頂
-        .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')") 置底
-        .btn.btn-outline-info(@click="interaction.fitExtent(selectedFeatures)") 聚焦
-        .btn.btn-outline-info(@click="addFavorite()") 加到最愛
-    table#custom-style.table-striped.w-100.text-shadow(:style="{opacity:selectedFeatures&&selectedFeatures.length?1:0.2}")
+    table#custom-style.table-striped.w-100(:style="{opacity:selectedFeatures&&selectedFeatures.length?1:0.2}")
         tbody
+            tr
+                td 操作
+                td
+                    .btn-group
+                        .btn.btn-outline-info(@click="interaction.moveLayerTo('top')") 置頂
+                        .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')") 置底
+                        .btn.btn-outline-info(@click="interaction.fitExtent(selectedFeatures)") 聚焦
             tr
                 td 文字內容
                 td
-                    input.w-100(type="text" style="width:100px" :value="style['text']" @input="setSFP('text',$event.target.value)")
+                    input.w-100(ref="text-input" type="text" style="width:100px" :value="style['text']" @input="setSFP('text',$event.target.value)")
             tr
                 td 文字位置
                 td
@@ -26,9 +28,10 @@
                         option(value="[-1.2,0]") 左
             tr
                 td 文字顏色
-                td.px-0.py-1
+                td.px-0.py-1.d-flex.align-items-center
                     el-color-picker(show-alpha :value="style['textFill']" @active-change="setSFP('textFill',$event)")
                     el-color-picker(show-alpha :value="style['textStroke']" @active-change="setSFP('textStroke',$event)")
+                    .btn.btn-sm.btn-secondary(@click="swapStyle('textFill','textStroke')") 交換
             tr
                 td 文字大小/邊框
                 td
@@ -40,13 +43,13 @@
                     select(:value="style['fontFamily']" @input="setSFP('fontFamily',$event.target.value)")
                         option(v-for="fontFamily in fontFamilies" :value="fontFamily") {{fontFamily}}
             tr
-                td 圓圈/文字半徑
+                td 半徑
                 td
                     el-input-number(size="mini" :value="style['radius']" :min="0" @change="setSFP('radius',$event)")
             tr
                 td 透明度
                 td
-                    input.custom-range(type="range" :value="style['opacity']" min='0' max='1' step='0.1' style="direction:rtl" @input="setSFP('opacity',$event.target.value*1)")
+                    input.custom-range(type="range" :value="style['opacity']" min='0.1' max='1' step='0.1' style="direction:rtl" @input="setSFP('opacity',$event.target.value*1)")
             tr
                 td 虛線/偏移
                 td
@@ -70,11 +73,10 @@
             tr
                 td {{rule.isGradient?'漸':'分'}}層設色
                 td 
-                    select(v-model="rule.col" @change="handleSelect()")
+                    select(v-model="rule.col" @change="updateRule()")
                         option(value="")
                         option(v-for="prop in properties" :value="prop") {{prop}}
-                    el-switch(v-model="rule.isGradient")
-    .w-100(v-if="rule.isGradient")
+    .w-100(v-if="rule.isGradient&&rule.col")
         .d-flex.align-items-center(v-for="gd,i in rule.gradients" :key="i")
             el-color-picker(show-alpha size="mini" v-model="gd.rgba" 
                 @change="updateRule();mapSFP('fill',rule.col,gradientColor)")
@@ -82,21 +84,31 @@
                 @input="updateRule();mapSFP('fill',rule.col,gradientColor)")
             button.close(@click="rule.gradients.splice(i,1)")
                 span &times;
-    .w-100(v-else)
+        .btn.btn-warning(@click="rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})")
+            i.el-icon-plus
+        .btn.btn-success(@click="fav.gradients.push([...rule.gradients.map(g=>({...g}))])")
+            i.el-icon-plus
+        .btn.btn-secondary(v-for="fg,i in fav.gradients" :key="`gd${i}`" 
+            @click="rule.gradients=[...fg.map(g=>({...g}))];updateRule()"
+            @contextmenu.prevent="$delete(fav.gradients,i)") 漸層{{i+1}}
+    .w-100(v-else-if="!rule.isGradient&&rule.col")
         .d-flex.align-items-center(v-for="(val,key) in rule.categories" :key="key")
             span.flex-grow-1 {{key}}
             el-color-picker(show-alpha size="mini" v-model="rule.categories[key]" 
                 @change="mapSFP('fill',rule.col,categoryColor);mapSFP('stroke',rule.col,categoryColor)")
             button.close(@click="$delete(rule.categories,key)")
                 span &times;
-    .btn.btn-success(@click="addRule()")
-        i.el-icon-plus
-    .btn.btn-secondary(v-if="!rule.isGradient" v-for="fav,i in favCategories" :key="`cat${i}`" 
-        @click="rule.categories={...fav};mapSFP('fill',rule.col,categoryColor);mapSFP('stroke',rule.col,categoryColor)"
-        @contextmenu.prevent="$delete(favCategories,i)") 設定{{i+1}}
-    .w-100.border.mx-1.my-1
-    .btn(v-for="fav,i in favorites" :key="`fav${i}`" @click="setFavorite(fav)" :style="getFavorite(fav)"
-        @contextmenu.prevent="$delete(favorites,i)") {{i+1}}
+        .btn.btn-success(@click="fav.categories.push({...rule.categories})")
+            i.el-icon-plus
+        .btn.btn-secondary(v-for="fc,i in fav.categories" :key="`cat${i}`" 
+            @click="rule.categories={...fc};updateRule(fc)"
+            @contextmenu.prevent="$delete(fc,i)") 分層{{i+1}}
+    .d-flex.align-items-center.my-1
+        .flex-grow-1.border
+        .btn.mx-1(@click="addFavorite()") 常用樣式
+        .flex-grow-1.border
+    .btn(v-for="favStyle,i in fav.styles" :key="`fav${i}`" @click="setFavorite(favStyle)" :style="getFavorite(favStyle)"
+        @contextmenu.prevent="$delete(fav.styles,i)") {{i+1}}
 </template>
 
 <script>
@@ -107,9 +119,23 @@ export default {
         defaultStyle: {
             lineWidth:3,lineDash:[],stroke:'rgba(3,169,244,1)',
             fill:'rgba(0,0,255,0.3)', textAnchor:'[0,0]',
-            textStroke:'rgba(0,0,0,1)',fontWeight:2,textFill:'rgba(255,255,255,1)'
+            textStroke:'rgba(255,255,255,1)',fontWeight:3,textFill:'rgba(0,0,0,1)'
         }, 
-        featureIndex:0, favorites: [],
+        featureIndex:0, fav: {
+            styles: [],
+            gradients: [
+                [
+                    {pct:0,rgba:'rgba(244,67,54,1)'},
+                    {pct:0.3,rgba:'rgba(255,152,0,1)'},
+                    {pct:0.6,rgba:'rgba(255,235,59,1)'},
+                    {pct:1,rgba:'rgba(76,175,80,1)'}
+                ],
+            ],
+            categories: [
+                {'公':'rgba(254,255,191,1)','私':'rgba(188,233,252,1)','公私共有':'rgba(202,214,159,1)',
+                '公法人':'rgba(215,177,158,1)','糖':'rgba(239,177,208,1)','預設':'rgba(204,204,204,1)'},
+            ]
+        },
         fontFamilies: ['微軟正黑體','serif','sans-serif','fantasy','monospace','標楷體'],
         rule:{min:0,max:100,col:'',categories:{},isGradient:true,gradients:[
             {pct:0,rgba:'rgba(244,67,54,1)'},
@@ -117,25 +143,13 @@ export default {
             {pct:0.6,rgba:'rgba(255,235,59,1)'},
             {pct:1,rgba:'rgba(76,175,80,1)'},
         ]}, 
-        favCategories: [
-            {'公':'rgba(254,255,191,1)','私':'rgba(188,233,252,1)','公私共有':'rgba(202,214,159,1)',
-            '公法人':'rgba(215,177,158,1)','糖':'rgba(239,177,208,1)','預設':'rgba(204,204,204,1)'},
-        ],
         colors:['rgba(244,67,54,1)','rgba(233,30,99,1)','rgba(156,39,176,1)','rgba(103,58,183,1)',
         'rgba(63,81,181,1)','rgba(33,150,243,1)','rgba(3,169,244,1)','rgba(0,188,212,1)','rgba(0,150,136,1)',
         'rgba(76,175,80,1)','rgba(139,195,74,1)','rgba(205,220,57,1)','rgba(255,235,59,1)','rgba(255,193,7,1)',
         'rgba(255,152,0,1)','rgba(255,87,34,1)','rgba(121,85,72,1)','rgba(158,158,158,1)','rgba(96,125,139,1)'],
+        autoFocus: null,
     }),
     methods: {
-        handleSelect(){
-            this.updateRule()
-            if(this.rule.isGradient){
-                this.mapSFP('fill',this.rule.col,this.gradientColor)
-            }else{
-                this.mapSFP('fill',this.rule.col,this.categoryColor)
-                this.mapSFP('stroke',this.rule.col,this.categoryColor)
-            }
-        },
         gradientColor(input){
             if(isNaN(input)||!this.rule.gradients.length) return this.style.fill
             const mapRange = (num,min,max,MIN,MAX)=>(num-min)/(max-min)*(MAX-MIN)+MIN
@@ -160,46 +174,56 @@ export default {
             this.interaction.setSelectedFeaturesProp(key,value)
             this.featureIndex=1;this.featureIndex=0 // force update
         },
-        addRule(){
-            if(this.rule.isGradient)
-                this.rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})
-            else
-                this.favCategories.push({...this.rule.categories})
-        },
-        updateRule(){
+        updateRule(preset){
             let props = this.selectedFeatures.map(f=>f.properties[this.rule.col])
-            let entries = [...new Set(props)].slice(0,this.colors.length).map((key,i)=>([key,this.colors[i%this.colors.length]]))
-            this.rule.categories = Object.fromEntries(entries)
-            this.rule.categories['預設'] = ''
             let values = props.filter(v=>!isNaN(v))
-            this.rule.max = Math.max(...values)
-            this.rule.min = Math.min(...values)
-            this.rule.gradients.sort((a,b)=>a.pct-b.pct)
-            this.rule.gradients.map(gd=>{
-                gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map(x=>parseInt(x))
-            })
+            this.rule.isGradient = values.length>this.selectedFeatures.length/2
+            if(this.rule.isGradient){
+                this.rule.max = Math.max(...values)
+                this.rule.min = Math.min(...values)
+                this.rule.gradients.sort((a,b)=>a.pct-b.pct)
+                this.rule.gradients.map(gd=>{
+                    gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map(x=>parseInt(x))
+                })
+                this.mapSFP('fill',this.rule.col,this.gradientColor)
+            }else{
+                if(preset){
+                    this.categories = preset
+                }else{
+                    let entries = [...new Set(props)].slice(0,this.colors.length).map((key,i)=>([key,this.colors[i%this.colors.length]]))
+                    this.rule.categories = Object.fromEntries(entries)
+                    this.rule.categories['預設'] = ''
+                }
+                this.mapSFP('fill',this.rule.col,this.categoryColor)
+                this.mapSFP('stroke',this.rule.col,this.categoryColor)
+            }
         },
         mapSFP(fKey,tKey,rule=undefined){
             this.interaction.mapSelectedFeaturesProp(fKey,tKey,rule)
             this.featureIndex=1;this.featureIndex=0 // force update
         },
+        swapStyle(s1,s2){
+            let tmp = this.style[s1]
+            this.setSFP(s1,this.style[s2])
+            this.setSFP(s2,tmp)
+        },
         addFavorite(){
             this.featureIndex=1;this.featureIndex=0 // force update
-            let newFav = Object.assign({},this.style)
-            delete newFav.text
-            this.favorites.push(newFav)
+            let newStyle = Object.assign({},this.style)
+            delete newStyle.text
+            this.fav.styles.push(newStyle)
         },
         setFavorite(style){
             this.defaultStyle = style
             for(let key in style)
                 this.setSFP(key,style[key])
         },
-        getFavorite(fav){
-            let tS = fav.textStroke, fW = fav.fontWeight?1:0
+        getFavorite(style){
+            let tS = style.textStroke, fW = style.fontWeight?1:0
             return {
-                border:`solid ${fav.lineWidth}px ${fav.stroke}`,
-                background:fav.fill,
-                color:fav.textFill,
+                border:`solid ${style.lineWidth}px ${style.stroke}`,
+                background:style.fill,
+                color:style.textFill,
                 textShadow:`-${fW}px 0 ${tS}, ${fW}px 0 ${tS}, 0 -${fW}px ${tS}, 0 ${fW}px ${tS}`
             }
         }
@@ -218,12 +242,26 @@ export default {
             }else{
                 return []
             }
+        },
+        colorRule(){
+            return this.rule.isGradient?this.gradientColor:this.categoryColor
         }
     },
     created(){
-        this.favorites = this.colors.map(color=>{
+        this.fav.styles = this.colors.map(color=>{
             return Object.assign({...this.defaultStyle},{stroke:color,fill:color.replace('1)','0.6)')})
         })
+    },
+    mounted(){
+        this.autoFocus = window.addEventListener('keydown',e=>{
+            if(!e.ctrlKey&&this.show){
+                if(document.activeElement==document.body)
+                    this.$refs['text-input'].focus()
+            }
+        })
+    },
+    beforeDestroy(){
+        window.removeEventListener('keydown',this.autoFocus)
     }
 }
 </script>

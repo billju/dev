@@ -55,13 +55,15 @@ export default {
     props: ['gismap','interaction','show'],
     components: {ETA},
     data:()=>({
-        UID:'TXG9', city:'Taichung', cities: {
+        UID:'', TRAStationID:'0900', 
+        city:'Taichung', cities: {
             Taipei:'臺北市',NewTaipei:'新北市',Taoyuan:'桃園市',Taichung:'臺中市',Tainan:'臺南市',
             Kaohsiung:'高雄市',Keelung:'基隆市',Hsinchu:'新竹市',HsinchuCounty:'新竹縣',MiaoliCounty:'苗栗縣',
             ChanghuaCounty:'彰化縣',NantouCounty:'南投縣',YunlinCounty:'雲林縣',ChiayiCounty:'嘉義縣',
             Chiayi:'嘉義市',PingtungCounty:'屏東縣',YilanCounty:'宜蘭縣',HualienCounty:'花蓮縣',
             TaitungCounty:'臺東縣',KinmenCounty:'金門縣',PenghuCounty:'澎湖縣',LienchiangCounty:'連江縣'
-        }, cols: [], rows:[], busETA:[], tab: '去程', TRAStationID:'0900', searching: true,
+        }, 
+        cols: [], rows:[], busETA:[], tab: '去程', searching: true,
         tourTypes:{
             ScenicSpot:'景點',Restaurant:'餐廳',Hotel:'飯店',Activity:'活動'
         },
@@ -144,6 +146,7 @@ export default {
                 return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':group})
             })
             this.interaction.fitExtent(features)
+            this.$emit('handleSelect',features)
             this.$emit('addGroup',group)
         },
         async BikeAvaiable(city='Taichung'){
@@ -178,6 +181,7 @@ export default {
                 })
             })
             this.interaction.fitExtent(features)
+            this.$emit('handleSelect',features)
             this.$emit('addGroup',group)
         },
         async searchBus(city,UID){
@@ -185,6 +189,7 @@ export default {
             let stops = await this.BusStops(city,UID)
             this.BusETA(city,UID)
             this.interaction.fitExtent([...shape,...stops])
+            this.$emit('handleSelect',[...shape,...stops])
             this.$emit('addGroup',UID)
             this.searching = false
         },
@@ -231,7 +236,7 @@ export default {
             if(json instanceof Error) return
             return this.renameArray(json,props).map(row=>{
                 return this.gismap.WKT(row['WKT'],{
-                    '路線':row['路線'],'方向':row['方向'],'群組':UID, lineWidth: 6, stroke:row['方向']?'green':'red'
+                    '路線':row['路線'],'方向':row['方向'],'群組':UID, lineWidth: 6, stroke:row['方向']?'dodgerblue':'grey'
                 })
             })
         },
@@ -346,6 +351,7 @@ export default {
                 })
             }).filter(f=>f)
             this.interaction.fitExtent([...shape,...points])
+            this.$emit('handleSelect',[...shape,...points])
             this.$emit('addGroup',group)
         },
         async MetroShape(operator='TRTC'){

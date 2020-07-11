@@ -7,7 +7,7 @@
 
 .el-carousel__item[data-v-a4ca23de]{background:#99a9bf}
 
-input[type=number][data-v-f6e9f756]{width:50px}
+input[type=number][data-v-f6e9f756]{width:50px}input[type=number][data-v-f6e9f756],input[type=text][data-v-f6e9f756]{border:1px solid #1e90ff;border-radius:3px}
 
 *{font-family:微軟正黑體}body,html{margin:0;height:100%}.w-100{width:100%}.h-100{height:100%}.cursor-pointer{cursor:pointer}.text-shadow{font-weight:700;color:#000;text-shadow:-1px 0 #fff,0 1px #fff,1px 0 #fff,0 -1px #fff}.fade-enter-active,.fade-leave-active{transition:opacity .5s}.fade-enter,.fade-leave-to{opacity:0}.fade-up-enter-active,.fade-up-leave-active{transition:opacity .5s,transform .5s}.fade-up-enter,.fade-up-leave-to{opacity:0;transform:translateY(30%)}.fade-right-enter-active,.fade-right-leave-active{transition:opacity .5s,transform .5s}.fade-right-enter,.fade-right-leave-to{opacity:0;transform:translateX(-50%)}
 

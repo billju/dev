@@ -209,8 +209,10 @@ export default class GisMap{
             // vectors
             let tolerance = Math.pow(2,18-this.view.zoom)
             tolerance = tolerance<1?0:tolerance
-            for(let i=this.vectors.length-1;i>=0;i--){
-                this.renderVector(this.vectors[i],tolerance)
+            const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
+            let vectors = this.vectors.filter(f=>isOverlaped(f.geometry.bbox,this.view.bbox))
+            for(let i=vectors.length-1;i>=0;i--){
+                this.renderVector(vectors[i],tolerance)
             }
             if(this.drawEvent.active){
                 this.renderDraw()
