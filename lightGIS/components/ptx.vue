@@ -11,15 +11,12 @@ div(v-if="show")
         .btn.btn-outline-danger(@click="Bike(city)") iBike即時站位
         .btn.btn-outline-success(@click="BusRoutes(city)") 公車路線
     .btn-group.w-100
-        .btn.btn-outline-primary(@click="TRAShape()") 台鐵線型
-        .btn.btn-outline-primary(@click="TRAStation()") 台鐵車站
+        .btn.btn-outline-primary(@click="TRA()") 台鐵
+        .btn.btn-outline-primary(@click="THSR()") 高鐵
     .input-group
         .input-group-prepend
             .btn.btn-outline-primary(@click="TRALiveBoard(TRAStationID)") 台鐵動態
         input.form-control.btn.btn-outline-primary(type='text' style='width:50px' v-model="TRAStationID" placeholer="台鐵車站UID")
-    .btn-group.w-100
-        .btn.btn-outline-primary(@click="THSRShape()") 高鐵線型
-        .btn.btn-outline-primary(@click="THSRStation()") 高鐵車站
     .input-group
         .input-group-prepend 
             .btn.btn-outline-primary(@click="MetroRoute(metroOperator)") 捷運類型
@@ -258,6 +255,13 @@ export default {
                 }
             })
         },
+        async TRA(){
+            let shapes = await this.TRAShape()
+            let stations = await this.TRAStation()
+            this.interaction.fitExtent([...shapes,...stations])
+            this.$emit('handleSelect',[...shapes,...stations])
+            this.$emit('addGroup','台鐵')
+        },
         async TRAShape(){
             let props = {
                 'LineName.Zh_tw':'路線',
@@ -265,11 +269,9 @@ export default {
             }
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/TRA/Shape?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
-            let features = this.renameArray(json,props).map(row=>{
-                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'群組':'台鐵路線'})
+            return this.renameArray(json,props).map(row=>{
+                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'群組':'台鐵'})
             })
-            this.interaction.fitExtent(features)
-            this.$emit('addGroup','台鐵路線')
         },
         async TRAStation(){
             let props = {
@@ -283,14 +285,13 @@ export default {
             }
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/TRA/Station?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
-            let features = this.renameArray(json,props).map(row=>{
-                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':'台鐵路線'})
+            return this.renameArray(json,props).map(row=>{
+                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':'台鐵'})
             })
-            this.interaction.fitExtent(features)
-            this.$emit('addGroup','台鐵路線')
         },
         async TRALiveBoard(StationID='0900'){
             let props = {
+                'StationID':'UID',
                 'StationName.Zh_tw':'站名',
                 'TrainNo':'車次',
                 'Direction':'方向',
@@ -304,6 +305,13 @@ export default {
             if(json instanceof Error) return
             this.renderTable(this.renameArray(json,props))
         },
+        async THSR(){
+            let shapes = await this.THSRShape()
+            let stations = await this.THSRStation()
+            this.interaction.fitExtent([...shapes,...stations])
+            this.$emit('handleSelect',[...shapes,...stations])
+            this.$emit('addGroup','高鐵')
+        },
         async THSRShape(){
             let props = {
                 'LineName.Zh_tw':'路線',
@@ -311,11 +319,9 @@ export default {
             }
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/THSR/Shape?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
-            let features = this.renameArray(json,props).map(row=>{
-                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'群組':'高鐵路線'})
+            return this.renameArray(json,props).map(row=>{
+                return this.gismap.WKT(row['WKT'],{'路線':row['路線'],'群組':'高鐵'})
             })
-            this.interaction.fitExtent(features)
-            this.$emit('addGroup','高鐵路線')
         },
         async THSRStation(){
             let props = {
@@ -328,11 +334,9 @@ export default {
             }
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/THSR/Station?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
-            let features = this.renameArray(json,props).map(row=>{
-                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':'高鐵路線'})
+            return this.renameArray(json,props).map(row=>{
+                return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':'高鐵'})
             })
-            this.interaction.fitExtent(features)
-            this.$emit('addGroup','高鐵路線')
         },
         async MetroRoute(operator='TRTC'){
             let group = this.metroOperators[operator]

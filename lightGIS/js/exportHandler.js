@@ -96,6 +96,8 @@ export default {
                 aoa.unshift(cols)
                 let text = aoa.reduce((acc,cur)=>acc+cur.join(',')+'\r\n','')
                 this.downloadText(text,filename+extension,'csv')
+            }else if(extension=='.json'){
+                this.downloadText(JSON.stringify(features.map(f=>f.properties)),filename+extension,'plain')
             }
         }
     }

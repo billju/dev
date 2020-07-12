@@ -1,6 +1,6 @@
 <template lang="pug">
 .w-100.h-100
-    canvas.w-100.h-100(ref="gismap" @drop="handleDrop($event)" @dragover="$event.preventDefault()")
+    canvas.w-100.h-100(ref="gismap" @drop="handleDrop($event)" @dragover="$event.preventDefault()" :style="{background:bgColor}")
     .position-fixed(style="right:0;top:0;max-height:100%")
         el-tabs(v-model="tab" tab-position="left")
             el-tab-pane(label="網格" name="網格")
@@ -17,21 +17,32 @@
                         .btn.btn-outline-danger.w-100(@click="addGroupPrompt()") 新增
                     .px-1.flex-grow-1
                         .btn-group.w-100
-                            .btn.btn-outline-info(@click="moveGroup(groupName)") 移動至此
-                            .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)") 聚焦
-                            .btn.btn-outline-danger(@click="removeGroupPrompt()")
-                                span &times;
+                            el-tooltip(content="移動選取項目至目前群組" placement="bottom-start")
+                                .btn.btn-outline-info(@click="moveGroup(groupName)") 
+                                    i.el-icon-position
+                            el-tooltip(content="置頂" placement="bottom-end")
+                                .btn.btn-outline-info(@click="interaction.moveLayerTo('top')")
+                                    i.el-icon-upload2
+                            el-tooltip(content="置底" placement="bottom-end")
+                                .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')")
+                                    i.el-icon-download
+                            el-tooltip(content="聚焦" placement="bottom-end")
+                                .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)")
+                                    i.el-icon-aim
+                            el-tooltip(content="刪除群組" placement="bottom-end")
+                                .btn.btn-outline-danger(@click="removeGroupPrompt()")
+                                    i.el-icon-close
                         .d-flex.align-items-center
                             el-switch.mx-1(v-model="groups[groupIndex].active" @change="toggleGroup($event)")
                             input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' 
                                 v-model.number="groups[groupIndex].opacity" @input="setGroupProps(groupName,'opacity',$event.target.value)")
                         .d-flex.w-100
-                            .btn.btn-outline-primary(@click="scrollGroupFeatures(-20)")
-                                span &laquo;
+                            .btn.btn-sm.btn-outline-primary(@click="scrollGroupFeatures(-20)")
+                                i.el-icon-arrow-left
                             .border.d-flex.align-items-center.justify-content-center.flex-grow-1
                                 span {{groupRange.start}}~{{groupRange.end}} / {{groupRange.length}}
-                            .btn.btn-outline-primary(@click="scrollGroupFeatures(20)")
-                                span &raquo;
+                            .btn.btn-sm.btn-outline-primary(@click="scrollGroupFeatures(20)")
+                                i.el-icon-arrow-right
                         .btn-group.w-100
                             .btn.btn-outline-info(@click="renderTable(groupFeatures.map(f=>f.properties));showDataTable=true") 欄位
                             select.btn.btn-outline-info(v-model="groups[groupIndex].propKey")
@@ -60,9 +71,10 @@
                     tbody
                         tr
                             td 檔案編碼
-                            td 
+                            td.d-flex
                                 select(v-model="encoding")
                                     option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
+                                el-color-picker(size="mini" :value="bgColor" @active-change="bgColor=$event")
                         tr
                             td 動畫插值
                             td
@@ -112,8 +124,8 @@
                             th 
                             th(v-for="col,ci in cols" :key="ci")
                                 .d-flex.align-items-center
-                                    span.flex-grow-1(style="white-space:nowrap") {{col.key}}
-                                    span.d-flex.cursor=pointer
+                                    span.flex-grow-1(style="white-space:nowrap" @dblclick="renameColumnPrompt(col)").cursor-pointer {{col.key}}
+                                    span.d-flex.cursor-pointer
                                         i.el-icon-d-caret(v-if="col.sort==0" @click="col.sort=1")
                                         i.el-icon-top(v-else-if="col.sort==1" @click="col.sort=-1")
                                         i.el-icon-bottom(v-else @click="col.sort=0")
@@ -200,8 +212,8 @@ export default {
     components: {Tutorial,Rasters,Draggable,Styles,PTX,LoadingPage},
     mixins: [importHandler,exportHandler],
     data: ()=>({
-        tab: '網格', gismap: GisMap, interaction: Interaction, fileExtension: '.geojson', filename: '', 
-        extensions:['.geojson','.png','.svg','.csv'], encoding:'utf-8', encodings: ['utf-8','big5'],
+        tab: '網格', gismap: GisMap, interaction: Interaction, fileExtension: '.geojson', filename: '', bgColor:'#ffffff',
+        extensions:['.geojson','.png','.svg','.csv','.json'], encoding:'utf-8', encodings: ['utf-8','big5'],
         showDataTable: false, importing:false, newGroup: '', newColumn:'', page: 1, maxRows: 10, maxItems:20, zoomRange: [0,20], zoomDelta:0.5,
         selectedFeatures: [], groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
         tmpFeatures:[], rows: [], cols:[], properties: [], allowAnimation: true, 
@@ -251,6 +263,19 @@ export default {
             this.handleSelect(features)
             this.showDataTable=false
             this.interaction.fitExtent(features)
+        },
+        renameColumnPrompt(col){
+            let newName = prompt('變更欄位名稱',col.key)
+            if(this.cols.map(col=>col.key).includes(newName)){
+                alert(`${newName} 名稱重複了`)
+            }else if(newName){
+                this.rows.map(row=>{
+                    row[newName] = row[col.key]
+                    delete row[col.key]
+                })
+                col.key = newName
+                this.$set(this.groups,this.groupIndex,this.groups[this.groupIndex]) //force update
+            }
         },
         removeColumn(key){
             this.cols = this.cols.filter(col=>col.key!=key)
