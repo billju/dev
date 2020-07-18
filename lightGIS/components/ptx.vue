@@ -23,26 +23,25 @@ div(v-if="show")
         select.form-control(v-model="metroOperator")
             option(v-for="(val,key) in metroOperators" :key="key" :value="key") {{val}}
     .btn-group.w-100
-    .position-fixed.d-flex.flex-column(v-if="rows.length||busETA.length" style="left:0;top:0;max-height:100%;max-width:350px")
-        .input-group
-            .btn.btn-outline-success.form-control(@click="searchBus(city,UID)") 搜尋公車
-            input(type="text" v-model="UID" placeholder="輸入公車UID" @input="searching=true")
-        .flex-grow-1(v-if="searching" style="max-height:100%;overflow-y:auto")
-            table.table.table-striped.table-hover.table-responsive.bg-light
-                thead.thead-light
-                    tr
-                        th(v-for="col in cols" :key="col") {{col}}
-                tbody
-                    tr(v-for="row,i in rows.filter(row=>row.UID.match(UID))" :key="i")
-                        td(v-for="col in cols" :key="col") {{row[col]}}
-        .flex-grow-1(v-else style="max-height:100%;overflow-y:auto")
-            el-tabs(v-model="tab" stretch)
-                el-tab-pane(label="去程" name="去程")
-                    ETA(:busETA="busETA.filter(x=>x.dir==0)")
-                el-tab-pane(label="返程" name="返程")
-                    ETA(:busETA="busETA.filter(x=>x.dir==1)")
-                el-tab-pane(label="環狀" name="環狀")
-                    ETA(:busETA="busETA.filter(x=>x.dir==2)")
+    transition(name="fade-right")
+        .position-fixed.d-flex.flex-column(v-if="rows.length||busETA.length" style="left:0;top:0;max-height:100%;max-width:350px")
+            .input-group
+                .btn.btn-outline-success.form-control(@click="searchBus(city,UID)") 搜尋公車
+                input(type="text" v-model="UID" placeholder="輸入公車UID" @input="searching=true")
+            .flex-grow-1(v-if="searching" style="max-height:100%;overflow-y:auto")
+                table.table.table-striped.table-hover.table-responsive.bg-light
+                    thead.thead-light
+                        tr
+                            th(v-for="col in cols" :key="col") {{col}}
+                    tbody
+                        tr(v-for="row,i in rows.filter(row=>row.UID.match(UID))" :key="i")
+                            td(v-for="col in cols" :key="col") {{row[col]}}
+            .flex-grow-1(v-else style="max-height:100%;overflow-y:auto")
+                el-tabs(v-model="tab" stretch)
+                    el-tab-pane(label="去程" name="去程")
+                        ETA(:busETA="busETA.filter(x=>x.dir==0)")
+                    el-tab-pane(label="返程" name="返程")
+                        ETA(:busETA="busETA.filter(x=>x.dir==1)")
 </template>
 
 <script>

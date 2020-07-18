@@ -58,7 +58,7 @@
                                     span.mr-1 {{feature.properties[groups[groupIndex].propKey]}}
             el-tab-pane(label="樣式" name="樣式")
                 Styles(:gismap="gismap" :interaction="interaction" :selectedFeatures="selectedFeatures" :show="tab=='樣式'")
-            el-tab-pane(label="檔案" name="檔案" lazy)
+            el-tab-pane(label="設定" name="設定" lazy)
                 input(ref="file" type='file' style='display: none' @change='handleFiles($event.target.files)' multiple='true')
                 .btn.btn-outline-primary.w-100(@click="$refs['file'].click()") 選取檔案或拖曳匯入
                 .input-group
@@ -71,16 +71,19 @@
                     tbody
                         tr
                             td 檔案編碼
-                            td.d-flex
+                            td
                                 select(v-model="encoding")
                                     option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
+                        tr
+                            td 背景顏色
+                            td
                                 el-color-picker(size="mini" :value="bgColor" @active-change="bgColor=$event")
                         tr
                             td 動畫插值
                             td
                                 el-switch(v-model="allowAnimation" @change="toggleAnimation($event)")
                         tr
-                            td  縮放Delta
+                            td 縮放間距
                             td
                                 el-input-number(size="mini" v-model="zoomDelta" :min="0.1" :max="1" :step="0.1" @change="gismap.zoomEvent.delta=zoomDelta")
                         tr
@@ -89,12 +92,12 @@
                         tr
                             td(colspan="2").px-3.py-0
                                 el-slider(v-model="zoomRange" range show-stops :max="20"
-                    @input="gismap.view.minZoom=zoomRange[0];gismap.view.maxZoom=zoomRange[1]")
-                .w100.border.mx-2.my-1
-                // 圖片底圖
+                                    @input="gismap.view.minZoom=zoomRange[0];gismap.view.maxZoom=zoomRange[1]")
+                .btn.btn-outline-info.w-100(@click="dialog=true") 查看教學
+            el-tab-pane(label="底圖" name="底圖" lazy)
                 Draggable(v-model="gismap.imageShapes" :options="{animation:150}")
-                    .d-flex.align-items-center.shadow-sm.px-1.py-1.cursor-pointer(v-for="imageShape,i in gismap.imageShapes" :key="i" 
-                            :class="imageShape.editing?'bg-danger text-light':''" @click="imageShape.editing=!imageShape.editing")
+                    .d-flex.align-items-center.shadow-sm.px-1.py-1.border.cursor-pointer(v-for="imageShape,i in gismap.imageShapes" :key="i" 
+                            :class="imageShape.editing?'border-danger':'border-light'" @click="imageShape.editing=!imageShape.editing")
                         span {{imageShape.filename}}
                         .custom-control.custom-switch.ml-2
                             input.custom-control-input(type='checkbox' v-model="imageShape.editable" :id="i")
@@ -103,10 +106,9 @@
                             draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
                         button.close(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
                             span &times;
+                .text-secondary.text-center(v-if="!(gismap.imageShapes&&gismap.imageShapes.length)").py-1.px-2 尚未匯入圖片
             el-tab-pane(label="PTX" name="PTX")
                 PTX(:gismap="gismap" :interaction="interaction" @addGroup="addGroup($event)" @handleSelect="handleSelect($event)" :show="tab=='PTX'")
-            el-tab-pane(label="說明" name="說明" lazy)
-                Tutorial
             el-tab-pane(label="隱藏" name="隱藏")
     transition(name="fade-right")
         .position-fixed.bg-light(v-if="Object.keys(properties).length" style="left:0;top:0;max-width:250px;max-height:100%;overflow-y:auto")
@@ -192,6 +194,8 @@
                             select.form-control(v-model="groups[groupIndex].propKey")
                                 option(v-for="key in propKeys" :key="key" :value="key") {{key}}
                 .btn.btn-sm.btn-outline-danger(@click="importing=showDataTable=false;") 關閉
+    el-dialog(:visible.sync="dialog" :append-to-body="true")
+        Tutorial
     //- LoadingPage
 </template>
 
@@ -222,7 +226,7 @@ export default {
             LineString:'el-icon-data-line',MultiLineString:'el-icon-data-line',
             Polygon:'el-icon-picture',MultiPolygon:'el-icon-picture'
         },
-        loading: false,
+        loading: false, dialog:false,
     }),
     methods: {
         confirmImport(){

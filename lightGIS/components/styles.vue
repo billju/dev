@@ -6,9 +6,18 @@
                 td 操作
                 td
                     .btn-group
-                        .btn.btn-outline-info(@click="interaction.moveLayerTo('top')") 置頂
-                        .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')") 置底
-                        .btn.btn-outline-info(@click="interaction.fitExtent(selectedFeatures)") 聚焦
+                            el-tooltip(content="置頂" placement="bottom-end")
+                                .btn.btn-outline-info(@click="interaction.moveLayerTo('top')")
+                                    i.el-icon-upload2
+                            el-tooltip(content="置底" placement="bottom-end")
+                                .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')")
+                                    i.el-icon-download
+                            el-tooltip(content="聚焦" placement="bottom-end")
+                                .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)")
+                                    i.el-icon-aim
+                            el-tooltip(content="刪除" placement="bottom-end")
+                                .btn.btn-outline-danger(@click="interaction.deleteSelected()")
+                                    i.el-icon-delete
             tr
                 td 文字內容
                 td
@@ -164,7 +173,7 @@ export default {
                     return gradients[i].rgba
                 }
             }
-            let arr = gd1.arr.map((min,i)=>mapRange(pct,gd1.pct,gd2.pct,min,gd2.arr[i])).map(x=>parseInt(x))
+            let arr = gd1.arr.map((min,i)=>mapRange(pct,gd1.pct,gd2.pct,min,gd2.arr[i])).map((x,i)=>i<3?parseInt(x):x)
             return `rgba(${arr[0]},${arr[1]},${arr[2]},${arr[3]})`
         },
         categoryColor(input){
@@ -183,7 +192,7 @@ export default {
                 this.rule.min = Math.min(...values)
                 this.rule.gradients.sort((a,b)=>a.pct-b.pct)
                 this.rule.gradients.map(gd=>{
-                    gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map(x=>parseInt(x))
+                    gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map((x,i)=>i<3?parseInt(x):x)
                 })
                 this.mapSFP('fill',this.rule.col,this.gradientColor)
             }else{

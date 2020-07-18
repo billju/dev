@@ -749,9 +749,13 @@ export default class GisMap{
                 case 'MultiLineString':
                     geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
                 case 'Polygon':
-                    geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
+                    geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)))
+                    feature.properties['Area'] = (this.getFeatureArea(feature)/1e6).toFixed(3)
+                    break;
                 case 'MultiPolygon':
-                    geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))));break;
+                    geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))))
+                    feature.properties['Area'] = (this.getFeatureArea(feature)/1e6).toFixed(3)
+                    break;
             }
             return feature
         })

@@ -51,24 +51,29 @@ export default {
         },
         async handleFile(file){
             this.importing = true
-            this.filename = file.name.split('.')[0]
+            let filename = file.name.split('.')[0]
+            this.filename = filename
             let extension = file.name.match(/\.\w+$/i)[0]
+            if(file.size/1024/1024>10){//10MB
+                this.allowAnimation = false
+                this.toggleAnimation()
+            }
             if(file.type.includes('image')){
                 let img = new Image()
                 img.src = URL.createObjectURL(file)
                 img.onload = ()=>{
-                    this.gismap.addImageShape(img,this.filename)
+                    this.gismap.addImageShape(img,filename)
                 }
             }
             if(extension=='.geojson'){
                 let text = await this.readFileAsText(file)
                 let geojson = JSON.parse(text)
-                this.handleGeojson(geojson,this.filename)
+                this.handleGeojson(geojson,filename)
             }else if(extension=='.kml'){
                 let text = await this.readFileAsText(file)
                 let kml = (new DOMParser()).parseFromString(text,'text/xml')
                 let geojson = toGeojson.kml(kml)
-                this.handleGeojson(geojson,this.filename)
+                this.handleGeojson(geojson,filename)
             }else if(extension=='.csv'){
                 let text = await this.readFileAsText(file)
                 let aoa = this.handleCSV(text,',')
@@ -96,7 +101,7 @@ export default {
                     this.renderTable(json.map(obj=>deepParse(obj)))
                     this.showDataTable = true
                 }else if(typeof json=='object'&&json.type=='FeatureCollection'){
-                    this.handleGeojson(geojson,this.filename)   
+                    this.handleGeojson(json,filename)   
                 }
             }
         },
