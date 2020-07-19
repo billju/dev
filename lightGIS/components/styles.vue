@@ -1,111 +1,98 @@
 <template lang="pug">
 .px-2(v-if="show")
-    table#custom-style.table-striped.w-100(:style="{opacity:selectedFeatures&&selectedFeatures.length?1:0.2}")
-        tbody
-            tr
-                td 操作
-                td
-                    .btn-group
-                        .btn.btn-outline-info(@click="interaction.moveLayerTo('top')") 置頂
-                        .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')") 置底
-                        .btn.btn-outline-info(@click="interaction.fitExtent(selectedFeatures)") 聚焦
-            tr
-                td 文字內容
-                td
-                    input.w-100(ref="text-input" type="text" style="width:100px" :value="style['text']" @input="setSFP('text',$event.target.value)")
-            tr
-                td 文字位置
-                td
-                    select(:value="style['textAnchor']" @input="setSFP('textAnchor',$event.target.value)")
-                        option(value="[0,0]") 中
-                        option(value="[-1,-1]") 左上
-                        option(value="[0,-1.2]") 上
-                        option(value="[1,-1]") 右上
-                        option(value="[1.2,0]") 右
-                        option(value="[1,1]") 右下
-                        option(value="[0,1.2]") 下
-                        option(value="[-1,1]") 左下
-                        option(value="[-1.2,0]") 左
-            tr
-                td 文字顏色
-                td.px-0.py-1.d-flex.align-items-center
+    .w-100(:style="{opacity:selectedFeatures&&selectedFeatures.length?1:0.2}")
+        .bg-secondary.text-light.px-2.py-1 文字
+        .d-flex.align-items-center.justify-content-between
+            span.px-2.py-1 內容
+            input.flex-grow-1(ref="text-input" type="text" style="width:100px" :value="style['text']" @input="setSFP('text',$event.target.value)")
+        .d-flex.align-items-center.justify-content-between 
+            span.px-2.py-1 內容指定欄位
+            select(@change="mapSFP('text',$event.target.value)")
+                option(value="")
+                option(v-for="prop in properties" :value="prop") {{prop}}                    
+        .d-flex.justify-content-between
+            div
+                span.px-2.py-1 位置
+                br
+                .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(0,3)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.name}}
+                br
+                .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(3,6)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.name}}
+                br
+                .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(6,9)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.name}}
+            div
+                .d-flex.justify-content-between
+                    span.px-2.py-1 填滿
+                    span.px-2.py-1 陰影
+                .d-flex.justify-content-between
                     el-color-picker(show-alpha :value="style['textFill']" @active-change="setSFP('textFill',$event)")
+                    .btn(@click="swapStyle('textFill','textStroke')")
+                        i.el-icon-sort(style="transform:rotate(90deg);transform-origin:center")
                     el-color-picker(show-alpha :value="style['textStroke']" @active-change="setSFP('textStroke',$event)")
-                    .btn.btn-sm.btn-secondary(@click="swapStyle('textFill','textStroke')") 交換
-            tr
-                td 文字大小/邊框
-                td
+                .d-flex.justify-content-between
                     input(type='number' :value="style['fontSize']" min='6' max='72' @input="setSFP('fontSize',$event.target.value*1)")
                     input(type='number' :value="style['fontWeight']" min='0' max='5' @input="setSFP('fontWeight',$event.target.value*1)")
-            tr
-                td 字型
-                td
-                    select(:value="style['fontFamily']" @input="setSFP('fontFamily',$event.target.value)")
-                        option(v-for="fontFamily in fontFamilies" :value="fontFamily") {{fontFamily}}
-            tr
-                td 半徑
-                td
-                    el-input-number(size="mini" :value="style['radius']" :min="0" @change="setSFP('radius',$event)")
-            tr
-                td 透明度
-                td
-                    input.custom-range(type="range" :value="style['opacity']" min='0.1' max='1' step='0.1' style="direction:rtl" @input="setSFP('opacity',$event.target.value*1)")
-            tr
-                td 虛線/偏移
-                td
-                    input(type='number' :value="style['lineDash'][0]" min="0" @input="setSFP('lineDash',[$event.target.value*1,$event.target.value*1])")
-                    input(type='number' :value="style['lineDashOffset']" min="0" @input="setSFP('lineDashOffset',$event.target.value*1)")
-            tr
-                td 框線顏色/寬度
-                td.px-0.py-1.d-flex.align-items-center
-                    el-color-picker(show-alpha :value="style['stroke']" @active-change="setSFP('stroke',$event)")
-                    el-input-number(size="mini" :value="style['lineWidth']" :min="0" @change="setSFP('lineWidth',$event)")
-            tr
-                td 填滿顏色
-                td.px-0.py-1
-                    el-color-picker(show-alpha :value="style['fill']" @active-change="setSFP('fill',$event)")
-            tr
-                td 文字欄位
-                td
-                    select(@change="mapSFP('text',$event.target.value)")
-                        option(value="")
-                        option(v-for="prop in properties" :value="prop") {{prop}}
-            tr
-                td {{rule.isGradient?'漸':'分'}}層設色
-                td 
-                    select(v-model="rule.col" @change="updateRule()")
-                        option(value="")
-                        option(v-for="prop in properties" :value="prop") {{prop}}
-    .w-100(v-if="rule.isGradient&&rule.col")
-        .d-flex.align-items-center(v-for="gd,i in rule.gradients" :key="i")
-            el-color-picker(show-alpha size="mini" v-model="gd.rgba" 
-                @change="updateRule();mapSFP('fill',rule.col,gradientColor)")
-            input.custom-range(type="range" v-model.number="gd.pct" min="0" max="1" step="0.1" 
-                @input="updateRule();mapSFP('fill',rule.col,gradientColor)")
-            button.close(@click="rule.gradients.splice(i,1)")
-                span &times;
-        .btn.btn-warning(@click="rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})")
-            i.el-icon-plus
-        .btn.btn-success(@click="fav.gradients.push([...rule.gradients.map(g=>({...g}))])")
-            i.el-icon-plus
-        .btn.btn-secondary(v-for="fg,i in fav.gradients" :key="`gd${i}`" 
-            @click="rule.gradients=[...fg.map(g=>({...g}))];updateRule()"
-            @contextmenu.prevent="$delete(fav.gradients,i)") 漸層{{i+1}}
-    .w-100(v-else-if="!rule.isGradient&&rule.col")
-        .d-flex.align-items-center(v-for="(val,key) in rule.categories" :key="key")
-            span.flex-grow-1 {{key}}
-            el-color-picker(show-alpha size="mini" v-model="rule.categories[key]" 
-                @change="mapSFP('fill',rule.col,categoryColor);mapSFP('stroke',rule.col,categoryColor)")
-            button.close(@click="$delete(rule.categories,key)")
-                span &times;
-        .btn.btn-success(@click="fav.categories.push({...rule.categories})")
-            i.el-icon-plus
-        .btn.btn-secondary(v-for="fc,i in fav.categories" :key="`cat${i}`" 
-            @click="rule.categories={...fc};updateRule(fc)"
-            @contextmenu.prevent="$delete(fc,i)") 分層{{i+1}}
+        .d-flex.align-items-center.justify-content-between
+            .px-2.py-1
+                span 旋轉{{style['textRotate']||0}}°
+                input.custom-range.mt-1(type="range" min="-180" max="180" step="5" :value="style['textRotate']"
+                    @dblclick="setSFP('textRotate',0)" @input="setSFP('textRotate',$event.target.value*1)")
+            .px-2.py-1
+                span 字型
+                select(:value="style['fontFamily']" @input="setSFP('fontFamily',$event.target.value)")
+                    option(v-for="fontFamily in fontFamilies" :value="fontFamily") {{fontFamily}}
+        .d-flex.align-items-center.justify-content-between
+            span.px-2.py-1 中心半徑
+            el-input-number(size="mini" :value="style['radius']" :min="0" @change="setSFP('radius',$event)")
+        .bg-secondary.text-light.px-2.py-1 透明度
+        input.custom-range(type="range" :value="style['opacity']" min='0.1' max='1' step='0.1' style="direction:rtl" @input="setSFP('opacity',$event.target.value*1)")
+        .bg-secondary.text-light.px-2.py-1 框線
+        .d-flex.align-items-center.justify-content-between
+            span.px-2.py-1 色彩
+            el-color-picker(show-alpha :value="style['stroke']" @active-change="setSFP('stroke',$event)")
+            span.px-2.py-1 寬度
+            el-input-number(size="mini" :value="style['lineWidth']" :min="0" @change="setSFP('lineWidth',$event)")
+        .d-flex.align-items-center
+            span.px-2.py-1 虛線
+            input(type='number' :value="style['lineDash'][0]" min="0" @input="setSFP('lineDash',[$event.target.value*1,$event.target.value*1])")
+            span.px-2.py-1(v-if="style['lineDash'].length") 虛線偏移
+            input(type='number' v-if="style['lineDash'].length" :value="style['lineDashOffset']" min="0" @input="setSFP('lineDashOffset',$event.target.value*1)")
+        .bg-secondary.text-light.px-2.py-1 {{rule.col==''?'填滿':rule.isGradient?'漸層設色':'分層設色'}}
+        .d-flex.align-items-center.justify-content-between
+            span.px-2.py-1 色彩
+            el-color-picker(show-alpha :value="style['fill']" @active-change="setSFP('fill',$event)")
+            span.px-2.py-1 指定欄位
+            select(v-model="rule.col" @change="updateRule()")
+                option(value="")
+                option(v-for="prop in properties" :value="prop") {{prop}}
+        .w-100(v-if="rule.isGradient&&rule.col")
+            .d-flex.align-items-center(v-for="gd,i in rule.gradients" :key="i")
+                el-tooltip(:content="(rule.min+(rule.max-rule.min)*gd.pct).toFixed(2)" placement="left")
+                    el-color-picker(show-alpha size="mini" v-model="gd.rgba" 
+                        @change="updateRule();mapSFP('fill',rule.col,gradientColor)")
+                input.custom-range.mt-1(type="range" v-model.number="gd.pct" min="0" max="1" step="0.1" 
+                    @input="updateRule();mapSFP('fill',rule.col,gradientColor)")
+                button.close(@click="rule.gradients.splice(i,1)")
+                    span &times;
+            .btn.btn-warning(@click="rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})")
+                i.el-icon-plus
+            .btn.btn-success(@click="fav.gradients.push([...rule.gradients.map(g=>({...g}))])") 新設定
+            .btn.btn-secondary(v-for="fg,i in fav.gradients" :key="`gd${i}`" 
+                @click="rule.gradients=[...fg.map(g=>({...g}))];updateRule()"
+                @contextmenu.prevent="$delete(fav.gradients,i)") 設定{{i+1}}
+        .w-100(v-else-if="!rule.isGradient&&rule.col")
+            .d-flex.align-items-center(v-for="(val,key) in rule.categories" :key="key")
+                span.flex-grow-1 {{key}}
+                el-color-picker(show-alpha size="mini" v-model="rule.categories[key]" 
+                    @change="mapSFP('fill',rule.col,categoryColor);mapSFP('stroke',rule.col,categoryColor)")
+                button.close(@click="$delete(rule.categories,key)")
+                    span &times;
+            .btn.btn-success(@click="fav.categories.push({...rule.categories})") 新設定
+            .btn.btn-secondary(v-for="fc,i in fav.categories" :key="`cat${i}`" 
+                @click="rule.categories={...fc};updateRule(fc)"
+                @contextmenu.prevent="$delete(fc,i)") 設定{{i+1}}
     .d-flex.align-items-center.my-1
         .flex-grow-1.border
-        .btn.mx-1(@click="addFavorite()") 常用樣式
+        .btn.mx-1(@click="addFavorite()") 加入常用樣式
         .flex-grow-1.border
     .btn(v-for="favStyle,i in fav.styles" :key="`fav${i}`" @click="setFavorite(favStyle)" :style="getFavorite(favStyle)"
         @contextmenu.prevent="$delete(fav.styles,i)") {{i+1}}
@@ -117,10 +104,20 @@ export default {
     props: ['gismap','interaction','selectedFeatures','show'],
     data:  ()=>({
         defaultStyle: {
-            lineWidth:3,lineDash:[],stroke:'rgba(3,169,244,1)',
-            fill:'rgba(0,0,255,0.3)', textAnchor:'[0,0]',
+            lineWidth:3,lineDash:[],stroke:'rgba(3,169,244,1)', fill:'rgba(0,0,255,0.3)', 
             textStroke:'rgba(255,255,255,1)',fontWeight:3,textFill:'rgba(0,0,0,1)'
         }, 
+        anchors: [
+            {name:'左上',value:'[-1,-1]'},
+            {name:'上方',value:'[0,-1.2]'},
+            {name:'右上',value:'[1,-1]'},
+            {name:'左方',value:'[-1.2,0]'},
+            {name:'中間',value:'[0,0]'},
+            {name:'右方',value:'[1.2,0]'},
+            {name:'左下',value:'[-1,1]'},
+            {name:'下方',value:'[0,1.2]'},
+            {name:'右下',value:'[1,1]'},
+        ],
         featureIndex:0, fav: {
             styles: [],
             gradients: [
@@ -146,7 +143,7 @@ export default {
         colors:['rgba(244,67,54,1)','rgba(233,30,99,1)','rgba(156,39,176,1)','rgba(103,58,183,1)',
         'rgba(63,81,181,1)','rgba(33,150,243,1)','rgba(3,169,244,1)','rgba(0,188,212,1)','rgba(0,150,136,1)',
         'rgba(76,175,80,1)','rgba(139,195,74,1)','rgba(205,220,57,1)','rgba(255,235,59,1)','rgba(255,193,7,1)',
-        'rgba(255,152,0,1)','rgba(255,87,34,1)','rgba(121,85,72,1)','rgba(158,158,158,1)','rgba(96,125,139,1)'],
+        'rgba(255,152,0,1)','rgba(255,87,34,1)','rgba(121,85,72,1)','rgba(158,158,158,1)','rgba(96,125,139,1)','rgba(255,255,255,0)'],
         autoFocus: null,
     }),
     methods: {
@@ -164,7 +161,7 @@ export default {
                     return gradients[i].rgba
                 }
             }
-            let arr = gd1.arr.map((min,i)=>mapRange(pct,gd1.pct,gd2.pct,min,gd2.arr[i])).map(x=>parseInt(x))
+            let arr = gd1.arr.map((min,i)=>mapRange(pct,gd1.pct,gd2.pct,min,gd2.arr[i])).map((x,i)=>i<3?parseInt(x):x)
             return `rgba(${arr[0]},${arr[1]},${arr[2]},${arr[3]})`
         },
         categoryColor(input){
@@ -183,7 +180,7 @@ export default {
                 this.rule.min = Math.min(...values)
                 this.rule.gradients.sort((a,b)=>a.pct-b.pct)
                 this.rule.gradients.map(gd=>{
-                    gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map(x=>parseInt(x))
+                    gd.arr=gd.rgba.replace(/\s/g,'').match(/(\d+),(\d+),(\d+),(\d+)/i).slice(1,5).map((x,i)=>i<3?parseInt(x):x)
                 })
                 this.mapSFP('fill',this.rule.col,this.gradientColor)
             }else{

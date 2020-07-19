@@ -33,36 +33,6 @@ function getShiftedCoords(coords,width){
     }
     return shift_coord
 }
-function getLength(coords){
-    return coords.reduce((acc,cur,i,arr)=>{
-        if(i==0) return acc
-        return acc+haversine(arr[i-1],arr[i])
-    },0)
-    function haversine(c1,c2){
-        var r = 6371008.8,
-            lat1 = c1[1]*Math.PI/180,
-            lat2 = c2[1]*Math.PI/180,
-            dlat = (lat2-lat1)/2,
-            dlon = (c2[0]-c1[0])*Math.PI/180/2,
-            a = Math.sin(dlat)*Math.sin(dlat) + 
-                Math.cos(lat1)*Math.cos(lat2)*
-                Math.sin(dlon)*Math.sin(dlon)
-        return 2*r*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-    }
-}
-function getArea(coords){
-    var radius = 6371008.8, area = 0
-    let x1 = coords[coords.length-1][0]
-    let y1 = coords[coords.length-1][1]
-    for(let i=0;i<coords.length;i++){
-        let x2 = coords[i][0]
-        let y2 = coords[i][1]
-        area+= (x2-x1)*Math.PI/180*(2+Math.sin(y1*Math.PI/180)+Math.sin(y2*Math.PI/180))
-        x1 = x2
-        y1 = y2
-    }
-    return Math.abs(area*radius*radius/2.0)
-}
 function circleDefinedBy3Points(x1,y1,x2,y2,x3,y3){
     let A = x1*(y2-y3)-y1*(x2-x3)+x2*y3-x3*y2
     let B = (x1*x1+y1*y1)*(y3-y2)+(x2*x2+y2*y2)*(y1-y3)+(x3*x3+y3*y3)*(y2-y1)
@@ -141,6 +111,9 @@ export default class GisMap{
             zoom: 9,
             minZoom: 0,
             maxZoom: 20,
+            scaleText: '0公尺',
+            scaleWith: '0px',
+            scaleStripe: '0px'
         }
         this.handleResize()
         this.vectors = []
@@ -446,25 +419,55 @@ export default class GisMap{
         this.modifyEvent.anchor = -1
         e.target.style.cursor = 'grab'
     }
+    getLength(coords){
+        return coords.reduce((acc,cur,i,arr)=>{
+            if(i==0) return acc
+            return acc+haversine(arr[i-1],arr[i])
+        },0)
+        function haversine(c1,c2){
+            var r = 6371008.8,
+                lat1 = c1[1]*Math.PI/180,
+                lat2 = c2[1]*Math.PI/180,
+                dlat = (lat2-lat1)/2,
+                dlon = (c2[0]-c1[0])*Math.PI/180/2,
+                a = Math.sin(dlat)*Math.sin(dlat) + 
+                    Math.cos(lat1)*Math.cos(lat2)*
+                    Math.sin(dlon)*Math.sin(dlon)
+            return 2*r*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+        }
+    }
     getFeatureLength(feature){
         if(feature.geometry.type=='LineString')
-            return getLength(feature.geometry.coordinates.map(this.coord2lnglat))
+            return this.getLength(feature.geometry.coordinates.map(this.coord2lnglat))
         if(feature.geometry.type=='Polygon')
-            return getLength(feature.geometry.coordinates[0].map(this.coord2lnglat))
+            return this.getLength(feature.geometry.coordinates[0].map(this.coord2lnglat))
         return 0
+    }
+    getArea(coords){
+        var radius = 6371008.8, area = 0
+        let x1 = coords[coords.length-1][0]
+        let y1 = coords[coords.length-1][1]
+        for(let i=0;i<coords.length;i++){
+            let x2 = coords[i][0]
+            let y2 = coords[i][1]
+            area+= (x2-x1)*Math.PI/180*(2+Math.sin(y1*Math.PI/180)+Math.sin(y2*Math.PI/180))
+            x1 = x2
+            y1 = y2
+        }
+        return Math.abs(area*radius*radius/2.0)
     }
     getFeatureArea(feature){
         if(feature.geometry.type=='Polygon'){
             return feature.geometry.coordinates.reduce((acc,cur,i)=>{
-                if(i==0) return acc+getArea(cur.map(this.coord2lnglat))
-                else return acc-getArea(cur.map(this.coord2lnglat))
+                if(i==0) return acc+this.getArea(cur.map(this.coord2lnglat))
+                else return acc-this.getArea(cur.map(this.coord2lnglat))
             },0)
         }
         if(feature.geometry.type=='MultiPolygon'){
             return feature.geometry.coordinates.reduce((accArea,coords)=>{
                 return accArea+coords.reduce((acc,cur,i)=>{
-                    if(i==0) return acc+getArea(cur.map(this.coord2lnglat))
-                    else return acc-getArea(cur.map(this.coord2lnglat))
+                    if(i==0) return acc+this.getArea(cur.map(this.coord2lnglat))
+                    else return acc-this.getArea(cur.map(this.coord2lnglat))
                 },0)
             },0)
         }
@@ -546,6 +549,7 @@ export default class GisMap{
         this.view.bbox[1] = view.center.y - H/2
         this.view.bbox[2] = view.center.x + W/2
         this.view.bbox[3] = view.center.y + H/2
+        this.updateScale()
     }
     setView(offset){
         var view = this.view,
@@ -554,6 +558,21 @@ export default class GisMap{
         view.center.x += offset[0]*this.world.w/tp.w/squ
         view.center.y += offset[1]*this.world.h/tp.h/squ
         this.updateView()
+    }
+    updateScale(){
+        const maxWidth = 200        
+        let c1 = this.coord2lnglat(this.client2coord([this.view.w,this.view.h]))
+        let c2 = this.coord2lnglat(this.client2coord([this.view.w-maxWidth,this.view.h]))
+        let m = this.getLength([c1,c2])
+        let exp = Math.floor(Math.log10(m))
+        let digit = m/Math.pow(10,exp)
+        digit = digit>5?5:digit>2?2:1
+        let mul = digit*Math.pow(10,exp)/m
+        m = digit*Math.pow(10,exp)
+        this.view.scaleText = m>1e3?(m/1e3)+'公里':m+'公尺'
+        let width = maxWidth*mul
+        this.view.scaleWidth = width.toFixed(0)+'px'
+        this.view.scaleStripe = digit==5?Math.round(width/5):digit==2?Math.round(width/2):Math.round(width/5)
     }
     client2coord(client){
         var view = this.view,
@@ -749,9 +768,13 @@ export default class GisMap{
                 case 'MultiLineString':
                     geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
                 case 'Polygon':
-                    geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)));break;
+                    geom.coordinates.map(arr=>arr.map(lnglat=>project(lnglat)))
+                    feature.properties['Area'] = (this.getFeatureArea(feature)/1e6).toFixed(3)
+                    break;
                 case 'MultiPolygon':
-                    geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))));break;
+                    geom.coordinates.map(arr2d=>arr2d.map(arr=>arr.map(lnglat=>project(lnglat))))
+                    feature.properties['Area'] = (this.getFeatureArea(feature)/1e6).toFixed(3)
+                    break;
             }
             return feature
         })
@@ -800,6 +823,7 @@ export default class GisMap{
             'textAnchor': feature.properties['textAnchor']||'[0,0]',
             'textFill': feature.properties['textFill']||'#000000',
             'textStroke': feature.properties['textStroke']||'#000000',
+            'textRotate': feature.properties['textRotate']||0,
             'fontFamily': feature.properties['fontFamily']||'微軟正黑體',
             'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):0,
             'fontSize': feature.properties['fontSize']?parseInt(feature.properties['fontSize']):12,
@@ -823,13 +847,19 @@ export default class GisMap{
             let metric = this.ctx.measureText(style.text)
             this.ctx.fillStyle = style.textFill
             this.ctx.strokeStyle = style.textStroke
-            let x = client[0]+(anchor[0]/2-0.5)*metric.width+style.radius*anchor[0]
+            let x = client[0]+anchor[0]/2*metric.width+style.radius*anchor[0]
             let y = client[1]+anchor[1]/2*style.fontSize+style.radius*anchor[1]
+            this.ctx.save()
+            this.ctx.translate(x,y)
+            if(style.textRotate){
+                this.ctx.rotate(style.textRotate*Math.PI/180)
+            }
             if(style.fontWeight){
                 this.ctx.lineWidth = style.fontWeight
-                this.ctx.strokeText(style.text,x,y)
+                this.ctx.strokeText(style.text,-metric.width/2,0)
             }
-            this.ctx.fillText(style.text,x,y)
+            this.ctx.fillText(style.text,-metric.width/2,0)
+            this.ctx.restore()
         }
         const drawStroke = ()=>{
             this.ctx.setLineDash(style.lineDash)
