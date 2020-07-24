@@ -1,5 +1,5 @@
 <template lang="pug">
-div(v-if="show")
+div(v-if="show" style="max-height:100%")
     .input-group
         .input-group-prepend 
             span.input-group-text 所在縣市
@@ -8,40 +8,33 @@ div(v-if="show")
     .btn-group.w-100
         .btn.btn-outline-warning(v-for="(val,key) in tourTypes" :key="key" @click="Tourism(city,key)") {{val}}
     .btn-group.w-100
-        .btn.btn-outline-danger(@click="Bike(city)") iBike即時站位
-        .btn.btn-outline-success(@click="BusRoutes(city)") 公車路線
+        .btn.btn-outline-danger(@click="Bike(city)") 公共自行車即時站位
+        .btn.btn-outline-success(@click="BusRoutes(city)") 查詢公車路線
     .btn-group.w-100
-        .btn.btn-outline-primary(@click="TRA()") 台鐵
         .btn.btn-outline-primary(@click="THSR()") 高鐵
-    .input-group
-        .input-group-prepend
-            .btn.btn-outline-primary(@click="TRALiveBoard(TRAStationID)") 台鐵動態
-        input.form-control.btn.btn-outline-primary(type='text' style='width:50px' v-model="TRAStationID" placeholer="台鐵車站UID")
-    .input-group
-        .input-group-prepend 
-            .btn.btn-outline-primary(@click="MetroRoute(metroOperator)") 捷運類型
-        select.form-control(v-model="metroOperator")
-            option(v-for="(val,key) in metroOperators" :key="key" :value="key") {{val}}
+        .btn.btn-outline-primary(@click="TRA()") 台鐵
+        .btn.btn-outline-primary(@click="TRALiveBoard(TRAStationID)") 動態
+        input.btn.btn-outline-primary(type='text' style='width:50px' v-model="TRAStationID" placeholer="台鐵車站UID")
     .btn-group.w-100
-    transition(name="fade-right")
-        .position-fixed.d-flex.flex-column(v-if="rows.length||busETA.length" style="left:0;top:0;max-height:100%;max-width:350px")
-            .input-group
-                .btn.btn-outline-success.form-control(@click="searchBus(city,UID)") 搜尋公車
-                input(type="text" v-model="UID" placeholder="輸入公車UID" @input="searching=true")
-            .flex-grow-1(v-if="searching" style="max-height:100%;overflow-y:auto")
-                table.table.table-striped.table-hover.table-responsive.bg-light
-                    thead.thead-light
-                        tr
-                            th(v-for="col in cols" :key="col") {{col}}
-                    tbody
-                        tr(v-for="row,i in filteredRows" :key="i")
-                            td(v-for="col in cols" :key="col") {{row[col]}}
-            .flex-grow-1(v-else style="max-height:100%;overflow-y:auto")
-                el-tabs(v-model="tab" stretch)
-                    el-tab-pane(label="去程" name="去程")
-                        ETA(:busETA="busETA.filter(x=>x.dir==0)")
-                    el-tab-pane(label="返程" name="返程")
-                        ETA(:busETA="busETA.filter(x=>x.dir==1)")
+        .btn.btn-outline-secondary(v-for="(val,key) in metroOperators" :key="key" @click="MetroRoute(key)") {{val}}
+    div(v-if="(rows.length||busETA.length)")
+        .input-group
+            .btn.btn-outline-success.form-control(@click="searchBus(city,UID)") 搜尋公車
+            input(type="text" v-model="UID" placeholder="輸入公車UID" @input="searching=true")
+        .flex-grow-1(v-if="searching" style="max-height:600px;overflow-y:auto")
+            table.table.table-striped.table-hover.table-responsive.bg-light
+                thead.thead-light
+                    tr
+                        th(v-for="col in cols" :key="col") {{col}}
+                tbody
+                    tr(v-for="row,i in filteredRows" :key="i")
+                        td(v-for="col in cols" :key="col") {{row[col]}}
+        .flex-grow-1(v-else style="max-height:600px;overflow-y:auto")
+            el-tabs(v-model="tab" stretch)
+                el-tab-pane(label="去程" name="去程")
+                    ETA(:busETA="busETA.filter(x=>x.dir==0)")
+                el-tab-pane(label="返程" name="返程")
+                    ETA(:busETA="busETA.filter(x=>x.dir==1)")
 </template>
 
 <script>

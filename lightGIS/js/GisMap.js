@@ -204,7 +204,11 @@ export default class GisMap{
         this.render()
     }// set function for vue
     setRasters(rasters){this.rasters=rasters}
-    setSelectedFeatures(features){this.selectEvent.features=features}
+    setSelectedFeatures(features){
+        this.selectEvent.styling = false
+        this.selectEvent.features=features
+    }
+    getSelectedFeatures(){return this.selectEvent.features}
     addImageShape(img,filename){
         let imageShape = new ImageShape(img,this.view.w/2,this.view.h/2,this)
         imageShape.filename = filename

@@ -2,12 +2,13 @@
 .px-1(v-if="show")
     Draggable(v-model="rasters" @update="gismap.setRasters(rasters)" :options="{animation:150}")
         .d-flex.align-items-center.shadow-sm(v-for="raster,i in rasters" :key="raster.name")
-            span.text-shadow.flex-grow-1 {{raster.name}}
-            .custom-control.custom-switch.mx-1
+            label.cursor-pointer(:for="raster.name" style="margin-bottom:0").text-shadow.flex-grow-1 {{raster.name}}
+            .custom-control.custom-switch.mx-1.cursor-pointer
                 input.custom-control-input(type='checkbox' v-model="raster.active" :id="raster.name" @input="gismap.setRasters(rasters)")
                 label.custom-control-label(:for="raster.name")
             .input-text(draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
-                input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' v-model.number="raster.opacity" @input="gismap.setRasters(rasters)")
+                input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl;padding-top:6px'
+                    v-model.number="raster.opacity" @input="gismap.setRasters(rasters)")
     .input-group
         .input-group-prepend(@click="addWMS()")
             .btn.btn-outline-success 新增

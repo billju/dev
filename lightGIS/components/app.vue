@@ -1,141 +1,131 @@
 <template lang="pug">
 .w-100.h-100
     canvas.w-100.h-100(ref="gismap" @drop="handleDrop($event)" @dragover="$event.preventDefault()" :style="{background:bgColor}")
-    .position-fixed.d-flex.align-items-center.px-2.py-1(v-if="gismap.view" style="right:0;bottom:0;user-select:none;background:rgba(255,255,255,0.3)")
-        span.font-weight-bold {{gismap.view.scaleText}}
+    .position-fixed.d-flex.align-items-center.px-2.py-1(v-if="gismap.view&&showScale" style="right:0;bottom:0;user-select:none;")
+        span.text-shadow {{gismap.view.scaleText}}
         .mx-2.py-1.border(:style="scaleStyle")
-    .position-fixed(style="right:0;top:0;max-height:100%")
-        el-tabs(v-model="tab" tab-position="left")
+    .position-fixed(style="left:0;top:0;max-height:100%")
+        .btn-group
+            el-tooltip(content="新增群組" placement="bottom-start")
+                .btn.btn-outline-success(@click="addGroupPrompt()") 
+                    i.el-icon-plus
+            el-tooltip(content="移動選取項目至目前群組" placement="bottom-start")
+                .btn.btn-outline-info(@click="moveGroup(groupName)") 
+                    i.el-icon-position
+            el-tooltip(content="置頂" placement="bottom-end")
+                .btn.btn-outline-info(@click="interaction.moveLayerTo('top')")
+                    i.el-icon-upload2
+            el-tooltip(content="置底" placement="bottom-end")
+                .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')")
+                    i.el-icon-download
+            el-tooltip(content="聚焦" placement="bottom-end")
+                .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)")
+                    i.el-icon-aim
+            el-tooltip(content="複製(ctrl+c)" placement="bottom-end")
+                .btn.btn-outline-success(@click="interaction.copySelected()")
+                    i.el-icon-document-copy
+            el-tooltip(content="貼上(ctrl+v)" placement="bottom-end")
+                .btn.btn-outline-success(@click="interaction.pasteSelected(true)")
+                    i.el-icon-document
+            el-tooltip(content="刪除(ctrl+x)" placement="bottom-end")
+                .btn.btn-outline-danger(@click="interaction.deleteSelected()")
+                    i.el-icon-delete
+        el-tabs(v-model="tab" :tab-position="tab=='隱藏'?'top':'right'")
             el-tab-pane(label="網格" name="網格")
                 Rasters(:gismap="gismap" :show="tab=='網格'")
             el-tab-pane(label="向量" name="向量" lazy)
-                .d-flex
-                    .border-right.pr-1(style="width:80px")
-                        Draggable(v-model="groups" :options="{animation:150}")
-                            el-tooltip(v-for="group,i in groups" :key="i" :content="group.name" placement="right")
-                                .btn.w-100.text-truncate(:class="groupIndex==i?`btn-${group.theme}`:`btn-outline-${group.theme}`"
-                                    @dblclick="renameGroupPrompt()"
-                                    @click="handleGroupClick(i)") {{group.name}}
-                        .w-100.border.my-2
-                        .btn.btn-outline-danger.w-100(@click="addGroupPrompt()") 新增
-                    .px-1.flex-grow-1
-                        .btn-group.w-100
-                            el-tooltip(content="移動選取項目至目前群組" placement="bottom-start")
-                                .btn.btn-outline-info(@click="moveGroup(groupName)") 
-                                    i.el-icon-position
-                            el-tooltip(content="置頂" placement="bottom-end")
-                                .btn.btn-outline-info(@click="interaction.moveLayerTo('top')")
-                                    i.el-icon-upload2
-                            el-tooltip(content="置底" placement="bottom-end")
-                                .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')")
-                                    i.el-icon-download
-                            el-tooltip(content="聚焦" placement="bottom-end")
-                                .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)")
-                                    i.el-icon-aim
-                            el-tooltip(content="刪除群組" placement="bottom-end")
+                .w-100.px-2(v-for="group,i in groups" :key="i" :class="groupIndex==i?`border border-${group.theme}`:''" @click="handleGroupClick(i)")
+                    .py-1
+                        span {{group.name}}
+                        select.float-right(v-model="group.propKey" :disabled="groupIndex!=i")
+                            option(v-if="groupIndex!=i") {{group.propKey}}
+                            option(v-else v-for="key in propKeys" :key="key" :value="key") {{key}}
+                    div(v-if="groupIndex==i")
+                        .btn-group.btn-group-sm.float-right
+                            el-popover(placement="bottom" trigger="hover")
+                                span 透明度
+                                input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' 
+                                    v-model.number="groups[groupIndex].opacity" @input="setGroupProps(groupName,'opacity',$event.target.value)")
+                                .btn.btn-sm.btn-outline-info(slot="reference")
+                                    i.el-icon-magic-stick
+                            el-tooltip(content="資料表格" placement="bottom")
+                                .btn.btn-outline-info(@click="renderTable(groupFeatures.map(f=>f.properties));showDataTable=true")
+                                    i.el-icon-menu
+                            el-tooltip(content="選取全部" placement="bottom")
+                                .btn.btn-outline-info(@click="handleSelect(groupFeatures)")
+                                    i.el-icon-finished
+                            el-tooltip(content="檢視或隱藏" placement="bottom")
+                                .btn(@click="toggleGroup()" :class="`btn-outline-${groups[groupIndex].active?'info':'danger'}`")
+                                    i.el-icon-view
+                            el-tooltip(content="重新命名" placement="bottom")
+                                .btn.btn-outline-info(@click="renameGroupPrompt()")
+                                    i.el-icon-edit-outline
+                            el-tooltip(content="移除群組" placement="bottom")
                                 .btn.btn-outline-danger(@click="removeGroupPrompt()")
                                     i.el-icon-close
-                        .d-flex.align-items-center
-                            el-switch.mx-1(v-model="groups[groupIndex].active" @change="toggleGroup($event)")
-                            input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' 
-                                v-model.number="groups[groupIndex].opacity" @input="setGroupProps(groupName,'opacity',$event.target.value)")
-                        .d-flex.w-100
-                            .btn.btn-sm.btn-outline-primary(@click="scrollGroupFeatures(-20)")
-                                i.el-icon-arrow-left
-                            .border.d-flex.align-items-center.justify-content-center.flex-grow-1
-                                span {{groupRange.start}}~{{groupRange.end}} / {{groupRange.length}}
-                            .btn.btn-sm.btn-outline-primary(@click="scrollGroupFeatures(20)")
-                                i.el-icon-arrow-right
-                        .btn-group.w-100
-                            .btn.btn-outline-info(@click="renderTable(groupFeatures.map(f=>f.properties));showDataTable=true") 欄位
-                            select.btn.btn-outline-info(v-model="groups[groupIndex].propKey")
-                                option(v-for="key in propKeys" :key="key" :value="key") {{key}}
-                        ol(style="min-height:200px" @wheel="handleWheel($event)")
-                            li.cursor-pointer(v-for="feature,i in this.limitedGroupFeatures" :key="i" 
+                        ol.pr-2(style="clear:both")
+                            li.cursor-pointer(v-for="feature,i in slicedGroupFeatures" :key="i" 
                                 :value="groups[groupIndex].start+i+1"
                                 :class="selectedFeatures.includes(feature)?'text-danger':''"
                                 @click="handleClickSelect(feature)"
                                 @contextmenu="$event.preventDefault();interaction.fitExtent([feature])") 
-                                    i(:class="type2icon[feature.geometry.type]") 
-                                    span.mr-1 {{feature.properties[groups[groupIndex].propKey]}}
-            el-tab-pane(label="樣式" name="樣式")
-                Styles(:gismap="gismap" :interaction="interaction" :selectedFeatures="selectedFeatures" :show="tab=='樣式'")
+                                    span {{type2icon[feature.geometry.type]}}
+                                    span.float-right {{feature.properties[groups[groupIndex].propKey]}}
+                        el-pagination(small hide-on-single-page :page-size="maxItems" layout="prev,pager,next"
+                            :total="groupFeatures.length" @current-change="groups[groupIndex].start=($event-1)*maxItems")
             el-tab-pane(label="設定" name="設定" lazy)
                 input(ref="file" type='file' style='display: none' @change='handleFiles($event.target.files)' multiple='true')
                 .btn.btn-outline-primary.w-100(@click="$refs['file'].click()") 選取檔案或拖曳匯入
+                
                 .input-group
                     .input-group-prepend
-                        .input-group-text 檔案名稱
-                    input.form-control.btn.btn-outline-success(type='text' style='width:50px' v-model="filename" placeholder="檔案名稱")
-                .input-group
-                    .input-group-prepend
-                        .btn.btn-outline-success(@click="exportFile()") 匯出檔案
+                        .btn.btn-outline-success(@click="exportFile()") 匯出
+                    input.form-control.btn.btn-outline-success(type='text' v-model="filename" placeholder="檔案名稱")
                     select.form-control.btn.btn-outline-success(v-model="fileExtension")
                         option(v-for="ext in extensions" :key="ext" :value='ext') {{ext}}
-                table.table.table-striped.table-hover.w-100
-                    tbody
-                        tr
-                            td 檔案編碼
-                            td
-                                select(v-model="encoding")
-                                    option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
-                        tr
-                            td 背景顏色
-                            td
-                                el-color-picker(size="mini" :value="bgColor" @active-change="bgColor=$event")
-                        tr
-                            td 動畫插值
-                            td
-                                el-switch(v-model="allowAnimation" @change="toggleAnimation($event)")
-                        tr
-                            td 縮放間距
-                            td
-                                el-input-number(size="mini" v-model="zoomDelta" :min="0.1" :max="1" :step="0.1" @change="gismap.zoomEvent.delta=zoomDelta")
-                        tr
-                            td 縮放範圍
-                            td {{gismap.view?gismap.view.zoom:0}} / {{zoomRange}}
-                        tr
-                            td(colspan="2").px-3.py-0
-                                el-slider(v-model="zoomRange" range show-stops :max="20"
-                                    @input="gismap.view.minZoom=zoomRange[0];gismap.view.maxZoom=zoomRange[1]")
-                .btn.btn-outline-info.w-100(@click="dialog=true") 查看教學
+                .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
+                    span 檔案編碼
+                    select(v-model="encoding")
+                        option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
+                .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
+                    span 背景顏色
+                    el-color-picker(size="mini" :value="bgColor" @active-change="bgColor=$event")
+                .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
+                    span 顯示比例尺
+                    el-switch(v-model="showScale")
+                .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
+                    span 動畫插值
+                    el-switch(v-model="allowAnimation" @change="toggleAnimation($event)")
+                .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
+                    span 縮放間距
+                    el-input-number(size="mini" v-model="zoomDelta" :min="0.1" :max="1" :step="0.1" @change="gismap.zoomEvent.delta=zoomDelta")
+                .px-2.py-2.border-bottom
+                    span 縮放範圍
+                    span.float-right {{gismap.view?gismap.view.zoom:0}} / {{zoomRange}}
+                    .px-2.py-2
+                        el-slider(v-model="zoomRange" range show-stops :max="20"
+                            @input="gismap.view.minZoom=zoomRange[0];gismap.view.maxZoom=zoomRange[1]")
             el-tab-pane(label="底圖" name="底圖" lazy)
                 Draggable(v-model="gismap.imageShapes" :options="{animation:150}")
                     .d-flex.align-items-center.shadow-sm.px-1.py-1.border.cursor-pointer(v-for="imageShape,i in gismap.imageShapes" :key="i" 
                             :class="imageShape.editing?'border-danger':'border-light'" @click="imageShape.editing=!imageShape.editing")
                         el-tooltip(:content="imageShape.filename" placement="left")
-                            span.text-truncate {{imageShape.filename}}
-                        i.btn(:class="imageShape.editable?'el-icon-unlock text-danger':'el-icon-lock text-success'" @click="imageShape.editable=!imageShape.editable")
-                        input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' v-model="imageShape.opacity"
-                            draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
-                        button.close(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
-                            span &times;
+                            span.text-truncate(style="width:60px") {{imageShape.filename}}
+                        .btn( @click="imageShape.editable=!imageShape.editable")
+                            i(:class="imageShape.editable?'el-icon-unlock text-danger':'el-icon-lock text-success'")
+                        input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl'
+                            v-model="imageShape.opacity" draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
+                        .btn(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
+                            i.el-icon-close
                 .text-secondary.text-center(v-if="!(gismap.imageShapes&&gismap.imageShapes.length)").py-1.px-2 拖曳匯入圖片開始
             el-tab-pane(label="PTX" name="PTX")
                 PTX(:gismap="gismap" :interaction="interaction" @addGroup="addGroup($event)" @handleSelect="handleSelect($event)" :show="tab=='PTX'")
+            el-tab-pane(label="提示" name="提示" lazy)
+                Tutorial
             el-tab-pane(label="隱藏" name="隱藏")
-    transition(name="fade-right")
-        .position-fixed.bg-light(v-if="Object.keys(properties).length" style="left:0;top:0;max-width:300px;max-height:100%;overflow-y:auto")
-            table.table.table-striped.table-hover
-                tbody
-                    tr
-                        td(colspan="2")
-                            .btn-group
-                                el-tooltip(content="置頂" placement="bottom-end")
-                                    .btn.btn-outline-info(@click="interaction.moveLayerTo('top')")
-                                        i.el-icon-upload2
-                                el-tooltip(content="置底" placement="bottom-end")
-                                    .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')")
-                                        i.el-icon-download
-                                el-tooltip(content="聚焦" placement="bottom-end")
-                                    .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)")
-                                        i.el-icon-aim
-                                el-tooltip(content="刪除" placement="bottom-end")
-                                    .btn.btn-outline-danger(@click="interaction.deleteSelected()")
-                                        i.el-icon-delete
-                    tr(v-for="val,key in properties")
-                        td {{key}}
-                        td(v-html="val")
+    transition(name="fade-left")
+        .position-fixed.bg-light.h-100(v-show="selectedFeatures.length" style="right:0;top:0;width:300px;overflow-y:auto")
+            Styles(:gismap="gismap" :interaction="interaction" :selectedFeatures="selectedFeatures" :show="selectedFeatures.length")
     transition(name="fade-up")
         .position-fixed.w-100.h-100.d-flex.flex-column(v-if="showDataTable" style="left:0;top:0;")
             .w-100.flex-grow-1.bg-dark(style="max-height:100%;overflow:auto")
@@ -160,8 +150,7 @@
                             td {{(page-1)*maxRows+ri+1}}
                             td(v-for="col,ci in cols" :key="ci" style="max-width:150px;text-overflow:ellipsis;" 
                                 contenteditable @blur="row[col.key]=$event.target.textContent") {{row[col.key]}}
-            .d-flex.justify-content-center.align-items-center.bg-white
-                
+            .d-flex.justify-content-center.align-items-center.bg-white.py-1
                 el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="page=$event")
                 input.btn.btn-sm.btn-outline-primary(type="text" v-model="search" placeholder="搜尋")
                 .btn.btn-sm.btn-outline-success(v-if="filename!=groupName" @click="confirmImport()") 匯入
@@ -198,7 +187,7 @@
                                 span.input-group-text WKT
                             select.form-control(v-model="importParams.WKT")
                                 option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                        .btn.btn-sm.btn-outline-info(@click="leftJoin()") LEFT JOIN LIKE NOW
+                        .btn.btn-sm.btn-outline-info(@click="leftJoin()") 合併資料表
                         .input-group.input-group-sm
                             .input-group-prepend
                                 span.input-group-text 輸入欄位
@@ -215,8 +204,7 @@
                             select.form-control(v-model="groups[groupIndex].propKey")
                                 option(v-for="key in propKeys" :key="key" :value="key") {{key}}
                 .btn.btn-sm.btn-outline-danger(@click="importing=showDataTable=false;") 關閉
-    el-dialog(:visible.sync="dialog" :append-to-body="true")
-        Tutorial
+    //- el-dialog(:visible.sync="dialog" :append-to-body="true")
     //- LoadingPage
 </template>
 
@@ -237,17 +225,18 @@ export default {
     components: {Tutorial,Rasters,Draggable,Styles,PTX,LoadingPage},
     mixins: [importHandler,exportHandler],
     data: ()=>({
-        tab: '網格', gismap: GisMap, interaction: Interaction, fileExtension: '.geojson', filename: '', bgColor:'#ffffff',
+        tab: '網格', gismap: {getSelectedFeatures:()=>([])}, interaction: Interaction, 
+        fileExtension: '.geojson', filename: '', bgColor:'#ffffff',
         extensions:['.geojson','.png','.svg','.csv','.json'], encoding:'utf-8', encodings: ['utf-8','big5'],
         showDataTable: false, importing:false, newGroup: '', newColumn:'', page: 1, maxRows: 10, maxItems:20, zoomRange: [0,20], zoomDelta:0.5,
-        selectedFeatures: [], groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
-        tmpFeatures:[], rows: [], cols:[], properties: [], allowAnimation: true, 
+        groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
+        tmpFeatures:[], rows: [], cols:[], allowAnimation: true, 
         type2icon: {
-            Point:'el-icon-s-help',MultiPoint:'el-icon-s-help',
-            LineString:'el-icon-data-line',MultiLineString:'el-icon-data-line',
-            Polygon:'el-icon-picture',MultiPolygon:'el-icon-picture'
+            Point:'點',MultiPoint:'點(多重)',
+            LineString:'線',MultiLineString:'線(多重)',
+            Polygon:'面',MultiPolygon:'面(多重)'
         },
-        loading: false, dialog:false, search: '',
+        loading: false, dialog:false, search: '', showScale:true,
     }),
     methods: {
         confirmImport(){
@@ -336,20 +325,14 @@ export default {
             else if(this.gismap.selectEvent.ctrlKey)
                 this.handleSelect([...this.selectedFeatures,feature])
             else
-                this.handleSelect([feature])
+                this.handleSelect([feature])  
         },
         handleSelect(features){
-            this.gismap.selectEvent.styling = false
             this.gismap.setSelectedFeatures(features)
-            this.selectedFeatures = features
-            this.properties = this.interaction.getFeaturesProp(features)
         },
-        handleWheel(e){
+        handleGroupScroll(e){
             e.preventDefault()
             let offset = Math.sign(e.deltaY)*this.maxItems
-            this.scrollGroupFeatures(offset)
-        },
-        scrollGroupFeatures(offset){
             let group = this.groups[this.groupIndex]
             group.start = 
                 group.start+offset<0?0:
@@ -358,7 +341,6 @@ export default {
         handleGroupClick(groupIndex){
             if(this.groupIndex==groupIndex){
                 let features = this.gismap.vectors.filter(f=>f.properties['群組']==this.groupName)
-                this.handleSelect(features)
             }else{
                 this.propKey = this.groups[groupIndex].propKey
                 this.groupIndex = groupIndex
@@ -402,8 +384,9 @@ export default {
             })
             this.$set(this.groups,0,this.groups[0])
         },
-        toggleGroup(bool){
-            if(bool){
+        toggleGroup(){
+            this.groups[this.groupIndex].active = !this.groups[this.groupIndex].active
+            if(this.groups[this.groupIndex].active){
                 this.gismap.vectors.unshift(...this.groups[this.groupIndex].temp)
                 this.groups[this.groupIndex].temp = []
             }else{
@@ -452,7 +435,10 @@ export default {
             let end = group.start+this.maxItems>length?length:group.start+this.maxItems
             return {start,end,length}
         },
-        limitedGroupFeatures(){
+        selectedFeatures(){
+            return this.gismap.getSelectedFeatures()
+        },
+        slicedGroupFeatures(){
             let start = this.groups[this.groupIndex].start
             return this.groupFeatures.slice(start,start+this.maxItems)
         },
@@ -540,13 +526,19 @@ html, body{
     opacity: 0;
     transform: translateX(-50%);
 }
+.fade-left-enter-active, .fade-left-leave-active {
+    transition: opacity .5s,transform .5s;
+}
+.fade-left-enter, .fade-left-leave-to{
+    opacity: 0;
+    transform: translateX(50%);
+}
 </style>
 <style scoped>
 .el-tabs__content, .el-tab-pane{
     padding: 5px;
-    max-width:320px;
-    max-height:100vh;
+    width:320px;
+    max-height: 100%;
     overflow-y:auto;
-    background:rgba(255,255,255,0.8);
 }
 </style>
