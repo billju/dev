@@ -7,34 +7,34 @@
     .position-fixed(style="left:0;top:0;max-height:100%")
         .btn-group
             el-tooltip(content="新增群組" placement="bottom-start")
-                .btn.btn-outline-success(@click="addGroupPrompt()") 
+                .btn.btn-success(@click="addGroupPrompt()") 
                     i.el-icon-plus
             el-tooltip(content="移動選取項目至目前群組" placement="bottom-start")
-                .btn.btn-outline-info(@click="moveGroup(groupName)") 
+                .btn.btn-info(@click="moveGroup(groupName)") 
                     i.el-icon-position
             el-tooltip(content="置頂" placement="bottom-end")
-                .btn.btn-outline-info(@click="interaction.moveLayerTo('top')")
+                .btn.btn-info(@click="interaction.moveLayerTo('top')")
                     i.el-icon-upload2
             el-tooltip(content="置底" placement="bottom-end")
-                .btn.btn-outline-info(@click="interaction.moveLayerTo('bottom')")
+                .btn.btn-info(@click="interaction.moveLayerTo('bottom')")
                     i.el-icon-download
             el-tooltip(content="聚焦" placement="bottom-end")
-                .btn.btn-outline-success(@click="interaction.fitExtent(selectedFeatures)")
+                .btn.btn-success(@click="interaction.fitExtent(selectedFeatures)")
                     i.el-icon-aim
             el-tooltip(content="複製(ctrl+c)" placement="bottom-end")
-                .btn.btn-outline-success(@click="interaction.copySelected()")
+                .btn.btn-success(@click="interaction.copySelected()")
                     i.el-icon-document-copy
             el-tooltip(content="貼上(ctrl+v)" placement="bottom-end")
-                .btn.btn-outline-success(@click="interaction.pasteSelected(true)")
+                .btn.btn-success(@click="interaction.pasteSelected(true)")
                     i.el-icon-document
             el-tooltip(content="刪除(ctrl+x)" placement="bottom-end")
-                .btn.btn-outline-danger(@click="interaction.deleteSelected()")
+                .btn.btn-danger(@click="interaction.deleteSelected()")
                     i.el-icon-delete
-        el-tabs(v-model="tab" :tab-position="tab=='隱藏'?'top':'right'")
+        el-tabs(v-model="tab" tab-position="right")
             el-tab-pane(label="網格" name="網格")
                 Rasters(:gismap="gismap" :show="tab=='網格'")
             el-tab-pane(label="向量" name="向量" lazy)
-                .w-100.px-2(v-for="group,i in groups" :key="i" :class="groupIndex==i?`border border-${group.theme}`:''" @click="handleGroupClick(i)")
+                .w-100.px-2.py-1(v-for="group,i in groups" :key="i" :class="groupIndex==i?`border border-${group.theme}`:'border-bottom'" @click="handleGroupClick(i)")
                     .py-1
                         span {{group.name}}
                         select.float-right(v-model="group.propKey" :disabled="groupIndex!=i")
@@ -63,8 +63,8 @@
                             el-tooltip(content="移除群組" placement="bottom")
                                 .btn.btn-outline-danger(@click="removeGroupPrompt()")
                                     i.el-icon-close
-                        ol.pr-2(style="clear:both")
-                            li.cursor-pointer(v-for="feature,i in slicedGroupFeatures" :key="i" 
+                        ol.pr-3.my-1(style="clear:both;user-select:none")
+                            li.cursor-pointer.border-bottom(v-for="feature,i in slicedGroupFeatures" :key="i" 
                                 :value="groups[groupIndex].start+i+1"
                                 :class="selectedFeatures.includes(feature)?'text-danger':''"
                                 @click="handleClickSelect(feature)"
@@ -122,7 +122,6 @@
                 PTX(:gismap="gismap" :interaction="interaction" @addGroup="addGroup($event)" @handleSelect="handleSelect($event)" :show="tab=='PTX'")
             el-tab-pane(label="提示" name="提示" lazy)
                 Tutorial
-            el-tab-pane(label="隱藏" name="隱藏")
     transition(name="fade-left")
         .position-fixed.bg-light.h-100(v-show="selectedFeatures.length" style="right:0;top:0;width:300px;overflow-y:auto")
             Styles(:gismap="gismap" :interaction="interaction" :selectedFeatures="selectedFeatures" :show="selectedFeatures.length")
@@ -320,12 +319,20 @@ export default {
             e.detail.feature.properties['群組'] = this.groupName
         },
         handleClickSelect(feature){
-            if(this.selectedFeatures.includes(feature))
+            if(this.selectedFeatures.includes(feature)){
                 this.handleSelect(this.selectedFeatures.filter(f=>f!=feature))
-            else if(this.gismap.selectEvent.ctrlKey)
+            }else if(this.gismap.selectEvent.ctrlKey){
                 this.handleSelect([...this.selectedFeatures,feature])
-            else
+            }else if(this.gismap.selectEvent.shiftKey&&
+                this.selectedFeatures.some(f=>this.groupFeatures.includes(f))){
+                let features = this.selectedFeatures.map(sf=>this.groupFeatures.findIndex(gf=>gf==sf)).filter(i=>i!=-1)
+                let startIdx = Math.min(...features)
+                let endIdx = this.groupFeatures.findIndex(f=>f==feature)
+                if(startIdx>endIdx) [startIdx,endIdx] = [endIdx,startIdx]
+                this.handleSelect(this.groupFeatures.slice(startIdx,endIdx+1))
+            }else{
                 this.handleSelect([feature])  
+            }
         },
         handleSelect(features){
             this.gismap.setSelectedFeatures(features)
@@ -537,8 +544,9 @@ html, body{
 <style scoped>
 .el-tabs__content, .el-tab-pane{
     padding: 5px;
-    width:320px;
+    width:300px;
     max-height: 100%;
     overflow-y:auto;
+    background: white !important;
 }
 </style>

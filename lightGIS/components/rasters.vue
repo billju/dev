@@ -2,7 +2,7 @@
 .px-1(v-if="show")
     Draggable(v-model="rasters" @update="gismap.setRasters(rasters)" :options="{animation:150}")
         .d-flex.align-items-center.shadow-sm(v-for="raster,i in rasters" :key="raster.name")
-            label.cursor-pointer(:for="raster.name" style="margin-bottom:0").text-shadow.flex-grow-1 {{raster.name}}
+            label.cursor-pointer.text-truncate(:for="raster.name" style="margin-bottom:0").text-shadow.flex-grow-1 {{raster.name}}
             .custom-control.custom-switch.mx-1.cursor-pointer
                 input.custom-control-input(type='checkbox' v-model="raster.active" :id="raster.name" @input="gismap.setRasters(rasters)")
                 label.custom-control-label(:for="raster.name")

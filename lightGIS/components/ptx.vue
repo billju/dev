@@ -8,7 +8,7 @@ div(v-if="show" style="max-height:100%")
     .btn-group.w-100
         .btn.btn-outline-warning(v-for="(val,key) in tourTypes" :key="key" @click="Tourism(city,key)") {{val}}
     .btn-group.w-100
-        .btn.btn-outline-danger(@click="Bike(city)") 公共自行車即時站位
+        .btn.btn-outline-danger(@click="Bike(city)") UBike即時站位
         .btn.btn-outline-success(@click="BusRoutes(city)") 查詢公車路線
     .btn-group.w-100
         .btn.btn-outline-primary(@click="THSR()") 高鐵

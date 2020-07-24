@@ -43,6 +43,7 @@ export default class Interaction{
         })
         window.addEventListener('keydown',e=>{
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
+            this.gismap.selectEvent.shiftKey = e.shiftKey
             if(e.code&&e.code.includes('Arrow')){
                 let offset = {ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.code]
                 const flatten = (cs)=>typeof cs[0]=='number'?[cs]:typeof cs[0][0]=='number'?cs:cs[0]
@@ -85,6 +86,7 @@ export default class Interaction{
         })
         window.addEventListener('keyup',e=>{
             this.gismap.selectEvent.ctrlKey = e.ctrlKey
+            this.gismap.selectEvent.shiftKey = e.shiftKey
             this.isKeyup = true
             for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleKeyup(e)

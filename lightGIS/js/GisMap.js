@@ -125,7 +125,7 @@ export default class GisMap{
         this.moveEvent = {x:0,y:0,vx:0,vy:0,t:0,frames:90,active:false,moved:false,currentCoord:[0,0]}
         this.panEvent = {before:xyz,after:xyz,t:0,frames:60}
         this.drawEvent = {path:[],active:false,snap:false}
-        this.selectEvent = {x:0,y:0,bbox:[0,0,0,0],features:[],ctrlKey:false,active:false,styling:false}
+        this.selectEvent = {x:0,y:0,bbox:[0,0,0,0],features:[],shiftKey:false,ctrlKey:false,active:false,styling:false}
         this.modifyEvent = {feature:null,anchor:-1,coords:[],geomType:null}
         this.animationFrame = null
         this.render = ()=>{
