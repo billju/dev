@@ -1,11 +1,12 @@
 <template lang="pug">
 .w-100.h-100
-    canvas.w-100.h-100(ref="gismap" @drop="handleDrop($event)" @dragover="$event.preventDefault()" :style="{background:bgColor}")
+    .w-100.h-100(ref="heatmap")
+        canvas.w-100.h-100(ref="gismap" @drop="handleDrop($event)" @dragover="$event.preventDefault()" :style="{background:bgColor}")
     .position-fixed.d-flex.align-items-center.px-2.py-1(v-if="gismap.view&&showScale" style="right:0;bottom:0;user-select:none;")
         span.text-shadow {{gismap.view.scaleText}}
         .mx-2.py-1.border(:style="scaleStyle")
-    .position-fixed(style="left:0;top:0;max-height:100%")
-        .btn-group
+    .position-fixed.h-100.bg-dark.text-light(style="left:0;top:0;width:320px;overflow-y:auto")
+        .w-100.btn-group.btn-group-sm
             el-tooltip(content="新增群組" placement="bottom-start")
                 .btn.btn-success(@click="addGroupPrompt()") 
                     i.el-icon-plus
@@ -30,7 +31,7 @@
             el-tooltip(content="刪除(ctrl+x)" placement="bottom-end")
                 .btn.btn-danger(@click="interaction.deleteSelected()")
                     i.el-icon-delete
-        el-tabs(v-model="tab" tab-position="right")
+        el-tabs(v-model="tab" tab-position="top" type="card")
             el-tab-pane(label="網格" name="網格")
                 Rasters(:gismap="gismap" :show="tab=='網格'")
             el-tab-pane(label="向量" name="向量" lazy)
@@ -73,10 +74,9 @@
                                     span.float-right {{feature.properties[groups[groupIndex].propKey]}}
                         el-pagination(small hide-on-single-page :page-size="maxItems" layout="prev,pager,next"
                             :total="groupFeatures.length" @current-change="groups[groupIndex].start=($event-1)*maxItems")
-            el-tab-pane(label="設定" name="設定" lazy)
+            el-tab-pane(label="設定" name="設定" lazy :class="'px-2'")
                 input(ref="file" type='file' style='display: none' @change='handleFiles($event.target.files)' multiple='true')
                 .btn.btn-outline-primary.w-100(@click="$refs['file'].click()") 選取檔案或拖曳匯入
-                
                 .input-group
                     .input-group-prepend
                         .btn.btn-outline-success(@click="exportFile()") 匯出
@@ -94,6 +94,9 @@
                     span 顯示比例尺
                     el-switch(v-model="showScale")
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
+                    span 產生熱點圖
+                    el-switch(v-model="showHeatmap")
+                .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 動畫插值
                     el-switch(v-model="allowAnimation" @change="toggleAnimation($event)")
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
@@ -105,7 +108,6 @@
                     .px-2.py-2
                         el-slider(v-model="zoomRange" range show-stops :max="20"
                             @input="gismap.view.minZoom=zoomRange[0];gismap.view.maxZoom=zoomRange[1]")
-            el-tab-pane(label="底圖" name="底圖" lazy)
                 Draggable(v-model="gismap.imageShapes" :options="{animation:150}")
                     .d-flex.align-items-center.shadow-sm.px-1.py-1.border.cursor-pointer(v-for="imageShape,i in gismap.imageShapes" :key="i" 
                             :class="imageShape.editing?'border-danger':'border-light'" @click="imageShape.editing=!imageShape.editing")
@@ -115,7 +117,7 @@
                             i(:class="imageShape.editable?'el-icon-unlock text-danger':'el-icon-lock text-success'")
                         input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl'
                             v-model="imageShape.opacity" draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
-                        .btn(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
+                        .btn.text-light(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
                             i.el-icon-close
                 .text-secondary.text-center(v-if="!(gismap.imageShapes&&gismap.imageShapes.length)").py-1.px-2 拖曳匯入圖片開始
             el-tab-pane(label="PTX" name="PTX")
@@ -123,7 +125,7 @@
             el-tab-pane(label="提示" name="提示" lazy)
                 Tutorial
     transition(name="fade-left")
-        .position-fixed.bg-light.h-100(v-show="selectedFeatures.length" style="right:0;top:0;width:300px;overflow-y:auto")
+        .position-fixed.bg-dark.h-100(v-show="selectedFeatures.length" style="right:0;top:0;width:300px;overflow-y:auto")
             Styles(:gismap="gismap" :interaction="interaction" :selectedFeatures="selectedFeatures" :show="selectedFeatures.length")
     transition(name="fade-up")
         .position-fixed.w-100.h-100.d-flex.flex-column(v-if="showDataTable" style="left:0;top:0;")
@@ -218,14 +220,15 @@ import Styles from './styles.vue'
 import PTX from './ptx.vue'
 import LoadingPage from './loadingPage.vue'
 import Draggable from 'vuedraggable'
+import Heatmap from '../js/heatmap.js'
 
 export default {
     name: 'app',
     components: {Tutorial,Rasters,Draggable,Styles,PTX,LoadingPage},
     mixins: [importHandler,exportHandler],
     data: ()=>({
-        tab: '網格', gismap: {getSelectedFeatures:()=>([])}, interaction: Interaction, 
-        fileExtension: '.geojson', filename: '', bgColor:'#ffffff',
+        tab: '網格', gismap: {getSelectedFeatures:()=>([])}, interaction: Interaction, heatmap: Heatmap,
+        fileExtension: '.geojson', filename: '', bgColor:'#333333',
         extensions:['.geojson','.png','.svg','.csv','.json'], encoding:'utf-8', encodings: ['utf-8','big5'],
         showDataTable: false, importing:false, newGroup: '', newColumn:'', page: 1, maxRows: 10, maxItems:20, zoomRange: [0,20], zoomDelta:0.5,
         groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
@@ -235,7 +238,7 @@ export default {
             LineString:'線',MultiLineString:'線(多重)',
             Polygon:'面',MultiPolygon:'面(多重)'
         },
-        loading: false, dialog:false, search: '', showScale:true,
+        loading: false, dialog:false, search: '', showScale:true, showHeatmap: false,
     }),
     methods: {
         confirmImport(){
@@ -314,9 +317,6 @@ export default {
                 list:[...new Set(array.map(obj=>obj[col]))]
                     .sort((a,b)=>this.sortRule(a,b,null,1)).slice(0,100)
             }))
-        },
-        handleDrawend(e){
-            e.detail.feature.properties['群組'] = this.groupName
         },
         handleClickSelect(feature){
             if(this.selectedFeatures.includes(feature)){
@@ -426,7 +426,7 @@ export default {
                 }
             }
             this.importing = this.showDataTable = false
-        }
+        },
     },
     computed:{
         groupFeatures(){
@@ -477,12 +477,24 @@ export default {
     },
     mounted(){
         this.gismap = new GisMap(this.$refs['gismap'])
-        this.interaction = new Interaction(this.gismap)
-        this.gismap.canvas.addEventListener('select',e=>{
-            this.handleSelect(e.detail.features)
+        this.interaction = new Interaction(this.$refs['heatmap'],this.gismap)
+        this.gismap.addEventListener('select',e=>{
+            this.handleSelect(e.features)
         })
-        this.gismap.canvas.addEventListener('drawend',e=>{
-            this.handleDrawend(e)
+        this.gismap.addEventListener('drawend',e=>{
+            e.feature.properties['群組'] = this.groupName
+        })
+        this.heatmap = new Heatmap(this.$refs['gismap'])
+        this.gismap.addEventListener('render',e=>{
+            if(this.showHeatmap){
+                const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
+                let points = this.gismap.vectors.filter(f=>isOverlaped(f.geometry.bbox,this.gismap.view.bbox)).filter(f=>f.geometry.type=='Point')
+                let data = points.map(f=>{
+                    let [x,y] = this.gismap.coord2client(f.geometry.coordinates)
+                    return {x:Math.round(x),y:Math.round(y),value:f.properties['radius']||10}
+                })
+                this.heatmap.setData({max:20, data})
+            }
         })
         window.addEventListener('paste',e=>{
             this.handleSelect(this.gismap.selectEvent.features)
@@ -499,19 +511,13 @@ html, body{
     margin: 0;
     height: 100%;
 }
-.w-100{
-    width: 100%;
-}
-.h-100{
-    height: 100%;
-}
 .cursor-pointer{
     cursor: pointer;
 }
 .text-shadow{
     font-weight: bold;
-    color: black;
-    text-shadow: -1px 0 white, 0 1px white, 1px 0 white, 0 -1px white;
+    color: white;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 }
 .fade-enter-active, .fade-leave-active {
     transition: opacity .5s;
@@ -540,13 +546,13 @@ html, body{
     opacity: 0;
     transform: translateX(50%);
 }
-</style>
-<style scoped>
-.el-tabs__content, .el-tab-pane{
-    padding: 5px;
-    width:300px;
-    max-height: 100%;
-    overflow-y:auto;
-    background: white !important;
+.el-tabs__item{
+    color: grey !important;
+}
+.el-tabs__item.is-active{
+    color: white !important;
+}
+.el-tabs__content{
+    padding: 0 5px;
 }
 </style>

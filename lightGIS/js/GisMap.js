@@ -116,10 +116,14 @@ export default class GisMap{
             scaleStripe: '0px'
         }
         this.handleResize()
+        // layers
         this.vectors = []
         this.rasters = []
         this.imageShapes = []
         this.tiles = {}
+        // custom events
+        this.event = {render:[],select:[],drawend:[]}
+        // default events
         let xyz = {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom}
         this.zoomEvent = {before:xyz,after:xyz,t:0,frames:25,delta:0.5,zStep:1}
         this.moveEvent = {x:0,y:0,vx:0,vy:0,t:0,frames:90,active:false,moved:false,currentCoord:[0,0]}
@@ -199,6 +203,7 @@ export default class GisMap{
                 this.ctx.strokeStyle = 'dodgerblue'
                 this.ctx.strokeRect(lb[0],lb[1],ub[0]-lb[0],ub[1]-lb[1])
             }
+            this.dispatchEvent('render',{})
             this.animationFrame = window.requestAnimationFrame(this.render)
         }
         this.render()
@@ -214,6 +219,14 @@ export default class GisMap{
         imageShape.filename = filename
         this.imageShapes.push(imageShape)
     }
+    dispatchEvent(type,payload){
+        for(let fn of this.event[type]){ fn(payload) }
+    }
+    addEventListener(type,fn){
+        try{ this.event[type].push(fn) }
+        catch{ console.error('no such type of event!') }
+    }
+    // default functions
     renderModify(){
         let coords = this.modifyEvent.feature.geometry.coordinates
         let geomType = this.modifyEvent.feature.geometry.type
@@ -274,12 +287,6 @@ export default class GisMap{
         })
     }
     panTo(coord,newZoom=this.view.zoom){
-        // Object.assign(this.zoomEvent,{
-        //     before: {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom},
-        //     after: {x:coord[0],y:coord[1],z:newZoom},
-        //     t: this.zoomEvent.frames,
-        //     zStep: newZoom<this.view.zoom?-1:1,
-        // })
         this.panEvent.before = {...this.view.center,z:this.view.zoom}
         this.panEvent.after = {x:coord[0],y:coord[1],z:newZoom}
         this.panEvent.t = this.panEvent.frames
@@ -296,7 +303,7 @@ export default class GisMap{
     }
     handleMousedown(e){
         let rect = this.canvas.getBoundingClientRect()
-        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
         if(this.modifyEvent.feature){
             let coords = this.modifyEvent.feature.geometry.coordinates
             let geomType = this.modifyEvent.feature.geometry.type
@@ -337,7 +344,7 @@ export default class GisMap{
     }
     handleMousemove(e){
         let rect = this.canvas.getBoundingClientRect()
-        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
         let vx = - clientX + this.moveEvent.x
         let vy = clientY - this.moveEvent.y
         if((this.moveEvent.active||this.modifyEvent.active||this.selectEvent.active)&&Math.sqrt(vx*vx+vy*vy)>3)
@@ -369,7 +376,7 @@ export default class GisMap{
     }
     handleMouseup(e){
         let rect = this.canvas.getBoundingClientRect()
-        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
         if(this.modifyEvent.anchor!=-1){
             if(!this.moveEvent.moved&&this.modifyEvent.coords.length>2){
                 this.modifyEvent.coords.splice(this.modifyEvent.anchor,1)
@@ -389,7 +396,7 @@ export default class GisMap{
                     this.modifyEvent.feature = features[0]
                 else
                     this.modifyEvent.feature = null
-                this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features}}))
+                this.dispatchEvent('select',{features})
             }
         }
         if(this.selectEvent.active){
@@ -515,7 +522,7 @@ export default class GisMap{
             this.drawEvent.path = []
             this.drawEvent.active = false
             this.drawEvent.snap = false
-            this.canvas.dispatchEvent(new CustomEvent('drawend',{detail:{feature}}))
+            this.dispatchEvent('drawend',{feature})
         }
     }
     handleMouseleave(e){

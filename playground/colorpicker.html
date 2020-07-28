@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Colorpicker</title>
-    <link rel="stylesheet" href="../css/bootstrap.css" />
+    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css" />
 </head>
 
 <body>
@@ -13,11 +13,11 @@
         <div id="color-btn" class="rounded bg-active px-3 py-3"></div>
     </div>
     <div id="colorpicker">
-        <div class="mt-1">
+        <div class="mt-1 usn">
             <div id="cp-theme" class="position-relative d-inline-block palette-rect">
                 <div id="cp-theme-bg" class="position-absolute palette-rect" style="background:rgb(255,0,0);"></div>
-                <div class="position-absolute palette-rect bg-white-gradient"></div>
-                <div class="position-absolute palette-rect bg-black-gradient"></div>
+                <div class="position-absolute palette-rect bg-white-gradient" style="top:0;left:0"></div>
+                <div class="position-absolute palette-rect bg-black-gradient" style="top:0;left:0"></div>
                 <div id="cp-theme-cursor" class="position-absolute border border-secondary rounded-circle bg-light px-1 py-1"
                     style="left:0;top:0"></div>
             </div>
@@ -26,24 +26,27 @@
                     style="left:-3px;top:0"></div>
             </div>
         </div>
-        <div id="cp-opacity" class="position-relative bg-transparent-image palette-bar-horizontal mt-1">
-            <div id="cp-opacity-cursor" class="position-absolute border border-secondary rounded bg-light px-1 py-2" style="left:100%;top:-3px">
-            </div>
+        <div id="cp-opacity" class="position-relative bg-transparent-image palette-bar-horizontal mt-1 usn">
+            <div id="cp-opacity-cursor" class="position-absolute border border-secondary rounded bg-light px-1 py-2" style="left:100%;top:-3px"></div>
         </div>
-        <div class="input-group mt-1" style="width:300px"><input class="form-control" type="text" />
+        <div class="input-group mt-1" style="width:300px">
+            <input id="cp-text" class="form-control" type="text"/>
             <div class="input-group-append">
                 <div class="btn btn-outline-secondary">clear</div>
                 <div class="btn btn-outline-secondary">submit</div>
             </div>
         </div>
     </div>
-    <div id="sample-container" class="d-inline-block border rounded bg-transparent-image">
-        <div id="sample-btn" class="rounded bg-active px-3 py-3"></div>
+    <div id="sample-container" class="d-inline-block">
+        <div id="sample-btn" class="rounded bg-active rounded bg-transparent-image px-3 py-3"></div>
     </div>
     <canvas id="color-sampler"></canvas>
     <input type="file" onchange="colorSampler.import(event.target.files[0])">
 </body>
 <style>
+.usn{
+    user-select: none;
+}
 .palette-rect{
     width: 250px;
     height: 200px;
@@ -271,7 +274,9 @@ function setPalette(){
     let w = gd.getInterpolate([255,255,255],rgb,themePalette.pctX)
     let b = gd.getInterpolate(w,[0,0,0],themePalette.pctY)
     let a = opacityPalette.pctX
-    document.getElementById('color-btn').style.background = `rgba(${b[0]},${b[1]},${b[2]},${a})`
+    let rgba = `rgba(${b[0]},${b[1]},${b[2]},${a})`
+    document.getElementById('color-btn').style.background = rgba
+    document.getElementById('cp-text').value = rgba
 }
 class MaterialColor{
     constructor(){
@@ -321,33 +326,104 @@ class MaterialColor{
 class ColorSampler{
     constructor(canvas){
         this.canvas = canvas
+        this.canvas.style.cursor = 'grab'
         this.ctx = this.canvas.getContext('2d')
         this.img = new Image()
         this.event = {change:[],select:[]}
-        this.canvas.addEventListener('click',e=>this.handleClick(e))
+        this.canvas.addEventListener('wheel',e=>this.handleWheel(e))
+        this.canvas.addEventListener('mousedown',e=>this.handleMousedown(e))
         this.canvas.addEventListener('mousemove',e=>this.handleMousemove(e))
-        this.canvas.addEventListener('mouseleave',e=>this.handleMouseleave(e))
-        this.bbox = [0,0,500,500]
-        this.scale = 1
+        this.canvas.addEventListener('mouseup',e=>this.handleMouseup(e))
+        this.canvas.addEventListener('mouseleave',e=>this.handleMouseup(e))
+        this.view = {x:0,y:0,w:0,h:0,zoom:0}
+        this.moveEvent = {x:0,y:0,active:false,moved:false}
         this.canvas.height = 500
         this.canvas.width = 500
     }
-    handleWheel(){
-        this.ctx.drawImage(this.img,0,0,this.canvas.width,this.canvas.height)
+    minmax(input,min,max){
+        return input<min?min:input>max?max:input
+    }
+    initImage(){
+        let rw = this.canvas.width/this.img.width
+        let rh = this.canvas.height/this.img.height
+        if(rw<rh){
+            let h = Math.round(this.img.height*rw)
+            this.view.x = 0
+            this.view.w = this.canvas.width
+            this.view.y = (this.canvas.height-h)/2
+            this.view.h = h
+        }else{
+            let w = Math.round(this.img.width*rh)
+            this.view.x = (this.canvas.width-w)/2
+            this.view.w = w
+            this.view.y = 0
+            this.view.h = this.canvas.height
+        }
+    }
+    drawImage(){
+        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
+        let {x,y,w,h} = this.view
+        this.ctx.drawImage(this.img,x,y,w,h)
+    }
+    zoomImage(delta,clientX,clientY){
+        let {x,y,w,h,zoom} = this.view
+        let z = this.minmax(zoom+delta,0,10)
+        if(z==0){
+            this.initImage()
+        }else{
+            let scale = Math.pow(2,z-zoom)
+            let cx = x+w/2, cy = y+h/2
+            cx+= (clientX-cx)*(1-scale)
+            cy+= (clientY-cy)*(1-scale)
+            this.view.w*= scale
+            this.view.h*= scale
+            this.view.x = cx-this.view.w/2
+            this.view.y = cy-this.view.h/2
+        }
+        this.view.zoom = z
+    }
+    handleWheel(e){
+        e.preventDefault()
+        let rect = this.canvas.getBoundingClientRect()
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
+        let delta = e.deltaY>0?-1:1
+        this.zoomImage(delta,clientX,clientY)
+        this.drawImage()
     }
     handleMousedown(e){
-
-    }
-    handleClick(e){
-        var [r,g,b,a] = this.ctx.getImageData(e.clientX-this.canvas.offsetLeft,e.clientY-this.canvas.offsetTop+window.scrollY,1,1).data
-        this.dispatch('select',{value:`rgba(${r},${g},${b},${a/255})`})
+        this.moveEvent.active = true
+        let rect = this.canvas.getBoundingClientRect()
+        this.moveEvent.x = e.clientX-rect.left
+        this.moveEvent.y = e.clientY-rect.top
+        this.canvas.style.cursor = 'grabbing'
     }
     handleMousemove(e){
-        var [r,g,b,a] = this.ctx.getImageData(e.clientX-this.canvas.offsetLeft,e.clientY-this.canvas.offsetTop+window.scrollY,1,1).data
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
+        let [r,g,b,a] = this.ctx.getImageData(clientX,clientY,1,1).data
         this.dispatch('change',{value:`rgba(${r},${g},${b},${a/255})`})
+        if(this.moveEvent.active){
+            let rect = this.canvas.getBoundingClientRect()
+            let dx = clientX-this.moveEvent.x
+            let dy = clientY-this.moveEvent.y
+            if(Math.sqrt(dx*dx+dy*dy)>5)
+                this.moveEvent.moved = true
+            if(this.moveEvent.moved){
+                this.view.x += dx
+                this.view.y += dy
+                this.moveEvent.x = clientX
+                this.moveEvent.y = clientY
+            }
+            this.drawImage()
+        }
     }
-    handleMouseleave(e){
-        this.canvas.style.cursor = 'auto'
+    handleMouseup(e){
+        if(this.moveEvent.active&&!this.moveEvent.moved){
+            var [r,g,b,a] = this.ctx.getImageData(e.clientX-this.canvas.offsetLeft,e.clientY-this.canvas.offsetTop+window.scrollY,1,1).data
+            this.dispatch('select',{value:`rgba(${r},${g},${b},${a/255})`})
+        }
+        this.moveEvent.active = false
+        this.moveEvent.moved = false
+        this.canvas.style.cursor = 'grab'
     }
     colorize(){
         let imgData = this.ctx.getImageData(0,0,this.canvas.width,this.canvas.height)
@@ -362,10 +438,8 @@ class ColorSampler{
     import(file){
         this.img.src = URL.createObjectURL(file)
         this.img.onload = ()=>{
-            // this.canvas.width = this.img.width
-            // this.canvas.height = this.img.height
-            this.ctx.drawImage(this.img,0,0,this.canvas.width,this.canvas.height)
-            // this.colorize()
+            this.initImage()
+            this.drawImage()
         }        
     }
     download(imgType='png'){    

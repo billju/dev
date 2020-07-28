@@ -1,15 +1,16 @@
 export default class Interaction{
-    constructor(gismap){
+    constructor(container,gismap){
+        this.container = container
         this.gismap = gismap
         this.recycle = []
         this.copied = {features:[],center:[0,0]}
         this.isKeyup = true
         // native events
-        this.gismap.canvas.oncontextmenu = e=>{e.preventDefault()}
-        this.gismap.canvas.addEventListener('dblclick',e=>{
+        this.container.oncontextmenu = e=>{e.preventDefault()}
+        this.container.addEventListener('dblclick',e=>{
             this.gismap.handleDblclick(e)
         })
-        this.gismap.canvas.addEventListener('mousedown',e=>{
+        this.container.addEventListener('mousedown',e=>{
             let noImageShapeSelected = true
             for(let imageShape of this.gismap.imageShapes){
                 if(noImageShapeSelected&&imageShape.handleMousedown(e)){
@@ -22,7 +23,7 @@ export default class Interaction{
             if(noImageShapeSelected)
                 this.gismap.handleMousedown(e)
         })
-        this.gismap.canvas.addEventListener('mousemove',e=>{
+        this.container.addEventListener('mousemove',e=>{
             for(let imageShape of this.gismap.imageShapes){
                 if(imageShape.editing){
                     imageShape.handleMousemove(e)
@@ -30,12 +31,12 @@ export default class Interaction{
             }
             this.gismap.handleMousemove(e)
         })   
-        this.gismap.canvas.addEventListener('mouseup',e=>{
+        this.container.addEventListener('mouseup',e=>{
             for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleMouseup(e)
             this.gismap.handleMouseup(e)
         })
-        this.gismap.canvas.addEventListener('mouseleave',e=>{
+        this.container.addEventListener('mouseleave',e=>{
             this.gismap.selectEvent.ctrlKey = false
             for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleMouseup(e)
@@ -91,7 +92,7 @@ export default class Interaction{
             for(let imageShape of this.gismap.imageShapes)
                 imageShape.handleKeyup(e)
         })
-        this.gismap.canvas.addEventListener('wheel',e=>{
+        this.container.addEventListener('wheel',e=>{
             this.gismap.handleWheel(e)
         })
         window.addEventListener('resize',()=>{

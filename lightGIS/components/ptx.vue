@@ -1,5 +1,5 @@
 <template lang="pug">
-div(v-if="show" style="max-height:100%")
+.px-2(v-if="show" style="max-height:100%")
     .input-group
         .input-group-prepend 
             span.input-group-text 所在縣市

@@ -1,14 +1,34 @@
-class Heatmap{
+export default class Heatmap{
     constructor(canvas){
         this.canvas = canvas
-        this.counter = {}
+        this.ctx = this.canvas.getContext('2d')
+        this.data = {}
+        this.maxValue = 10
+        this.steps = 100
+        this.palette = this.createPalette()
     }
-    push(x,y,value){
+    setData(args){
+        this.data = {}
+        for(let point of args.data)
+            this.addData(point)
+        this.maxValue = args.max?args.max:this.maxValue
+        this.render()
+    }
+    addData(point){
+        let {x,y,value} = point
         if (x < 0 || x > this.canvas.width || y < 0 || y > this.canvas.height) {
             return ;
         }
-        var i = x+y*this.canvas.width;
-        this.counter[i] = this.counter[i]?this.counter[i]+value:value 
+        let key = Math.round(x%this.canvas.width)+this.canvas.width*Math.round(y)
+        this.data[key] = this.data[key]?this.data[key]+value:value
+    }
+    createPalette(){
+        let palette = {0:new Uint8ClampedArray(4)}
+        for(let i=1;i<=this.steps;i++){
+            let value = i/this.steps
+            palette[value] = this.hsla2rgba(this.value2hsla(value))
+        }
+        return palette
     }
     value2hsla(value){
         const hsla = new Float64Array(4);
@@ -20,6 +40,7 @@ class Heatmap{
     }
     hsla2rgba(hsla){
         const rgba = new Uint8ClampedArray(4);
+        let r,g,b
         var [h,s,l,a] = hsla
         if(s == 0){
             r = g = b = l;
@@ -59,46 +80,44 @@ class Heatmap{
         }
         return pixels
     }
-    draw(step,pow){
-        var counter = {}
-        var ctx = this.canvas.getContext('2d')
-        ctx.clearRect(0,0,this.canvas.width, this.canvas.height)
-        for(let i in this.counter){
-            let value = this.counter[i]
-            let radius = Math.floor(Math.pow(value/step,1/pow))
-            let x = Math.floor(i%this.canvas.width)
-            let y = Math.floor(i/this.canvas.width)
+    render(){
+        let imageData = this.ctx.getImageData(0,0,this.canvas.width,this.canvas.height)
+        let W = this.canvas.width, H = this.canvas.height
+        let counter = {}
+        for(let key in this.data){
+            let x = key%W, y = Math.floor(key/W)
+            let value = this.data[key]
+            let radius = value
             // calculate point x.y 
-            for(var scanx=x-radius; scanx<x+radius; scanx+=1){            
+            for(var scanx=x-radius; scanx<=x+radius; scanx++){            
                 // out of extent
-                if(scanx<0 || scanx>this.canvas.width)
+                if(scanx<0 || scanx>W)
                     continue;
-                for(var scany=y-radius; scany<y+radius; scany+=1){
-                    if(scany<0 || scany>params.height)
+                for(var scany=y-radius; scany<=y+radius; scany++){
+                    if(scany<0 || scany>H)
                         continue;
-                    var dx = scanx-x
-                    var dy = scany-y
+                    var dx = scanx-x, dy = scany-y
                     var dist = Math.sqrt(dx*dx+dy*dy);
                     if(dist > radius){
                         continue;
                     } else {
-                        var v = value - step * Math.pow(dist, pow);
-                        var j = scanx+scany*this.canvas.width
-                        counter[j] = counter[j]?counter[j]+v:v
+                        var v = value - dist
+                        var k = scanx+scany*W
+                        counter[k] = counter[k]?counter[k]+v:v
                     }
                 }
             }
         }
-        var imageData = ctx.createImageData(this.canvas.width, this.canvas.height)
-        var maxValue = Math.max(...Object.values(counter))||0
-        for (var i=0; i<imageData.data.length; i+=4){
-            let normValue = counter[i]/maxValue
-            let rgba = isNaN(normValue)?[0,0,0,255]:this.hsla2rgba(this.value2hsla(normValue))
+        for(let k in counter){
+            let stepIndex = Math.ceil(counter[k]/this.maxValue*this.steps)/this.steps
+            stepIndex = stepIndex>1?1:stepIndex
+            let rgba = this.palette[stepIndex]
+            let i = k<<2
             imageData.data[i] = rgba[0]; // r
             imageData.data[i+1] = rgba[1]; // g
             imageData.data[i+2] = rgba[2]; // b
             imageData.data[i+3] = rgba[3]; // a
         }
-        ctx.putImageData(imageData, 0, 0);
+        this.ctx.putImageData(imageData,0,0)
     }
 }
