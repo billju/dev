@@ -176,10 +176,14 @@
                                 span.input-group-text 緯度
                             select.form-control(v-model="importParams.lat")
                                 option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                            select.form-control(v-model="importParams.lat2")
+                                option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
                         .input-group.input-group-sm
                             .input-group-prepend
                                 span.input-group-text 經度
                             select.form-control(v-model="importParams.lng")
+                                option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                            select.form-control(v-model="importParams.lng2")
                                 option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
                         .input-group.input-group-sm
                             .input-group-prepend
@@ -228,7 +232,7 @@ export default {
         fileExtension: '.geojson', filename: '', bgColor:'#ffffff',
         extensions:['.geojson','.png','.svg','.csv','.json'], encoding:'utf-8', encodings: ['utf-8','big5'],
         showDataTable: false, importing:false, newGroup: '', newColumn:'', page: 1, maxRows: 10, maxItems:20, zoomRange: [0,20], zoomDelta:0.5,
-        groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
+        groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',lat2:'',lng2:'',WKT:'',rightTableColumn:''},
         tmpFeatures:[], rows: [], cols:[], allowAnimation: true, 
         type2icon: {
             Point:'點',MultiPoint:'點(多重)',
@@ -239,7 +243,7 @@ export default {
     }),
     methods: {
         confirmImport(){
-            let {lng,lat,WKT} = this.importParams
+            let {lng,lat,lng2,lat2,WKT} = this.importParams
             if(this.tmpFeatures.length){
                 this.tmpFeatures = this.tmpFeatures.filter(f=>this.filteredRows.includes(f.properties))
                 // add group name
@@ -254,7 +258,10 @@ export default {
                 this.tmpFeatures = []
             }else if(lng&&lat){
                 let features = this.filteredRows.filter(row=>!(isNaN(row[lng])||isNaN(row[lat]))).map(row=>{
-                    return this.gismap.addVector('Point',[row[lng],row[lat]],{...row,'群組':this.filename})
+                    if(lng2&&lat2)
+                        return this.gismap.addVector('LineString',[[row[lng],row[lat]],[row[lng2],row[lat2]]],{...row,'群組':this.filename})
+                    else
+                        return this.gismap.addVector('Point',[row[lng],row[lat]],{...row,'群組':this.filename})
                 })
                 this.interaction.fitExtent(features)
                 this.handleSelect(features)

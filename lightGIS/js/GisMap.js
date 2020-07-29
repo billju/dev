@@ -925,7 +925,7 @@ export default class GisMap{
                 break
             case 'LineString':
                 drawPath(feature.geometry.coordinates)
-                if(feature.geometry.coordinates.length==2){
+                if(feature.geometry.coordinates.length==2&&feature.properties['周長']){
                     let coords = feature.geometry.coordinates
                     let c1 = this.coord2client(coords[0])
                     let c2 = this.coord2client(coords[1])
