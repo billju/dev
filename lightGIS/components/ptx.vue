@@ -13,17 +13,17 @@
     .btn-group.w-100
         .btn.btn-outline-primary(@click="THSR()") 高鐵
         .btn.btn-outline-primary(@click="TRA()") 台鐵
-        .btn.btn-outline-primary(@click="TRALiveBoard(TRAStationID)") 動態
-        input.btn.btn-outline-primary(type='text' style='width:50px' v-model="TRAStationID" placeholer="台鐵車站UID")
+        .btn.btn-outline-primary(v-if="TRArows.length" @click="TRALiveBoard()") 動態
+        input.btn.btn-outline-primary(v-if="TRArows.length" type='text' style='width:50px' v-model="TRAStationName" placeholer="車站名稱")
     .btn-group.w-100
         .btn.btn-outline-secondary(v-for="(val,key) in metroOperators" :key="key" @click="MetroRoute(key)") {{val}}
     div(v-if="(rows.length||busETA.length)")
         .input-group
-            .btn.btn-outline-success.form-control(@click="searchBus(city,UID)") 搜尋公車
-            input(type="text" v-model="UID" placeholder="輸入公車UID" @input="searching=true")
+            .btn.btn-outline-success.form-control(@click="searchBus()") 搜尋
+            input(type="text" v-model="keyword" placeholder="輸入關鍵字" @input="searching=true")
         .flex-grow-1(v-if="searching" style="max-height:600px;overflow-y:auto")
-            table.table.table-striped.table-hover.table-responsive.bg-light
-                thead.thead-light
+            table.table.table-dark.table-striped.table-hover
+                thead
                     tr
                         th(v-for="col in cols" :key="col") {{col}}
                 tbody
@@ -44,7 +44,7 @@ export default {
     props: ['gismap','interaction','show'],
     components: {ETA},
     data:()=>({
-        UID:'', TRAStationID:'0900', 
+        keyword:'', TRAStationName:'基隆', TRArows: [],
         city:'Taichung', cities: {
             Taipei:'臺北市',NewTaipei:'新北市',Taoyuan:'桃園市',Taichung:'臺中市',Tainan:'臺南市',
             Kaohsiung:'高雄市',Keelung:'基隆市',Hsinchu:'新竹市',HsinchuCounty:'新竹縣',MiaoliCounty:'苗栗縣',
@@ -173,11 +173,10 @@ export default {
             this.$emit('handleSelect',features)
             this.$emit('addGroup',group)
         },
-        async searchBus(city,UID){
-            if(!this.filteredRows.length)
-                return
-            if(!this.filteredRows.map(r=>r['UID']).includes(UID))
-                this.UID = UID = this.filteredRows[0]['UID']
+        async searchBus(){
+            if(!this.filteredRows.length) return
+            let city = this.city
+            let UID = this.filteredRows[0]['UID']
             let shape = await this.BusShape(city,UID)
             let stops = await this.BusStops(city,UID)
             this.BusETA(city,UID)
@@ -254,6 +253,7 @@ export default {
         async TRA(){
             let shapes = await this.TRAShape()
             let stations = await this.TRAStation()
+            this.TRArows = stations.map(f=>f.properties)
             this.interaction.fitExtent([...shapes,...stations])
             this.$emit('handleSelect',[...shapes,...stations])
             this.$emit('addGroup','台鐵')
@@ -285,7 +285,7 @@ export default {
                 return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':'台鐵'})
             })
         },
-        async TRALiveBoard(StationID='0900'){
+        async TRALiveBoard(){
             let props = {
                 'StationID':'UID',
                 'StationName.Zh_tw':'站名',
@@ -297,6 +297,9 @@ export default {
                 'ScheduledArrivalTime':'抵達',
                 'ScheduledDepartureTime':'發車'
             }
+            let matches = this.TRArows.filter(r=>r['站名'].match(this.TRAStationName))
+            if(!matches.length) return 
+            let StationID = matches[0]['UID']
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/TRA/LiveBoard?$select=${this.props2select(props)}&$filter=StationID eq '${StationID}'&$format=JSON`)
             if(json instanceof Error) return
             this.renderTable(this.renameArray(json,props))
@@ -385,7 +388,7 @@ export default {
     },
     computed:{
         filteredRows(){
-            return this.rows.filter(row=>row['UID'].match(this.UID))
+            return this.rows.filter(row=>Object.values(row).some(v=>v.match(this.keyword)))
         }
     },
     mounted(){

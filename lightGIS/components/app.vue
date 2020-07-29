@@ -101,7 +101,7 @@
                     el-switch(v-model="allowAnimation" @change="toggleAnimation($event)")
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 縮放間距
-                    el-input-number(size="mini" v-model="zoomDelta" :min="0.1" :max="1" :step="0.1" @change="gismap.zoomEvent.delta=zoomDelta")
+                    el-input-number(size="mini" v-model="gismap.zoomEvent.delta" :min="0.1" :max="1" :step="0.1")
                 .px-2.py-2.border-bottom
                     span 縮放範圍
                     span.float-right {{gismap.view?gismap.view.zoom:0}} / {{zoomRange}}
@@ -153,7 +153,7 @@
                                 contenteditable @blur="row[col.key]=$event.target.textContent") {{row[col.key]}}
             .d-flex.justify-content-center.align-items-center.bg-white.py-1
                 el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="page=$event")
-                input.btn.btn-sm.btn-outline-primary(type="text" v-model="search" placeholder="搜尋")
+                input.btn.btn-sm.btn-outline-primary(type="text" v-model="search" @input="page=1" placeholder="搜尋")
                 .btn.btn-sm.btn-outline-success(v-if="filename!=groupName" @click="confirmImport()") 匯入
                 .btn.btn-sm.btn-outline-success(v-else @click="confirmSelect()") 選取
                 el-popover(placement="top" trigger="click")
@@ -227,10 +227,10 @@ export default {
     components: {Tutorial,Rasters,Draggable,Styles,PTX,LoadingPage},
     mixins: [importHandler,exportHandler],
     data: ()=>({
-        tab: '網格', gismap: {getSelectedFeatures:()=>([])}, interaction: Interaction, heatmap: Heatmap,
+        tab: '網格', gismap: {getSelectedFeatures:()=>([]),zoomEvent:{delta:0.5}}, interaction: Interaction, heatmap: Heatmap,
         fileExtension: '.geojson', filename: '', bgColor:'#333333',
         extensions:['.geojson','.png','.svg','.csv','.json'], encoding:'utf-8', encodings: ['utf-8','big5'],
-        showDataTable: false, importing:false, newGroup: '', newColumn:'', page: 1, maxRows: 10, maxItems:20, zoomRange: [0,20], zoomDelta:0.5,
+        showDataTable: false, importing:false, newGroup: '', newColumn:'', page: 1, maxRows: 10, maxItems:20, zoomRange: [0,20],
         groupIndex:0, groups:[], imageShapes: [], importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
         tmpFeatures:[], rows: [], cols:[], allowAnimation: true, 
         type2icon: {
@@ -510,6 +510,18 @@ export default {
 html, body{
     margin: 0;
     height: 100%;
+}
+.custom-control-label:before{
+    background: #343a40;
+}
+input[type=range]::-webkit-slider-runnable-track{
+    background: #adb5bd;
+}
+input[type=range]::-moz-range-track{
+    background: #adb5bd;
+}
+input[type=range]::-ms-track{
+    background: #adb5bd;
 }
 .cursor-pointer{
     cursor: pointer;

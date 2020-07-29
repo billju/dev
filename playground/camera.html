@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <button id="stop-btn">stop</button>
+    <video id="video"></video>
+</body>
+<script>
+    // var takePicture = document.getElementById('take-picture')
+    // var showPicture = document.getElementById('show-picture')
+    // takePicture.onchange = e=>{
+    //     var files = e.target.files
+    //     if(files.length){
+    //         let imgURL = URL.createObjectURL(files[0])
+    //         showPicture.src = imgURL
+    //         URL.revokeObjectURL(imgURL)
+    //     }
+    // }
+    const FRONTCAM = 'user', BACKCAM = 'environment'
+    var constraints = {
+        video:{
+            frameRate:{ideal:10,max:15},
+            facingMode: FRONTCAM
+        },
+        audio:true
+    }
+    navigator.mediaDevices.getUserMedia(constraints).then((stream)=>{
+        var video = document.getElementById('video')
+        video.srcObject = stream
+        video.onloadedmetadata = e=>{
+            video.play()
+        }
+        document.getElementById('stop-btn').onclick=e=>{
+            stream.getTracks().forEach(track=>{track.stop()})
+        }
+    })
+    
+    
+</script>
+</html>

@@ -531,6 +531,8 @@ export default class GisMap{
     }
     handleWheel(e){
         e.preventDefault()
+        let isTouchPad = e.wheelDeltaY ? e.wheelDeltaY === -3 * e.deltaY : e.deltaMode === 0
+        if(isTouchPad) this.zoomEvent.delta = 0.1
         var coord = this.client2coord([e.clientX,e.clientY])
         var delta = this.zoomEvent.delta
         var newZoom = this.zoomEvent.after.z - Math.sign(e.deltaY)*delta

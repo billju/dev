@@ -183,7 +183,7 @@ export default {
                     gd1=i>0?gradients[i-1]:gradients[i]
                     gd2=gradients[i]
                     break
-                }else if(i==gradients.length-1){
+                }else if((i==0&&pct<gradients[i].pct)||i==gradients.length-1){
                     return gradients[i].rgba
                 }
             }
