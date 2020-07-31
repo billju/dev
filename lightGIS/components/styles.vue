@@ -1,10 +1,10 @@
 <template lang="pug">
-.px-2.w-100(v-if="show" :style="{opacity:selectedFeatures&&selectedFeatures.length?1:0.2}")
+.w-100.bg-dark.text-light(v-if="show" :style="{opacity:selectedFeatures&&selectedFeatures.length?1:0.2}")
     el-collapse(v-model="activeNames")
         el-collapse-item(title="屬性" name="屬性")
             template(slot="title")
                 .px-2 屬性
-            table.table.table-striped.table-hover.mb-0
+            table.table.table-striped.mb-0.text-light
                 tbody           
                     tr(v-for="val,key in attributes")
                         td {{key}}
@@ -20,15 +20,15 @@
                 select(@change="mapSFP('text',$event.target.value)")
                     option(value="")
                     option(v-for="prop in properties" :value="prop") {{prop}}                    
-            .d-flex.justify-content-between
+            .d-flex.justify-content-around
                 div
                     span.px-2.py-1 位置
                     br
-                    .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(0,3)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.name}}
+                    .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(0,3)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.symbol}}
                     br
-                    .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(3,6)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.name}}
+                    .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(3,6)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.symbol}}
                     br
-                    .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(6,9)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.name}}
+                    .btn.btn-sm.btn-outline-info(v-for="anchor in anchors.slice(6,9)" :key="anchor.name" :class="style['textAnchor']==anchor.value?'active':''" @click="setSFP('textAnchor',anchor.value)") {{anchor.symbol}}
                 div
                     .d-flex.justify-content-between
                         span.px-2.py-1 填滿
@@ -134,15 +134,15 @@ export default {
             textStroke:'rgba(255,255,255,1)',fontWeight:3,textFill:'rgba(0,0,0,1)'
         }, 
         anchors: [
-            {name:'左上',value:'[-1,-1]'},
-            {name:'上方',value:'[0,-1.2]'},
-            {name:'右上',value:'[1,-1]'},
-            {name:'左方',value:'[-1.2,0]'},
-            {name:'中間',value:'[0,0]'},
-            {name:'右方',value:'[1.2,0]'},
-            {name:'左下',value:'[-1,1]'},
-            {name:'下方',value:'[0,1.2]'},
-            {name:'右下',value:'[1,1]'},
+            {name:'左上',symbol:'↖',value:'[-1,-1]'},
+            {name:'上方',symbol:'↑',value:'[0,-1.2]'},
+            {name:'右上',symbol:'↗',value:'[1,-1]'},
+            {name:'左方',symbol:'←',value:'[-1.2,0]'},
+            {name:'中間',symbol:'○',value:'[0,0]'},
+            {name:'右方',symbol:'→',value:'[1.2,0]'},
+            {name:'左下',symbol:'↙',value:'[-1,1]'},
+            {name:'下方',symbol:'↓',value:'[0,1.2]'},
+            {name:'右下',symbol:'↘',value:'[1,1]'},
         ],
         featureIndex:0, fav: {
             styles: [],
@@ -183,7 +183,7 @@ export default {
                     gd1=i>0?gradients[i-1]:gradients[i]
                     gd2=gradients[i]
                     break
-                }else if(i==gradients.length-1){
+                }else if((i==0&&pct<gradients[i].pct)||i==gradients.length-1){
                     return gradients[i].rgba
                 }
             }
@@ -310,11 +310,13 @@ input[type="text"]{
 </style>
 <style>
 .el-collapse-item__header{
-    background: #6c757d !important;
+    background: #343a40 !important;
     color: white !important;
 }
 .el-collapse-item__content{
     padding: 5px !important;
     padding-bottom: 5px !important;
+    background: #6c757d !important;
+    color: white !important;
 }
 </style>

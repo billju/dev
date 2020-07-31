@@ -116,10 +116,15 @@ export default class GisMap{
             scaleStripe: '0px'
         }
         this.handleResize()
+        // layers
         this.vectors = []
         this.rasters = []
         this.imageShapes = []
         this.tiles = {}
+        // custom events
+        this.event = {render:[],select:[],drawend:[]}
+        this.notRenderPoints = false
+        // default events
         let xyz = {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom}
         this.zoomEvent = {before:xyz,after:xyz,t:0,frames:25,delta:0.5,zStep:1}
         this.moveEvent = {x:0,y:0,vx:0,vy:0,t:0,frames:90,active:false,moved:false,currentCoord:[0,0]}
@@ -185,7 +190,8 @@ export default class GisMap{
             const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
             let vectors = this.vectors.filter(f=>isOverlaped(f.geometry.bbox,this.view.bbox))
             for(let i=vectors.length-1;i>=0;i--){
-                this.renderVector(vectors[i],tolerance)
+                if(!(this.notRenderPoints&&(vectors[i].geometry.type=='Point'||vectors[i].geometry.type=='MultiPoint')))
+                    this.renderVector(vectors[i],tolerance)
             }
             if(this.drawEvent.active){
                 this.renderDraw()
@@ -199,6 +205,7 @@ export default class GisMap{
                 this.ctx.strokeStyle = 'dodgerblue'
                 this.ctx.strokeRect(lb[0],lb[1],ub[0]-lb[0],ub[1]-lb[1])
             }
+            this.dispatchEvent('render',{features:vectors})
             this.animationFrame = window.requestAnimationFrame(this.render)
         }
         this.render()
@@ -214,6 +221,14 @@ export default class GisMap{
         imageShape.filename = filename
         this.imageShapes.push(imageShape)
     }
+    dispatchEvent(type,payload){
+        for(let fn of this.event[type]){ fn(payload) }
+    }
+    addEventListener(type,fn){
+        try{ this.event[type].push(fn) }
+        catch{ console.error('no such type of event!') }
+    }
+    // default functions
     renderModify(){
         let coords = this.modifyEvent.feature.geometry.coordinates
         let geomType = this.modifyEvent.feature.geometry.type
@@ -274,12 +289,6 @@ export default class GisMap{
         })
     }
     panTo(coord,newZoom=this.view.zoom){
-        // Object.assign(this.zoomEvent,{
-        //     before: {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom},
-        //     after: {x:coord[0],y:coord[1],z:newZoom},
-        //     t: this.zoomEvent.frames,
-        //     zStep: newZoom<this.view.zoom?-1:1,
-        // })
         this.panEvent.before = {...this.view.center,z:this.view.zoom}
         this.panEvent.after = {x:coord[0],y:coord[1],z:newZoom}
         this.panEvent.t = this.panEvent.frames
@@ -296,7 +305,7 @@ export default class GisMap{
     }
     handleMousedown(e){
         let rect = this.canvas.getBoundingClientRect()
-        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
         if(this.modifyEvent.feature){
             let coords = this.modifyEvent.feature.geometry.coordinates
             let geomType = this.modifyEvent.feature.geometry.type
@@ -337,7 +346,7 @@ export default class GisMap{
     }
     handleMousemove(e){
         let rect = this.canvas.getBoundingClientRect()
-        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
         let vx = - clientX + this.moveEvent.x
         let vy = clientY - this.moveEvent.y
         if((this.moveEvent.active||this.modifyEvent.active||this.selectEvent.active)&&Math.sqrt(vx*vx+vy*vy)>3)
@@ -369,7 +378,7 @@ export default class GisMap{
     }
     handleMouseup(e){
         let rect = this.canvas.getBoundingClientRect()
-        let clientX = e.clientX-rect.top, clientY = e.clientY-rect.left
+        let clientX = e.clientX-rect.left, clientY = e.clientY-rect.top
         if(this.modifyEvent.anchor!=-1){
             if(!this.moveEvent.moved&&this.modifyEvent.coords.length>2){
                 this.modifyEvent.coords.splice(this.modifyEvent.anchor,1)
@@ -389,7 +398,7 @@ export default class GisMap{
                     this.modifyEvent.feature = features[0]
                 else
                     this.modifyEvent.feature = null
-                this.canvas.dispatchEvent(new CustomEvent('select',{detail:{features}}))
+                this.dispatchEvent('select',{features})
             }
         }
         if(this.selectEvent.active){
@@ -403,7 +412,7 @@ export default class GisMap{
                     let fgb = feature.geometry.bbox
                     return fgb[0]>=bbox[0]&&fgb[1]>=bbox[1]&&fgb[2]<=bbox[2]&&fgb[3]<=bbox[3]
                 }
-                dispatchSelectEvent(this.vectors.filter(feature=>isInBbox(feature)))
+                dispatchSelectEvent(this.vectors.filter(f=>f.properties['opacity']!=0).filter(f=>isInBbox(f)))
             }else{ //toggle selection
                 let feature = this.detectClient([clientX,clientY])
                 if(feature){
@@ -515,7 +524,7 @@ export default class GisMap{
             this.drawEvent.path = []
             this.drawEvent.active = false
             this.drawEvent.snap = false
-            this.canvas.dispatchEvent(new CustomEvent('drawend',{detail:{feature}}))
+            this.dispatchEvent('drawend',{feature})
         }
     }
     handleMouseleave(e){
@@ -524,6 +533,8 @@ export default class GisMap{
     }
     handleWheel(e){
         e.preventDefault()
+        let isTouchPad = e.wheelDeltaY ? e.wheelDeltaY === -3 * e.deltaY : e.deltaMode === 0
+        if(isTouchPad) this.zoomEvent.delta = 0.1
         var coord = this.client2coord([e.clientX,e.clientY])
         var delta = this.zoomEvent.delta
         var newZoom = this.zoomEvent.after.z - Math.sign(e.deltaY)*delta
@@ -790,8 +801,9 @@ export default class GisMap{
         const isOverlaped = (bbox1,bbox2)=>bbox1[0]<=bbox2[2]&&bbox1[2]>=bbox2[0]&&bbox1[1]<=bbox2[3]&&bbox1[3]>=bbox2[1]
         const isInBbox = (p,bbox)=>p[0]>=bbox[0]&&p[0]<=bbox[2]&&p[1]>=bbox[1]&&p[1]<=bbox[3]
         let point = this.client2coord(client)
-        let features = this.vectors.filter(feature=>isOverlaped(feature.geometry.bbox,this.view.bbox))
-            .filter(feature=>['Point','MultiPoint'].includes(feature.geometry.type)?true:isInBbox(point,feature.geometry.bbox))
+        let features = this.vectors.filter(f=>f.properties['opacity']!=0)
+            .filter(f=>isOverlaped(f.geometry.bbox,this.view.bbox))
+            .filter(f=>['Point','MultiPoint'].includes(f.geometry.type)?true:isInBbox(point,f.geometry.bbox))
         for(let feature of features){
             let geom = feature.geometry
             let isInGeometry = false
@@ -822,11 +834,11 @@ export default class GisMap{
             'stroke': feature.properties['stroke']||'dodgerblue',
             'fill': ['LineString','MultiLineString'].includes(feature.geometry.type)?undefined:feature.properties['fill']||'rgba(0,0,255,0.3)',
             'radius': feature.properties['radius']?parseInt(feature.properties['radius']):5,
-            'opacity': feature.properties['opacity']?parseFloat(feature.properties['opacity']):1,
+            'opacity': feature.properties['opacity']!=undefined?parseFloat(feature.properties['opacity']):1,
             'text': feature.properties['text'],
             'textAnchor': feature.properties['textAnchor']||'[0,0]',
             'textFill': feature.properties['textFill']||'#000000',
-            'textStroke': feature.properties['textStroke']||'#000000',
+            'textStroke': feature.properties['textStroke']||'#ffffff',
             'textRotate': feature.properties['textRotate']||0,
             'fontFamily': feature.properties['fontFamily']||'微軟正黑體',
             'fontWeight': feature.properties['fontWeight']?parseInt(feature.properties['fontWeight']):0,
@@ -835,6 +847,7 @@ export default class GisMap{
     }
     renderVector(feature,tolerance=0){
         let style = this.getDefaultStyle(feature)
+        if(style.opacity===0) return
         // selected style
         if(!this.selectEvent.styling&&this.selectEvent.features.includes(feature)){
             Object.assign(style,{
