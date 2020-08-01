@@ -161,7 +161,7 @@ export default {
             if(json instanceof Error) return
             let avails = await this.BikeAvaiable(city)
             if(avails instanceof Error) return
-            let group = 'iBike'+city
+            let group = 'Bike_'+city
             let features = this.renameArray(json,props).map(row=>{
                 let idx = avails.findIndex(x=>x['UID']==row['UID'])
                 let extProps = idx==-1?{}:avails[idx]
@@ -348,7 +348,7 @@ export default {
                     if(idx!=-1){
                         let row = station[idx]
                         return this.gismap.addVector('Point',[row['經度'],row['緯度']],{
-                            ...row,'群組':group,'代碼':line['LineNo']
+                            ...row,'群組':group,'代號':line['LineNo']
                         })
                     }
                 })
@@ -359,7 +359,7 @@ export default {
         },
         async MetroShape(operator='TRTC'){
             let props = {
-                'LineID':'代碼',
+                'LineID':'代號',
                 'LineName.Zh_tw':'路線',
                 'Geometry':'WKT'
             }
@@ -368,7 +368,7 @@ export default {
             let group = this.metroOperators[operator]
             return this.renameArray(json,props).map(row=>{
                 return this.gismap.WKT(row['WKT'],{
-                    '代碼':row['代碼'],'路線':row['路線'],'群組':group
+                    '代號':row['代號'],'路線':row['路線'],'群組':group
                 })
             })
         },

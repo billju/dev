@@ -33,6 +33,7 @@ class Chart{
         this.xLabel = args.xLabel||'x axis'
         this.yLabel = args.yLabel||'y axis'
         this.smoothRate = args.smoothRate||0
+        this.backgroundColor = args.backgroundColor||'#333333'
         this.timingFuncion = args.timingFuncion||'easeInOut'
         //
         this.source = this.data
@@ -77,16 +78,15 @@ class Chart{
             return Array.from(Array(target.length), (_,i)=>{
                 let s = source[i]
                 let t = target[i]
-                let x, y
                 if(s==undefined){
-                    x=t[0]; y=t[1]
+                    return t
                 }else if(t==undefined){
-                    x=s[0]; y=s[1]
+                    return s
                 }else{
-                    x = s[0]+(t[0]-s[0])*pct
-                    y = s[1]+(t[1]-s[1])*pct
+                    let x = s[0]+(t[0]-s[0])*pct
+                    let y = s[1]+(t[1]-s[1])*pct
+                    return [x,y]
                 }
-                return [x,y]
             })
         }
     }
@@ -115,8 +115,8 @@ class Chart{
         let y = this.canvas.height-(coord[1]-this.bbox[1])/(this.bbox[3]-this.bbox[1])*this.H-this.padding[2]
         return [x,y]
     }
-    getCoords(data=this.data){
-        return data.map(coord=>this.getCoord(coord))
+    getCoords(coords=this.data){
+        return coords.map(coord=>this.getCoord(coord))
     }
     getValueAtCoord(coord){
         let valueX = (coord[0]-this.padding[3])*(this.bbox[2]-this.bbox[0])/this.W+this.bbox[0]
@@ -194,8 +194,6 @@ class Chart{
         let xEnd = this.canvas.width-this.padding[1]
         let yStart = this.canvas.height-this.padding[2]
         let yEnd = this.padding[0]
-        let W = this.canvas.width-this.padding[1]-this.padding[3]
-        let H = this.canvas.height-this.padding[0]-this.padding[2]
         // origin
         // this.ctx.setLineDash([])
         this.ctx.strokeStyle = 'white'
@@ -218,12 +216,12 @@ class Chart{
         // let sizeY = 50
         // let stepY = Math.ceil((this.bbox[3]-this.bbox[1])/H*sizeY)
         this.ctx.fillStyle = 'white'
-        let binsY = this.getBins(this.bbox[3]-this.bbox[1],H/20)
+        let binsY = this.getBins(this.bbox[3]-this.bbox[1],this.H/20)
         let stepY = binsY.step
-        let sizeY = H/binsY.bins
+        let sizeY = this.H/binsY.bins
         let offsetY = sizeY*(1-this.bbox[1]%stepY/stepY)
         this.ctx.beginPath()
-        for(let i=0;i<(H-offsetY)/sizeY;i++){                
+        for(let i=0;i<(this.H-offsetY)/sizeY;i++){                
             let y = yStart-offsetY-i*sizeY
             this.ctx.moveTo(xStart,y)
             this.ctx.lineTo(xEnd,y)
@@ -234,12 +232,12 @@ class Chart{
         this.ctx.stroke()
         this.ctx.closePath()
         // y axis
-        let binsX = this.getBins(this.bbox[2]-this.bbox[0],W/50)
+        let binsX = this.getBins(this.bbox[2]-this.bbox[0],this.W/50)
         let stepX = binsX.step
-        let sizeX = W/binsX.bins
+        let sizeX = this.W/binsX.bins
         let offsetX = sizeX*(1-this.bbox[0]%stepX/stepX)
         this.ctx.beginPath()
-        for(let i=0;i<(W-offsetX)/sizeX;i++){
+        for(let i=0;i<(this.W-offsetX)/sizeX;i++){
             let x = xStart+offsetX+i*sizeX
             this.ctx.moveTo(x,yStart)
             this.ctx.lineTo(x,yEnd)
@@ -286,47 +284,55 @@ class Chart{
         this.H = this.canvas.height-this.padding[0]-this.padding[2]
     }
     clear(){
-        this.ctx.fillStyle = '#333'
+        this.ctx.fillStyle = this.backgroundColor
         this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height)
     }
     update(args){
         Object.assign(this,args)
     }
-    drawBar(data=[],style={}){
-        let r = 1/3, bboxes = []
-        if(data.some(x=>isNaN(x[0]))){
-            let W = (this.bbox[2]-this.bbox[0])/(data.length+1)
-            bboxes = data.map((x,i)=>([
-                this.bbox[0]+W*(i+1-r),
-                this.bbox[1],
-                this.bbox[0]+W*(i+1+r),
-                this.bbox[1]+x[1]
-            ]))
+    drawBar(data=this.data,style={}){
+        let direction = style.direction||'vertical'//bottom2top
+        let r = 1/3, xy=[], wh=[]
+        let rw = this.W/(this.bbox[2]-this.bbox[0])
+        let rh = this.H/(this.bbox[3]-this.bbox[1])
+        let W = (this.bbox[2]-this.bbox[0])/(data.length+1)
+        if(direction=='vertical'){
+            xy = data.map((c,i)=>{
+                let coord = [
+                    this.bbox[0]+W*(i+1-r),
+                    this.bbox[1]+c[1]
+                ]
+                if(isNaN(c[0]))
+                    c[0] = coord[0]
+                return coord
+            }).map(coord=>this.getCoord(coord))
+            wh = data.map((c,i)=>( [2*W*r*rw,c[1]*rh] ))
         }else{
             let H = (this.bbox[3]-this.bbox[1])/(data.length+1)
-            bboxes = data.map((x,i)=>([
-                this.bbox[0]+W*(i+1-r),
-                this.bbox[1],
-                this.bbox[0]+W*(i+1+r),
-                this.bbox[1]+x[1]
-            ]))
+            xy = data.map((c,i)=>{
+                let coord = [
+                    this.bbox[0],
+                    this.bbox[1]+H*(i+1-r)
+                ]
+                if(isNaN(c[1]))
+                    c[1] = coord[1]
+                return coord
+            }).map(coord=>this.getCoord(coord))
+            wh = data.map((c,i)=>( [c[0]*rw,2*H*r*rh] ))
         }
         this.ctx.fillStyle = style.fill||'rgba(0,0,0,0.3)'
         this.ctx.strokeStyle = style.stroke||'white'
-        bboxes.map(b=>{
-            let lb = this.getCoord(b.slice(0,2))
-            let rt = this.getCoord(b.slice(2))
-            return lb.concat(rt)
-        }).map(bbox=>{
-            let x = bbox[0], y = bbox[1],
-                w = bbox[2]-x, h = bbox[3]-y
+        for(let i=0;i<data.length;i++){
+            let [x,y] = xy[i]
+            let [w,h] = wh[i]
             this.ctx.fillRect(x,y,w,h)
             this.ctx.strokeRect(x,y,w,h)
-        })
+        }
     }
 }
 var i = 100
-var data = [[i-50,0],[i,20+10*Math.sin(i/50)],[i+50,20]]
+var period = 10
+var data = [[i-50,0],[i,20+10*Math.sin(i/period)],[i+50,20]]
 const chart = new Chart(document.getElementById('chart'),{
     data,
     timingFuncion: 'linear',
@@ -335,12 +341,12 @@ const chart = new Chart(document.getElementById('chart'),{
 var chartAnimationFrame = null
 function draw(){
     i+=0.1
-    data = [[i-50,0],[i,20+10*Math.sin(i/20)],[i+50,20]]
+    data = [[i-50,0],[i,20+10*Math.sin(i/period)],[i+50+100*Math.sin(i/period),20]]
     chart.clear()
     chart.drawGrid()
     chart.drawDots()
     chart.drawLine()
-    chart.drawBar([['a',10],['b',5],['b',5],['b',5],['b',30]])
+    chart.drawBar()
     chart.animateTo(data)
     chartAnimationFrame = window.requestAnimationFrame(draw)
 }

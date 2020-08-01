@@ -69,7 +69,7 @@
                                 :value="group.start+i+1"
                                 :class="selectedFeatures.includes(feature)?'text-danger':feature.properties['opacity']==0?'text-secondary':'text-light'"
                                 @click="handleClickSelect(feature)"
-                                @contextmenu="$event.preventDefault();interaction.fitExtent([feature])") 
+                                @contextmenu="$event.preventDefault();handleClickSelect(feature);interaction.fitExtent([feature])") 
                                     span {{type2icon[feature.geometry.type]}}
                                     span.float-right {{feature.properties[group.propKey]}}
                         el-pagination(small hide-on-single-page :page-size="maxItems" layout="prev,pager,next"
@@ -122,6 +122,8 @@
                 .text-secondary.text-center(v-if="!(gismap.imageShapes&&gismap.imageShapes.length)").py-1.px-2 拖曳匯入圖片開始
             el-tab-pane(label="PTX" name="PTX")
                 PTX(:gismap="gismap" :interaction="interaction" @addGroup="addGroup($event)" @handleSelect="handleSelect($event)" :show="tab=='PTX'")
+            el-tab-pane(label="調色" name="調色" lazy)
+                ColorSampler
             el-tab-pane(label="提示" name="提示" lazy)
                 Tutorial
     transition(name="fade-left")
@@ -222,13 +224,14 @@ import Tutorial from './tutorial.vue'
 import Rasters from './rasters.vue'
 import Styles from './styles.vue'
 import PTX from './ptx.vue'
+import ColorSampler from './colorsampler.vue'
 import LoadingPage from './loadingPage.vue'
 import Draggable from 'vuedraggable'
 import Heatmap from '../js/heatmap.js'
 
 export default {
     name: 'app',
-    components: {Tutorial,Rasters,Draggable,Styles,PTX,LoadingPage},
+    components: {Tutorial,Rasters,Draggable,Styles,PTX,LoadingPage,ColorSampler},
     mixins: [importHandler,exportHandler],
     data: ()=>({
         tab: '網格', gismap: {getSelectedFeatures:()=>([]),zoomEvent:{delta:0.5},notRenderPoints:false}, 
@@ -443,6 +446,12 @@ export default {
             }
             this.importing = this.showDataTable = false
         },
+        getCurrentPosition(){
+            navigator.geolocation.getCurrentPosition(pos=>{
+                let {latitude,longitude} = pos.coords
+                this.gismap.panTo(this.gismap.lnglat2coord([longitude,latitude]))
+            })
+        }
     },
     computed:{
         groupFeatures(){
@@ -523,6 +532,7 @@ export default {
         window.addEventListener('paste',e=>{
             this.handleSelect(this.gismap.selectEvent.features)
         })
+        this.getCurrentPosition()
     }
 }
 </script>
@@ -542,9 +552,6 @@ input[type=range]::-webkit-slider-runnable-track{
     background: #adb5bd;
 }
 input[type=range]::-moz-range-track{
-    background: #adb5bd;
-}
-input[type=range]::-ms-track{
     background: #adb5bd;
 }
 .cursor-pointer{

@@ -1,65 +1,57 @@
 <template lang="pug">
 .px-2
+    h5.bg-secondary.px-2.py-1 網格切換
     ul
-        li 網格切換
+        li 點擊文字或開關打開網格底圖
+        li 拉動滑桿可調整透明度
+        li 按住文字拖曳可排序圖層先後順序
+        li 可新增自定義WMS伺服器
+    h5.bg-secondary.px-2.py-1 向量繪製
+    ul
+        li 點擊右鍵開始繪製
+        li 連點兩下左鍵結束
+        li 點：如果滑鼠待在原點
+        li 線：如果連線沒有閉合
+        li 面：如果最後一點與第一點重疊
+        li 點擊或框選(ctrl+左鍵)進行向量選取
+        li ctrl+左鍵+移動：框選
+        li ctrl+左鍵單點：切換選取
+        li ctrl+x：剪下(複製並刪除)
+        li ctrl+z：復原刪除
+        li ctrl+c：複製
+        li ctrl+v：貼上
+        li ctrl+b：原地複製貼上
+        li 方向鍵：微調位置
+    h5.bg-secondary.px-2.py-1 向量管理
+    ul
+        li 左上方為群組名稱(不重複)
+        li 右上方為顯示欄位
+        li 只有選取該群組才會顯示工具列
+        li 工具列第一項為透明度調整
+        li 若透明度調為零便可隱藏該群組
+    h5.bg-secondary.px-2.py-1 設定
+    ul
+        li 檔案匯入支援圖片(jpeg,png等)、向量(geojson,kml)、文字檔(csv,json)
+        li 圖片：可拖曳、鎖定或調整透明度
+        li geojson：匯出所有向量檔案
+        li png：網頁大小為尺寸的圖片檔
+        li svg：可匯入繪圖軟體進行加工
+        li 熱點圖：將所有資料點轉為熱點圖，調高半徑會有不一樣的效果
+    h5.bg-secondary.px-2.py-1 PTX
+    ul
+        li 交通部大眾運輸資料平台
+        li 所在縣市：以下資料將依此搜尋
+        li 觀光-點位資料
             ul
-                li 點擊開關打開地圖(建議：OSM)
-                li 拉動滑桿可調整透明度
-                li 按住文字拖曳可排序圖層先後順序
-                li 可加入自定義WMS server
-        li 向量繪製
-            ul
-                li 點擊右鍵開始繪製
-                li 連點兩下結束
-                li 點：如果滑鼠沒有移動
-                li 線：如果連線沒有閉合
-                li 面：如果最後一點與第一點重疊
-                li 點擊物件進行選取，左邊會跳出屬性列
-                li ctrl+左鍵+移動：框選(範圍內)
-                li ctrl+左鍵：多重選取或取消
-                li ctrl+x：剪下(複製並刪除)
-                li ctrl+z：復原刪除
-                li ctrl+c：複製
-                li ctrl+v：貼上
-                li ctrl+b：原地複製貼上
-                li 方向鍵：微調位置
-        li 向量管理
-            ul
-                li 左方列為群組名稱集，群組名稱不重複
-                li 點選群組切換，再點一次聚焦至全觀
-                li 右方列為控制項
-        li 樣式
-            ul
-                li 加入最愛：新增常用樣式置於底下，左鍵套用右鍵刪除
-                li 置頂：將向量置於地圖最上方
-                li 置底：將向量置於向量最下方(仍在圖片上方)
-        li 設定
-            ul
-                li 可以直接拖曳匯入圖片、向量檔
-                li 向量檔支援geojson
-                li 圖片可以拖曳、鎖定或調透明度
-                li 框選指定範圍並匯出
-                li geojson：匯出所有向量
-                li png：以目前網頁大小為尺寸
-                li svg：可以再匯入繪圖軟體加工
-        li 底圖
-            ul
-                li 管理已匯入的圖片
-                li 點擊鎖定將圖片固定在地圖上
-        li PTX
-            ul
-                li 資料取自交通部大眾運輸資料平台
-                li 觀光：皆為點位資料
-                    ul
-                        li 景點
-                        li 餐廳
-                        li 旅館
-                        li 活動
-                li 公共自行車：
-                li 公車：
-                li 火車：
-                li 高鐵：
-                li 捷運：
+                li 景點
+                li 餐廳
+                li 旅館
+                li 活動
+        li 公共自行車：即時租借狀況查詢
+        li 公車：查詢各路線、站點及預估抵達時間
+        li 火車：全台路線站點及班表
+        li 高鐵：全台路線站點
+        li 捷運
 </template>
 
 <script>

@@ -636,12 +636,10 @@ export default class GisMap{
         var z = Math.floor(view.zoom)
         var {tiles, minX, minY, maxX, maxY} = this.getXYZ(this.minmax(z,raster.min||this.view.minZoom,raster.max||this.view.maxZoom))
         // load images
-        if(!(raster.url in this.tiles)){
+        if(!this.tiles[raster.url])
             this.tiles[raster.url] = {}
-        }
         var subDomain = raster.url.match(/\{([a-z])-([a-z])\}/)
         tiles.map(tile=>{
-            let xyz = [tile.x,tile.y,tile.z]
             let src = raster.url.replace('{x}',tile.x).replace('{y}',tile.y).replace('{z}',tile.z)
             if(subDomain){
                 let charStart = subDomain[1].charCodeAt(0)
@@ -649,11 +647,12 @@ export default class GisMap{
                 let domain = String.fromCharCode(charStart+Math.floor(Math.random()*(chartEnd-charStart)))
                 src = src.replace(subDomain[0],domain)
             }
-            if(!(xyz in this.tiles[raster.url])){
+            if(!this.tiles[raster.url][`${tile.x},${tile.y},${tile.z}`]){
                 var img = new Image()
                 img.crossOrigin = 'anonymous'
+                img.onload = ()=>{img.setAttribute('src',src)} // IE
                 img.src = src
-                this.tiles[raster.url][xyz] = img
+                this.tiles[raster.url][`${tile.x},${tile.y},${tile.z}`] = img
             }
         })
         // find loaded images
@@ -663,8 +662,8 @@ export default class GisMap{
         while(tilesNotLoaded.length&&z>=view.minZoom&&z<=view.maxZoom){
             let unique = {}
             for(let tile of tilesNotLoaded){
-                let xyz = [tile.x,tile.y,tile.z]
-                let loaded = this.tiles[raster.url][xyz]?this.tiles[raster.url][xyz].complete:false
+                let img = this.tiles[raster.url][`${tile.x},${tile.y},${tile.z}`]
+                let loaded = img?img.complete:false
                 if(loaded){
                     tilesLoaded.unshift(tile)
                 }else if(zStep==1){
@@ -687,16 +686,14 @@ export default class GisMap{
             if(z-view.zoom>=2) break //prevent from exponential explotion
         }
         return tilesLoaded.map(tile=>{
-            var scale = Math.pow(2,view.zoom-tile.z)
+            let scale = Math.pow(2,view.zoom-tile.z)
             let W = tp.w*scale
             let H = tp.h*scale
             let X = origin.x+tile.x*W
             let Y = origin.y+tile.y*H
-            let xyz = [tile.x,tile.y,tile.z]
-            let img = this.tiles[raster.url][xyz]
-            try{
+            let img = this.tiles[raster.url][`${tile.x},${tile.y},${tile.z}`]
+            if(img.complete)
                 this.ctx.drawImage(img,X,Y,W,H)
-            }catch{}
             return {img,X,Y,W,H}
         })
     }

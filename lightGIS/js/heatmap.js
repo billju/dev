@@ -39,7 +39,7 @@ export default class Heatmap{
     hsla2rgba(hsla){
         const rgba = new Uint8ClampedArray(4);
         let r,g,b
-        var [h,s,l,a] = hsla
+        let [h,s,l,a] = hsla
         if(s == 0){
             r = g = b = l;
         }else{
@@ -51,8 +51,8 @@ export default class Heatmap{
                 if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
                 return p;
             }
-            var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-            var p = 2 * l - q;
+            let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            let p = 2 * l - q;
             r = hue2rgb(p, q, h + 1/3);
             g = hue2rgb(p, q, h);
             b = hue2rgb(p, q, h - 1/3);
@@ -84,23 +84,23 @@ export default class Heatmap{
         let counter = {}
         for(let key in this.data){
             let x = key%W, y = Math.floor(key/W)
-            let value = this.data[key]
-            let radius = value
+            let radius = this.data[key]
+            let r_squ = radius*radius
             // calculate point x.y 
-            for(var scanx=x-radius; scanx<=x+radius; scanx++){            
+            for(let scanx=x-radius; scanx<=x+radius; scanx++){            
                 // out of extent
                 if(scanx<0 || scanx>W)
                     continue;
-                for(var scany=y-radius; scany<=y+radius; scany++){
+                for(let scany=y-radius; scany<=y+radius; scany++){
                     if(scany<0 || scany>H)
                         continue;
-                    var dx = scanx-x, dy = scany-y
-                    var dist = Math.sqrt(dx*dx+dy*dy);
-                    if(dist > radius){
+                    let dx = scanx-x, dy = scany-y
+                    let d_squ = dx*dx+dy*dy
+                    if(d_squ > r_squ){
                         continue;
                     } else {
-                        var v = value - dist
-                        var k = scanx+scany*W
+                        let v = radius*(1-d_squ/r_squ)
+                        let k = scanx+scany*W
                         counter[k] = counter[k]?counter[k]+v:v
                     }
                 }

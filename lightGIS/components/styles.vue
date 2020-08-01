@@ -109,8 +109,8 @@
                             span &times;
                     .btn.btn-success(@click="fav.categories.push({...rule.categories})") 新設定
                     .btn.btn-secondary(v-for="fc,i in fav.categories" :key="`cat${i}`" 
-                        @click="rule.categories={...fc};updateRule(fc)"
-                        @contextmenu.prevent="$delete(fc,i)") 設定{{i+1}}
+                        @click="rule.categories={...fc.dict};updateRule(fc)"
+                        @contextmenu.prevent="$delete(fc,i)") {{fc.name||`設定${i+1}`}}
         el-collapse-item(name="常用樣式")
             template(slot="title")
                 .px-2.d-flex.align-items-center.justify-content-between
@@ -155,8 +155,28 @@ export default {
                 ],
             ],
             categories: [
-                {'公':'rgba(254,255,191,1)','私':'rgba(188,233,252,1)','公私共有':'rgba(202,214,159,1)',
-                '公法人':'rgba(215,177,158,1)','糖':'rgba(239,177,208,1)','預設':'rgba(204,204,204,1)'},
+                {
+                    name: '土地權屬',
+                    dict:{
+                        '公':'rgba(254,255,191,1)',
+                        '私':'rgba(188,233,252,1)',
+                        '公私共有':'rgba(202,214,159,1)',
+                        '公法人':'rgba(215,177,158,1)',
+                        '糖':'rgba(239,177,208,1)',
+                        '預設':'rgba(204,204,204,1)'
+                    }
+                },{
+                    name: '捷運代號',
+                    dict:{
+                        'O':'rgba(249,203,95,1)',
+                        'G':'rgba(0,134,89,1)',
+                        'BR':'rgba(196,140,49,1)',
+                        'R':'rgba(227,0,44,1)',
+                        'Y':'rgba(253,219,0,1)',
+                        'BL':'rgba(0,112,189,1)',
+                        'A':'rgba(122,68,153,1)'
+                    }
+                }
             ]
         },
         fontFamilies: ['微軟正黑體','serif','sans-serif','fantasy','monospace','標楷體'],

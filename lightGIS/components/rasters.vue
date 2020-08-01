@@ -4,16 +4,16 @@
         .d-flex.align-items-center.border-bottom.border-light(v-for="raster,i in rasters" :key="raster.name")
             label.cursor-pointer.text-truncate(:for="raster.name" style="margin-bottom:0").flex-grow-1 {{raster.name}}
             .custom-control.custom-switch.mx-1.cursor-pointer
-                input.custom-control-input(type='checkbox' v-model="raster.active" :id="raster.name" @input="gismap.setRasters(rasters)")
+                input.custom-control-input(type="checkbox" v-model="raster.active" :id="raster.name" @input="gismap.setRasters(rasters)")
                 label.custom-control-label(:for="raster.name")
-            .input-text(draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
-                input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl;padding-top:6px'
+            .input-text(draggable="true" ondragstart="event.preventDefault();event.stopPropagation()")
+                input.custom-range(type="range" min="0" max="1" step="0.1" value="0.8" style="direction:rtl;margin-top:6px;width:100px"
                     v-model.number="raster.opacity" @input="gismap.setRasters(rasters)")
     .input-group.mt-1
         .input-group-prepend(@click="addWMS()")
             .btn.btn-outline-success 新增
-        input.form-control.btn.btn-outline-success(type='text' v-model="name" placeholder="名稱")
-        input.form-control.btn.btn-outline-success(type='text' style="flex:3" v-model="url" placeholder="https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png")
+        input.form-control.btn.btn-outline-success(type="text" v-model="name" placeholder="名稱")
+        input.form-control.btn.btn-outline-success(type="text" style="flex:3" v-model="url" placeholder="https://{a-c}.tile.openstreetmap.org/{z}/{x}/{y}.png")
 </template>
 
 <script>
@@ -32,8 +32,8 @@ export default {
             return [
                 {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/URBAN3857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'臺中都市計畫',opacity:0.8,active:false},
                 {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/Land3857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'地段及地籍圖',opacity:0.8,active:false},
-                {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/LandPriceMapAA163857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'公告現值',opacity:0.8,active:false},
-                {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/LandPriceMapAA173857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'公告地價',opacity:0.8,active:false},
+                // {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/LandPriceMapAA163857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'公告現值',opacity:0.8,active:false},
+                // {url:'https://lohas.taichung.gov.tw/arcgis/rest/services/Tiled3857/LandPriceMapAA173857/MapServer/tile/{z}/{y}/{x}?blankTile=false&token={token}',name:'公告地價',opacity:0.8,active:false},
                 {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_policy/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'特殊管制',opacity:0.8,active:false},
                 {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_water/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'水源水質',opacity:0.8,active:false},
                 {url:'https://eghouse.hccg.gov.tw/arcgis/rest/services/Tiled3857/Nature_geo/MapServer/tile/{z}/{y}/{x}?blankTile=false',name:'地質敏感',opacity:0.8,active:false},
