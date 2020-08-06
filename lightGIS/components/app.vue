@@ -53,7 +53,7 @@
                                 .btn.btn-sm.btn-outline-info(@click="sortGroupFeature()")
                                     i(:class="sortIcon")
                             el-tooltip(content="資料表格" placement="bottom")
-                                .btn.btn-outline-info(@click="renderTable(groupFeatures.map(f=>f.properties));showDataTable=true")
+                                .btn.btn-outline-info(@click="renderTable(groupFeatures.map(f=>f.properties));setState({showDataTable:true})")
                                     i.el-icon-menu
                             el-tooltip(content="選取全部" placement="bottom")
                                 .btn.btn-outline-info(@click="handleSelect(groupFeatures)")
@@ -80,25 +80,25 @@
                 .input-group
                     .input-group-prepend
                         .btn.btn-outline-success(@click="exportFile()") 匯出
-                    input.form-control.btn.btn-outline-success(type='text' v-model="filename" placeholder="檔案名稱")
-                    select.form-control.btn.btn-outline-success(v-model="fileExtension")
+                    input.form-control.btn.btn-outline-success(type='text' :value="filename" @input="setState({filename:$event.target.value})" placeholder="檔案名稱")
+                    select.form-control.btn.btn-outline-success(:value="fileExtension" @change="setState({fileExtension:$event.target.value})")
                         option(v-for="ext in extensions" :key="ext" :value='ext') {{ext}}
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 檔案編碼
-                    select(v-model="encoding")
+                    select(:value="encoding" @change="setState({encoding:$event.target.value})")
                         option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 背景顏色
-                    el-color-picker(size="mini" :value="bgColor" @active-change="bgColor=$event")
+                    el-color-picker(size="mini" :value="bgColor" @active-change="setState({bgColor:$event})")
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 顯示比例尺
-                    el-switch(v-model="showScale")
+                    el-switch(:value="showScale" @input="setState({showScale:$event})")
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 產生熱點圖
                     el-switch(v-model="gismap.notRenderPoints")
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 動畫插值
-                    el-switch(v-model="allowAnimation" @change="toggleAnimation($event)")
+                    el-switch(:value="allowAnimation" @change="toggleAnimation($event)")
                 .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
                     span 縮放間距
                     el-input-number(size="mini" v-model="gismap.zoomEvent.delta" :min="0.1" :max="1" :step="0.1")
@@ -144,18 +144,18 @@
                                         i.el-icon-top(v-else-if="col.sort==1" @click="col.sort=-1")
                                         i.el-icon-bottom(v-else @click="col.sort=0")
                                     i.el-icon-close.cursor-pointer(@click="removeColumn(col.key);$event.stopPropagation()")
-                                select.w-100(v-model="col.filter" @change="updateColumnList();page=1")
+                                select.w-100(v-model="col.filter" @change="updateColumnList();setState({tablePage:1})")
                                     option(value="")
                                     option(v-for="li in col.list" :key="li" :value="li") {{li}}
                             
                     tbody
-                        tr(v-for="row,ri in filteredRows.slice((page-1)*maxRows,page*maxRows)" :key="ri")
-                            td {{(page-1)*maxRows+ri+1}}
+                        tr(v-for="row,ri in filteredRows.slice((tablePage-1)*maxRows,tablePage*maxRows)" :key="ri")
+                            td {{(tablePage-1)*maxRows+ri+1}}
                             td(v-for="col,ci in cols" :key="ci" style="max-width:150px;text-overflow:ellipsis;" 
                                 contenteditable @blur="row[col.key]=$event.target.textContent") {{row[col.key]}}
             .d-flex.justify-content-center.align-items-center.bg-white.py-1
-                el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="page=$event")
-                input.btn.btn-sm.btn-outline-primary(type="text" v-model="search" @input="page=1" placeholder="搜尋")
+                el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="setState({tablePage:$event})")
+                input.btn.btn-sm.btn-outline-primary(type="text" :value="search" @input="setState({search:$event.target.value,tablePage:1})" placeholder="搜尋")
                 .btn.btn-sm.btn-outline-success(v-if="filename!=groupName" @click="confirmImport()") 匯入
                 .btn.btn-sm.btn-outline-success(v-else @click="confirmSelect()") 選取
                 el-popover(placement="top" trigger="click")
@@ -163,7 +163,7 @@
                     .input-group.input-group-sm.align-items-center
                         .input-group-prepend
                             span.input-group-text 每頁顯示
-                        input.custom-range.form-control(type="range" v-model.number="maxRows" min="5" max="100" @change="page=1")
+                        input.custom-range.form-control(type="range" v-model.number="maxRows" min="5" max="100" @change="setState({tablePage:$event})")
                     .w-100(v-if="!importing")
                         .input-group.input-group-sm
                             .input-group-prepend
@@ -174,7 +174,7 @@
                         .input-group.input-group-sm
                             .input-group-prepend
                                 span.input-group-text 圖層名稱
-                            input.form-control(v-model="filename")
+                            input.form-control(type="text" :value="filename" @input="setState({filename:$event.target.value})")
                         .input-group.input-group-sm
                             .input-group-prepend
                                 span.input-group-text 緯度
@@ -210,12 +210,13 @@
                                 span.input-group-text 合併欄位
                             select.form-control(v-model="groups[groupIndex].propKey")
                                 option(v-for="key in propKeys" :key="key" :value="key") {{key}}
-                .btn.btn-sm.btn-outline-danger(@click="importing=showDataTable=false;") 關閉
+                .btn.btn-sm.btn-outline-danger(@click="setState({importing:false,showDataTable:false});") 關閉
     //- el-dialog(:visible.sync="dialog" :append-to-body="true")
     //- LoadingPage
 </template>
 
 <script>
+import {mapState, mapMutations, mapGetters} from 'vuex'
 import GisMap from '../js/GisMap.js'
 import Interaction from '../js/interaction.js'
 import importHandler from '../js/importHandler.js'
@@ -233,28 +234,10 @@ export default {
     name: 'app',
     components: {Tutorial,Rasters,Draggable,Styles,PTX,LoadingPage,ColorSampler},
     mixins: [importHandler,exportHandler],
-    data: ()=>({
-        tab: '網格', gismap: {getSelectedFeatures:()=>([]),zoomEvent:{delta:0.5},notRenderPoints:false}, 
-        interaction: Interaction, heatmap: Heatmap,
-        // settings
-        fileExtension: '.geojson', filename: '', bgColor:'#333333', imageShapes: [], 
-        extensions:['.geojson','.png','.svg','.csv','.json'], encoding:'utf-8', encodings: ['utf-8','big5'],
-        search: '', showScale:true, allowAnimation: true, 
-        // data table
-        showDataTable: false, importing:false, rows: [], cols:[], 
-        newGroup: '', newColumn:'', page: 1, maxRows: 10, maxItems:20, zoomRange: [0,20],
-        importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
-        // vector
-        groupIndex:0, groups:[], tmpFeatures:[], 
-        type2icon: {
-            Point:'點',MultiPoint:'點(多重)',
-            LineString:'線',MultiLineString:'線(多重)',
-            Polygon:'面',MultiPolygon:'面(多重)'
-        },
-        // global
-        loading: false, dialog:false, 
-    }),
     methods: {
+        setState(object){
+            this.$store.commit('set',object)
+        },
         confirmImport(){
             let {lng,lat,lng2,lat2,WKT} = this.importParams
             if(this.tmpFeatures.length){
@@ -289,12 +272,12 @@ export default {
                 this.handleSelect(features)
                 this.addGroup(this.filename)
             }
-            this.showDataTable = false
+            this.setState({showDataTable:false})
         },
         confirmSelect(){
             let features = this.groupFeatures.filter(f=>this.filteredRows.includes(f.properties))
             this.handleSelect(features)
-            this.showDataTable=false
+            this.setState({showDataTable:false})
             this.interaction.fitExtent(features)
         },
         renameColumnPrompt(col){
@@ -302,9 +285,11 @@ export default {
             if(this.cols.map(col=>col.key).includes(newName)){
                 alert(`${newName} 名稱重複了`)
             }else if(newName){
-                this.rows.map(row=>{
+                this.rows = this.rows.map(oldRow=>{
+                    let row = {...oldRow}
                     row[newName] = row[col.key]
                     delete row[col.key]
+                    return row
                 })
                 col.key = newName
                 this.$set(this.groups,this.groupIndex,this.groups[this.groupIndex]) //force update
@@ -381,7 +366,7 @@ export default {
             }else{
                 this.groupIndex = groupIndex
             }
-            this.filename = this.groupName
+            this.setState({filename:this.groupName})
         },
         addGroup(name,theme='success'){
             if(name&&this.groups.findIndex(g=>g.name==name)==-1){
@@ -429,7 +414,8 @@ export default {
                 this.groupIndex = this.groupIndex>0?this.groupIndex-1:0
             }
         },
-        toggleAnimation(){
+        toggleAnimation($event){
+            this.setState({allowAnimation:$event})
             this.gismap.moveEvent.frames = this.allowAnimation?90:1
             this.gismap.zoomEvent.frames = this.allowAnimation?25:1
             this.gismap.panEvent.frames = this.allowAnimation?60:1
@@ -444,7 +430,10 @@ export default {
                     feature.properties = {...feature.properties,...this.rows[idx]}
                 }
             }
-            this.importing = this.showDataTable = false
+            this.setState({
+                importing:false,
+                showDataTable:false
+            })
         },
         getCurrentPosition(){
             navigator.geolocation.getCurrentPosition(pos=>{
@@ -453,7 +442,29 @@ export default {
             })
         }
     },
+    data: ()=>({
+        tab: '網格', gismap: {getSelectedFeatures:()=>([]),zoomEvent:{delta:0.5},notRenderPoints:false}, 
+        interaction: Interaction, heatmap: Heatmap,
+        // data table
+        rows: [], cols:[], 
+        newGroup: '', newColumn:'', maxRows: 10, maxItems:20, zoomRange: [0,20],
+        importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
+        // vector
+        groupIndex:0, groups:[], tmpFeatures:[], 
+        type2icon: {
+            Point:'點',MultiPoint:'點(多重)',
+            LineString:'線',MultiLineString:'線(多重)',
+            Polygon:'面',MultiPolygon:'面(多重)'
+        },
+        // global
+        loading: false, dialog:false, 
+    }),
     computed:{
+        // settings
+        ...mapState(['fileExtension','filename','bgColor','extensions','encoding','encodings','search','tablePage','showScale','allowAnimation']),
+        // DataTable
+        ...mapState(['showDataTable','importing']),
+        ...mapGetters([]),
         groupFeatures(){
             return this.gismap.vectors?this.gismap.vectors.filter(v=>v.properties['群組']==this.groupName):[]
         },

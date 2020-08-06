@@ -22,9 +22,7 @@ function beautifiedJsonHtml(){
 function handleUpload(){
     let url = document.getElementById('request-url').value
     const xhr = new XMLHttpRequest()
-    xhr.open('GET',url)
     // xhr.setRequestHeader('user-agent','Mozilla/5.0 (Windows NT 6.1; Win64; x64)')
-    xhr.send()
     xhr.onload = ()=>{
         xhr.responseText
     }
@@ -50,9 +48,9 @@ export default {
             }
         },
         async handleFile(file){
-            this.importing = true
+            this.setState({importing:true})
             let filename = file.name.split('.')[0]
-            this.filename = filename
+            this.setState({filename})
             let extension = file.name.match(/\.\w+$/i)[0]
             if(file.size/1024/1024>10){//10MB
                 this.allowAnimation = false
@@ -80,7 +78,7 @@ export default {
                 let cols = aoa[0]
                 let rows = aoa.slice(1).map(arr=>Object.fromEntries(arr.map((a,i)=>([cols[i],a]))))
                 this.renderTable(rows)
-                this.showDataTable = true
+                this.setState({showDataTable:true})
             }else if(extension=='.json'){
                 let text = await this.readFileAsText(file)
                 let json = JSON.parse(text)
@@ -99,7 +97,7 @@ export default {
                         return shouldKeepParse?deepParse(obj):obj
                     }
                     this.renderTable(json.map(obj=>deepParse(obj)))
-                    this.showDataTable = true
+                    this.setState({showDataTable:true})
                 }else if(typeof json=='object'&&json.type=='FeatureCollection'){
                     this.handleGeojson(json,filename)   
                 }
@@ -117,7 +115,7 @@ export default {
         handleGeojson(geojson){
             this.tmpFeatures = geojson.features.filter(f=>f.geometry)
             this.renderTable(this.tmpFeatures.map(f=>f.properties))
-            this.showDataTable = true
+            this.setState({showDataTable:true})
         },
         handleCSV(text,delimiter){
             // copied from https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm

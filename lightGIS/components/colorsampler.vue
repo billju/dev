@@ -40,7 +40,7 @@ export default {
         copy(text){
             let ta = document.createElement('textarea')
             ta.value = text
-            // ta.style.display = 'none'
+            ta.style.visibility = 'hidden'
             document.body.appendChild(ta)
             ta.select()
             document.execCommand('copy')

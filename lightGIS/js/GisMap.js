@@ -650,7 +650,7 @@ export default class GisMap{
             if(!this.tiles[raster.url][`${tile.x},${tile.y},${tile.z}`]){
                 var img = new Image()
                 img.crossOrigin = 'anonymous'
-                img.onload = ()=>{img.setAttribute('src',src)} // IE
+                // img.onload = ()=>{img.setAttribute('src',src)} // IE
                 img.src = src
                 this.tiles[raster.url][`${tile.x},${tile.y},${tile.z}`] = img
             }
