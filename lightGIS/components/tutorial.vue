@@ -1,5 +1,5 @@
 <template lang="pug">
-.px-2
+.px-2.py-2
     h5.bg-secondary.px-2.py-1 網格切換
     ul
         li 點擊文字或開關打開網格底圖
@@ -52,13 +52,15 @@
         li 火車：全台路線站點及班表
         li 高鐵：全台路線站點
         li 捷運
+    .w-100.btn.btn-secondary(@click="setState({showDialog:true})") 查看應用介紹
 </template>
 
 <script>
+import utilsMixin from '../mixins/utilsMixin.js'
+
 export default {
-    data:()=>({
-        
-    })
+    name: 'Tutorial',
+    mixins: [utilsMixin],
 }
 </script>
 

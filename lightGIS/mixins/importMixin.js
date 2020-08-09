@@ -48,13 +48,13 @@ export default {
             }
         },
         async handleFile(file){
-            this.setState({importing:true})
+            this.setState({isImporting:true})
             let filename = file.name.split('.')[0]
             this.setState({filename})
             let extension = file.name.match(/\.\w+$/i)[0]
             if(file.size/1024/1024>10){//10MB
-                this.allowAnimation = false
-                this.toggleAnimation()
+                this.setState({allowAnimation:false})
+                this.toggleAnimation(false)
             }
             if(file.type.includes('image')){
                 let img = new Image()
@@ -113,9 +113,11 @@ export default {
             })
         },
         handleGeojson(geojson){
-            this.tmpFeatures = geojson.features.filter(f=>f.geometry)
+            this.setState({
+                tmpFeatures: geojson.features.filter(f=>f.geometry),
+                showDataTable:true
+            })
             this.renderTable(this.tmpFeatures.map(f=>f.properties))
-            this.setState({showDataTable:true})
         },
         handleCSV(text,delimiter){
             // copied from https://www.bennadel.com/blog/1504-ask-ben-parsing-csv-strings-with-javascript-exec-regular-expression-command.htm

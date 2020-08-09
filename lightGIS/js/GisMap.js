@@ -209,13 +209,14 @@ export default class GisMap{
             this.animationFrame = window.requestAnimationFrame(this.render)
         }
         this.render()
-    }// set function for vue
-    setRasters(rasters){this.rasters=rasters}
+    }
+    // set function for application
     setSelectedFeatures(features){
         this.selectEvent.styling = false
         this.selectEvent.features=features
     }
     getSelectedFeatures(){return this.selectEvent.features}
+    set(key,value){this[key]=value}
     addImageShape(img,filename){
         let imageShape = new ImageShape(img,this.view.w/2,this.view.h/2,this)
         imageShape.filename = filename

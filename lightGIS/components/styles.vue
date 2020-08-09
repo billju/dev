@@ -1,6 +1,6 @@
 <template lang="pug">
-.w-100.bg-dark.text-light(v-if="show" :style="{opacity:selectedFeatures&&selectedFeatures.length?1:0.2}")
-    el-collapse(v-model="activeNames")
+.position-fixed.bg-dark.text-light.h-100(style="right:0;top:0;width:300px;overflow-y:auto")
+    el-collapse(v-if="selectedFeatures.length" v-model="activeNames")
         el-collapse-item(title="屬性" name="屬性")
             template(slot="title")
                 .px-2 屬性
@@ -124,9 +124,9 @@
 </template>
 
 <script>
+import { mapState, mapGetters } from 'vuex'
 export default {
     name: 'Styles',
-    props: ['gismap','interaction','selectedFeatures','show'],
     data:  ()=>({
         activeNames: [],
         defaultStyle: {
@@ -186,10 +186,13 @@ export default {
             {pct:0.6,rgba:'rgba(255,235,59,1)'},
             {pct:1,rgba:'rgba(76,175,80,1)'},
         ]}, 
-        colors:['rgba(244,67,54,1)','rgba(233,30,99,1)','rgba(156,39,176,1)','rgba(103,58,183,1)',
-        'rgba(63,81,181,1)','rgba(33,150,243,1)','rgba(3,169,244,1)','rgba(0,188,212,1)','rgba(0,150,136,1)',
-        'rgba(76,175,80,1)','rgba(139,195,74,1)','rgba(205,220,57,1)','rgba(255,235,59,1)','rgba(255,193,7,1)',
-        'rgba(255,152,0,1)','rgba(255,87,34,1)','rgba(121,85,72,1)','rgba(158,158,158,1)','rgba(96,125,139,1)','rgba(255,255,255,0)'],
+        colors:[
+            'rgba(244,67,54,1)','rgba(233,30,99,1)','rgba(156,39,176,1)','rgba(103,58,183,1)',
+            'rgba(63,81,181,1)','rgba(33,150,243,1)','rgba(3,169,244,1)','rgba(0,188,212,1)',
+            'rgba(0,150,136,1)','rgba(76,175,80,1)','rgba(139,195,74,1)','rgba(205,220,57,1)',
+            'rgba(255,235,59,1)','rgba(255,193,7,1)','rgba(255,152,0,1)','rgba(255,87,34,1)',
+            'rgba(121,85,72,1)','rgba(158,158,158,1)','rgba(96,125,139,1)','rgba(255,255,255,0)'
+        ],
         autoFocus: null,
     }),
     methods: {
@@ -290,7 +293,9 @@ export default {
         },
         colorRule(){
             return this.rule.isGradient?this.gradientColor:this.categoryColor
-        }
+        },
+        ...mapState(['gismap','interaction','tab']),
+        ...mapGetters(['selectedFeatures'])
     },
     created(){
         this.fav.styles = this.colors.map(color=>{

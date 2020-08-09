@@ -1,18 +1,14 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 Vue.use(Vuex)
-function sortRule(a,b,key,direction=1){
-    let A = key?a[key]:a
-    let B = key?b[key]:b
-    if(A==undefined||B==undefined) return 0
-    return isNaN(A)?A.toString().localeCompare(B.toString())*direction:(A-B)*direction
-}
 const state = {
     // global
-    loading: false, dialog:false, 
+    isLoading: true, showDialog: true, 
+    tab:'網格',
     gismap: {
         getSelectedFeatures:()=>([]),
         zoomEvent:{delta:0.5},
+        view: {zoom:0,minZoom:0,maxZoom:20},
         notRenderPoints:false
     }, 
     interaction: {}, 
@@ -24,9 +20,9 @@ const state = {
     search: '', showScale:true, allowAnimation: true, 
 
     // data table
-    showDataTable: false, importing:false, rows: [], cols:[], 
-    newGroup: '', newColumn:'', tablePage: 1, maxRows: 10, maxItems:20, zoomRange: [0,20],
-    importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
+    showDataTable: false, isImporting:false, 
+    rows: [], cols:[], 
+    tablePage: 1, maxItems:20, zoomRange: [0,20],
 
     // vector
     groupIndex:0, groups:[], tmpFeatures:[], 
@@ -37,10 +33,12 @@ const state = {
     },
 }
 const mutations = {
-    set(state, payload){
-        Object.keys(payload).map(key=>{
-            state[key] = payload[key]
-        })
+    setState(state, payload){
+        if(typeof payload=='object'){
+            Object.assign(state, payload)
+        }else if(typeof payload=='function'){
+            Object.assign(state, payload(state))
+        }
     }
 }
 const getters = {
@@ -66,6 +64,12 @@ const getters = {
         return getters.groupFeatures.slice(start,start+state.maxItems)
     },
     filteredRows(state,getters){
+        const sortRule = (a,b,key,direction=1)=>{
+            let A = key?a[key]:a
+            let B = key?b[key]:b
+            if(A==undefined||B==undefined) return 0
+            return isNaN(A)?A.toString().localeCompare(B.toString())*direction:(A-B)*direction
+        }
         let rows = state.rows.slice()
         for(let col of state.cols)
             if(col.filter!='')
@@ -89,13 +93,6 @@ const getters = {
             case -1: return 'el-icon-bottom'
         }
     },
-    scaleStyle(state,getters){
-        let w = state.gismap.view.scaleStripe
-        return {
-            width: state.gismap.view.scaleWidth,
-            background:`repeating-linear-gradient(to right,black,black ${w}px,white ${w}px,white ${2*w}px)`
-        }
-    }
 }
 const actions = {
 

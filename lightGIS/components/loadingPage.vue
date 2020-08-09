@@ -1,20 +1,19 @@
 <template lang="pug">
-transition(name="fade")
-    .position-fixed.w-100.h-100(ref="loadingPage" v-if="loading" style="top:0;left:0").bg-dark
+.position-fixed.w-100.h-100(ref="loadingPage" style="top:0;left:0").bg-dark
 </template>
 
 <script>
+import utilsMixin from '../mixins/utilsMixin.js'
+
 export default {
     name: 'loadingPage',
-    data: ()=>({
-        loading: true
-    }),
+    mixins: [utilsMixin],
     methods: {
         svgAnimation(
             container,url,callback,style={
-                strokeDasharray:3000,
-                strokeDashoffset:3000,
-                transition: 'stroke-dashoffset 2s ease-out',
+                strokeDasharray: 1000,
+                strokeDashoffset: 1000,
+                transition: 'stroke-dashoffset 3s ease-out',
                 width:'100%',
                 height:'100%',
             }){
@@ -28,7 +27,7 @@ export default {
                 container.appendChild(svg);
                 setTimeout(()=>{
                     svg.style.strokeDashoffset = 0
-                    setTimeout(()=>{ callback() },1500)
+                    setTimeout(()=>{ callback() },2000)
                 },100)
             }
             xhr.send();
@@ -36,7 +35,7 @@ export default {
     },
     mounted(){
         this.svgAnimation(this.$refs.loadingPage,'assets/light.svg',()=>{
-            this.loading = false
+            this.setState({isLoading:false})
         })
     }
 }

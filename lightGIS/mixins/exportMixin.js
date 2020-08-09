@@ -61,7 +61,7 @@ export default {
                     if(i==0) return acc+`M${cur[0]} ${cur[1]}`
                     else return acc+`L${cur[0]} ${cur[1]}`
                 },'')
-                for(let feature of features){
+                for(let feature of features.slice().reverse()){
                     let style = canvasStyle2svgStyle(this.gismap.getDefaultStyle(feature))
                     if(feature.geometry.type=='Point'){
                         let client = this.gismap.coord2client(feature.geometry.coordinates).map(c=>parseInt(c))

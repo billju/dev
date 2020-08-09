@@ -180,6 +180,7 @@ export default class Interaction{
                 flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
             return this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
         })
+        this.gismap.setSelectedFeatures(this.gismap.selectEvent.features)
     }
     deleteSelected(){
         if(this.gismap.selectEvent.features.length){

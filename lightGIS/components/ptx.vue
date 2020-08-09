@@ -1,5 +1,5 @@
 <template lang="pug">
-.px-2(v-if="show" style="max-height:100%")
+.px-2(v-if="tab=='PTX'" style="max-height:100%")
     .input-group
         .input-group-prepend 
             span.input-group-text 所在縣市
@@ -30,7 +30,7 @@
                     tr(v-for="row,i in filteredRows" :key="i")
                         td(v-for="col in cols" :key="col") {{row[col]}}
         .flex-grow-1(v-else style="max-height:600px;overflow-y:auto")
-            el-tabs(v-model="tab" stretch)
+            el-tabs(v-model="busTab" stretch)
                 el-tab-pane(label="去程" name="去程")
                     ETA(:busETA="busETA.filter(x=>x.dir==0)")
                 el-tab-pane(label="返程" name="返程")
@@ -38,11 +38,13 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import utilsMixin from '../mixins/utilsMixin.js'
 import ETA from './eta.vue'
 export default {
     name: 'PTX',
-    props: ['gismap','interaction','show'],
     components: {ETA},
+    mixins: [utilsMixin],
     data:()=>({
         keyword:'', TRAStationName:'基隆', TRArows: [],
         city:'Taichung', cities: {
@@ -52,7 +54,7 @@ export default {
             Chiayi:'嘉義市',PingtungCounty:'屏東縣',YilanCounty:'宜蘭縣',HualienCounty:'花蓮縣',
             TaitungCounty:'臺東縣',KinmenCounty:'金門縣',PenghuCounty:'澎湖縣',LienchiangCounty:'連江縣'
         }, 
-        cols: [], rows:[], busETA:[], tab: '去程', searching: true,
+        cols: [], rows:[], busETA:[], busTab: '去程', searching: true,
         tourTypes:{
             ScenicSpot:'景點',Restaurant:'餐廳',Hotel:'飯店',Activity:'活動'
         },
@@ -61,7 +63,7 @@ export default {
         }
     }),
     methods:{
-        renderTable(rows){
+        createTable(rows){
             this.cols = [...new Set(rows.flatMap(obj=>Object.keys(obj)))]
             let key = this.cols[0]
             this.rows = rows.sort((a,b)=>a[key].toString().localeCompare(b[key]))
@@ -135,8 +137,8 @@ export default {
                 return this.gismap.addVector('Point',[row['經度'],row['緯度']],{...row,'群組':group})
             })
             this.interaction.fitExtent(features)
-            this.$emit('handleSelect',features)
-            this.$emit('addGroup',group)
+            this.handleSelect(features)
+            this.addGroup(group)
         },
         async BikeAvaiable(city='Taichung'){
             let props = {
@@ -170,8 +172,8 @@ export default {
                 })
             })
             this.interaction.fitExtent(features)
-            this.$emit('handleSelect',features)
-            this.$emit('addGroup',group)
+            this.handleSelect(features)
+            this.addGroup(group)
         },
         async searchBus(){
             if(!this.filteredRows.length) return
@@ -181,8 +183,8 @@ export default {
             let stops = await this.BusStops(city,UID)
             this.BusETA(city,UID)
             this.interaction.fitExtent([...shape,...stops])
-            this.$emit('handleSelect',[...shape,...stops])
-            this.$emit('addGroup',UID)
+            this.handleSelect([...shape,...stops])
+            this.addGroup(UID)
             this.searching = false
         },
         async BusRoutes(city='Taichung'){
@@ -195,7 +197,7 @@ export default {
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Bus/Route/City/${city}?$select=${this.props2select(props)}&$format=JSON`)
             if(json instanceof Error) return
             let rows = this.renameArray(json,props)
-            this.renderTable(rows)
+            this.createTable(rows)
         },
         async BusStops(city='Taichung',UID='TXG9'){
             let props = {
@@ -255,8 +257,8 @@ export default {
             let stations = await this.TRAStation()
             this.TRArows = stations.map(f=>f.properties)
             this.interaction.fitExtent([...shapes,...stations])
-            this.$emit('handleSelect',[...shapes,...stations])
-            this.$emit('addGroup','台鐵')
+            this.handleSelect([...shapes,...stations])
+            this.addGroup('台鐵')
         },
         async TRAShape(){
             let props = {
@@ -302,14 +304,14 @@ export default {
             let StationID = matches[0]['UID']
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Rail/TRA/LiveBoard?$select=${this.props2select(props)}&$filter=StationID eq '${StationID}'&$format=JSON`)
             if(json instanceof Error) return
-            this.renderTable(this.renameArray(json,props))
+            this.createTable(this.renameArray(json,props))
         },
         async THSR(){
             let shapes = await this.THSRShape()
             let stations = await this.THSRStation()
             this.interaction.fitExtent([...shapes,...stations])
-            this.$emit('handleSelect',[...shapes,...stations])
-            this.$emit('addGroup','高鐵')
+            this.handleSelect([...shapes,...stations])
+            this.addGroup('高鐵')
         },
         async THSRShape(){
             let props = {
@@ -354,8 +356,8 @@ export default {
                 })
             }).filter(f=>f)
             this.interaction.fitExtent([...shape,...points])
-            this.$emit('handleSelect',[...shape,...points])
-            this.$emit('addGroup',group)
+            this.handleSelect([...shape,...points])
+            this.addGroup(group)
         },
         async MetroShape(operator='TRTC'){
             let props = {
@@ -389,7 +391,8 @@ export default {
     computed:{
         filteredRows(){
             return this.rows.filter(row=>Object.values(row).some(v=>v.match(this.keyword)))
-        }
+        },
+        ...mapState(['gismap','interaction','tab'])
     },
     mounted(){
 
