@@ -1,5 +1,5 @@
 <template lang="pug">
-.w-100
+.w-100(v-if="tab=='設定'")
     input(ref="file" type='file' style='display: none' @change='handleFiles($event.target.files)' multiple='true')
     .btn.btn-outline-primary.w-100(@click="$refs['file'].click()") 選取檔案或拖曳匯入
     .input-group

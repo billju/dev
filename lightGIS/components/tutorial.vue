@@ -1,5 +1,5 @@
 <template lang="pug">
-.px-2.py-2
+.px-2.py-2(v-if="tab=='提示'")
     h5.bg-secondary.px-2.py-1 網格切換
     ul
         li 點擊文字或開關打開網格底圖
@@ -51,8 +51,7 @@
         li 公車：查詢各路線、站點及預估抵達時間
         li 火車：全台路線站點及班表
         li 高鐵：全台路線站點
-        li 捷運
-    .w-100.btn.btn-secondary(@click="setState({showDialog:true})") 查看應用介紹
+        li 捷運：車站與路網
 </template>
 
 <script>

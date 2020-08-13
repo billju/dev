@@ -53,7 +53,7 @@ export default {
         },
     },
     computed: {
-        ...mapState(['gismap','interaction','groups','isLoading']),
+        ...mapState(['gismap','interaction','groups','isLoading','tab']),
         ...mapGetters(['selectedFeatures'])
     },
 }

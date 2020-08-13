@@ -90,15 +90,22 @@ export default {
                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${this.gismap.view.w} ${this.gismap.view.h}">${paths}</svg>`
                 this.downloadText(svg,filename+extension,'plain')
             }else if(extension=='.csv'){
-                let array = features.map(f=>f.properties)
-                let cols = [...new Set(array.flatMap(obj=>Object.keys(obj)))]
-                let aoa = array.map(obj=>cols.map(col=>obj[col]))
-                aoa.unshift(cols)
-                let text = aoa.reduce((acc,cur)=>acc+cur.join(',')+'\r\n','')
-                this.downloadText(text,filename+extension,'csv')
+                let rows = features.map(f=>f.properties)
+                this.exportCSV(rows)
             }else if(extension=='.json'){
-                this.downloadText(JSON.stringify(features.map(f=>f.properties)),filename+extension,'plain')
+                let rows = features.map(f=>f.properties)
+                this.exportJSON(rows)
             }
+        },
+        exportCSV(rows){
+            let cols = [...new Set(rows.flatMap(obj=>Object.keys(obj)))]
+            let aoa = rows.map(obj=>cols.map(col=>obj[col]))
+            aoa.unshift(cols)
+            let text = aoa.reduce((acc,cur)=>acc+cur.join(',')+'\r\n','')
+            this.downloadText(text,`${this.filename}.csv`,'csv')
+        },
+        exportJSON(rows){
+            this.downloadText(JSON.stringify(rows),`${this.filename}.json`,'plain')
         }
     }
 }

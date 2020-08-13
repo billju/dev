@@ -25,6 +25,7 @@
 <script>
 import ColorSampler from '../js/colorsampler.js'
 import Draggable from 'vuedraggable'
+import { mapState } from 'vuex'
 export default {
     name:'Colorsampler',
     components: {Draggable},
@@ -38,18 +39,15 @@ export default {
                 .join('').toUpperCase()
         },
         copy(text){
-            let ta = document.createElement('textarea')
-            ta.value = text
-            ta.style.visibility = 'hidden'
-            document.body.appendChild(ta)
-            ta.select()
-            document.execCommand('copy')
-            document.body.removeChild(ta)
+            navigator.clipboard.writeText(text)
         },
         copyAll(){
             let text = this.rows.map(row=>this.isHex?row.hex:row.rgba).join('\n')
             this.copy(text)
         }
+    },
+    computed:{
+        ...mapState(['tab']),
     },
     mounted(){
         this.sampler = new ColorSampler(this.$refs['sampler'])

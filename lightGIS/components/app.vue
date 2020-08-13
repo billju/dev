@@ -5,21 +5,16 @@
     .position-fixed.d-flex.align-items-center.px-2.py-1(v-if="gismap.view&&showScale" style="right:0;bottom:0;user-select:none;")
         span.text-shadow {{gismap.view.scaleText}}
         .mx-2.py-1.border(:style="scaleStyle")
-    .position-fixed.h-100.bg-dark.text-light(style="left:0;top:0;width:320px;overflow-y:auto")
-        Toolbar
-        el-tabs(:value="tab" @input="setState({tab:$event})" tab-position="top" type="card")
-            el-tab-pane(label="網格" name="網格")
-                Rasters
-            el-tab-pane(label="向量" name="向量" lazy)
-                Vectors
-            el-tab-pane(label="設定" name="設定" lzay)
-                Settings
-            el-tab-pane(label="PTX" name="PTX")
-                PTX
-            el-tab-pane(label="調色" name="調色" lazy)
-                ColorSampler
-            el-tab-pane(label="提示" name="提示" lazy)
-                Tutorial
+    .position-fixed.h-100.bg-dark.text-light(style="width:320px;top:0;transition:left 0.5s" :style="{left: tab=='隱藏'?'-320px':0}")
+        .position-absolute.bg-secondary(style="top:0;right:-60px;width:60px")
+            Toolbar
+        .px-2.py-2.h-100(style="overflow-y:auto")
+            Rasters
+            Vectors
+            Settings
+            PTX
+            ColorSampler(v-if="tab=='調色'")
+            Tutorial
     transition(name="fade-left")
         Styles(v-show="selectedFeatures.length")
     transition(name="fade-up")
@@ -70,7 +65,7 @@ export default {
     },
     computed:{
         // global
-        ...mapState(['gismap','interaction','heatmap','tab','isLoading','showDialog']),
+        ...mapState(['gismap','interaction','heatmap','tab','tabs','isLoading','showDialog','rasters']),
         // vectors
         ...mapState(['groups','groupIndex','tmpFeatures','maxItems','type2icon']),
         // settings
@@ -91,6 +86,7 @@ export default {
     },
     mounted(){
         let gismap = new GisMap(this.$refs['gismap'])
+        gismap.set('rasters',this.rasters)
         gismap.addEventListener('select',e=>{
             this.handleSelect(e.features)
         })
@@ -168,14 +164,5 @@ input[type=range]::-moz-range-track{
 .fade-left-enter, .fade-left-leave-to{
     opacity: 0;
     transform: translateX(50%);
-}
-.el-tabs__item{
-    color: grey !important;
-}
-.el-tabs__item.is-active{
-    color: white !important;
-}
-.el-tabs__content{
-    padding: 0 5px;
 }
 </style>

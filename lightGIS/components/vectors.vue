@@ -1,5 +1,5 @@
 <template lang="pug">
-.w-100
+.w-100(v-if="tab=='向量'")
     .w-100.px-2.py-1(v-for="group,i in groups" :key="i" :class="groupIndex==i?`border border-${group.theme}`:'border-bottom'" @click="setState({groupIndex:i})")
         .py-1
             span(:class="group.opacity==0?'text-secondary':'text-light'") {{group.name}}

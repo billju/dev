@@ -7,7 +7,7 @@
                     th 
                     th(v-for="col,ci in cols" :key="ci")
                         .d-flex.align-items-center
-                            span.flex-grow-1(style="white-space:nowrap" @dblclick="renameColumnPrompt(col)").cursor-pointer {{col.key}}
+                            span.flex-grow-1(style="white-space:nowrap" @click="renameColumnPrompt(col)").cursor-pointer {{col.key}}
                             span.d-flex.cursor-pointer
                                 i.el-icon-d-caret(v-if="col.sort==0" @click="col.sort=1")
                                 i.el-icon-top(v-else-if="col.sort==1" @click="col.sort=-1")
@@ -19,7 +19,7 @@
                     
             tbody
                 tr(v-for="row,ri in filteredRows.slice((tablePage-1)*maxRows,tablePage*maxRows)" :key="ri")
-                    td {{(tablePage-1)*maxRows+ri+1}}
+                    td(@click="removeRowPrompt(row)").cursor-pointer {{(tablePage-1)*maxRows+ri+1}}
                     td(v-for="col,ci in cols" :key="ci" style="max-width:150px;text-overflow:ellipsis;" 
                         contenteditable @blur="row[col.key]=$event.target.textContent") {{row[col.key]}}
     .d-flex.justify-content-center.align-items-center.bg-white.py-1
@@ -32,7 +32,31 @@
             .btn.btn-sm.btn-outline-info(slot="reference") 其他
             InputGroup(label="每頁顯示" :class="'align-items-center'")
                 input.custom-range.form-control(type="range" v-model.number="maxRows" min="5" max="100" @change="setState({tablePage:1})")
-            .w-100(v-if="!isImporting")
+            .w-100.border-bottom.mb-1.pb-1(v-if="isImporting")
+                InputGroup(label="新增群組-名稱")
+                    input.form-control(type="text" :value="filename" @input="setState({filename:$event.target.value})")
+                InputGroup(label="緯度-欄位")
+                    select.form-control(v-model="importParams.lat")
+                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                InputGroup(label="經度-欄位")
+                    select.form-control(v-model="importParams.lng")
+                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                InputGroup(label="WKT-欄位")
+                    select.form-control(v-model="importParams.WKT")
+                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+            .w-100.border-bottom.mb-1.pb-1(v-if="isImporting")
+                InputGroup(label="表格合併-欄位")
+                    select.form-control(v-model="importParams.rightTableColumn")
+                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
+                InputGroup(label="目標群組-名稱")
+                    select.form-control(:value="groupIndex" @change="setState({groupIndex:$event.target.value})")
+                        option(v-for="group,gi in groups" :key="gi" :value="gi") {{group.name}}
+                InputGroup(label="目標群組-欄位")
+                    select.form-control(:value="groups[groupIndex].propKey" @change="setArrayOfObject('groups',groupIndex,{propKey:$event.target.value})")
+                        option(v-for="key in propKeys" :key="key" :value="key") {{key}}
+            .w-100.border-bottom.mb-1.pb-1
+                InputGroup(label="新欄位名稱")
+                    input.form-control(type="text" v-model="newColParams.name")
                 InputGroup(label="新增方式")
                     select.form-control(v-model="newColParams.operator")
                         option(v-for="operator in operators" :key="operator.name" :value="operator.fn") {{operator.name}}
@@ -46,36 +70,19 @@
                     input.form-control(type="text" v-model="newColParams.constA")
                 InputGroup(label="常數B")
                     input.form-control(type="text" v-model="newColParams.constB")
-                InputGroup(label="新欄位名稱")
-                    input.form-control(type="text" v-model="newColParams.name")
-                .w-100.btn.btn-outline-success(@click="createNewColumn()") 新增欄位
-            .w-100(v-else)
-                InputGroup(label="圖層名稱")
-                    input.form-control(type="text" :value="filename" @input="setState({filename:$event.target.value})")
-                InputGroup(label="緯度")
-                    select.form-control(v-model="importParams.lat")
-                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                InputGroup(label="經度")
-                    select.form-control(v-model="importParams.lng")
-                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                InputGroup(label="WKT")
-                    select.form-control(v-model="importParams.WKT")
-                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                InputGroup(label="輸入欄位")
-                    select.form-control(v-model="importParams.rightTableColumn")
-                        option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
-                InputGroup(label="目標群組")
-                    select.form-control(:value="groupIndex" @change="setState({groupIndex:$event.target.value})")
-                        option(v-for="group,gi in groups" :key="gi" :value="gi") {{group.name}}
-                InputGroup(label="合併欄位")
-                    select.form-control(:value="groups[groupIndex].propKey" @change="setArrayOfObject('groups',groupIndex,{propKey:$event.target.value})")
-                        option(v-for="key in propKeys" :key="key" :value="key") {{key}}
+                .w-100.btn.btn-sm.btn-outline-success(@click="createNewColumn()") 新增欄位
+            .w-100.btn-group.btn-group-sm
+                .btn.btn-outline-warning(@click="exportJSON(rows)") 匯出JSON
+                select(:value="encoding" @change="setState({encoding:$event.target.value})")
+                    option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
+                .btn.btn-outline-success(@click="exportCSV(rows)") 匯出CSV
         .btn.btn-sm.btn-outline-danger(@click="setState({isImporting:false,showDataTable:false});") 關閉
 </template>
 
 <script>
 import {mapState, mapGetters} from 'vuex'
 import utilsMixin from '../mixins/utilsMixin.js'
+import exportMixin from '../mixins/exportMixin.js'
 import InputGroup from './inputGroup.vue'
 
 export default {
@@ -95,7 +102,7 @@ export default {
         newColParams: {name:'',colA:'',colB:'',operator:'產生空白欄位',constA:'',constB:''},
         importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
     }),
-    mixins: [utilsMixin],
+    mixins: [utilsMixin,exportMixin],
     methods: {
         confirmImport(){
             let features = []
@@ -144,15 +151,14 @@ export default {
         },
         createNewColumn(){
             let {name, colA, colB, operator, constA, constB} = this.newColParams
-            this.setState({
-                rows: this.rows.map(row=>{
-                    let A = constA===''&&colA?row[colA]:constA
-                    let B = constB===''&&colB?row[colB]:constB
-                    row[name] = typeof operator=='function'?operator(A,B):''
-                    return row
-                })
+            let rows = this.rows.map(row=>{
+                let A = constA===''&&colA?row[colA]:constA
+                let B = constB===''&&colB?row[colB]:constB
+                row[name] = typeof operator=='function'?operator(A||'',B||''):''
+                return row
             })
-            this.renderTable(this.groupFeatures.map(f=>f.properties))
+            this.setState({ rows })
+            this.renderTable(rows)
         },
         renameColumnPrompt(col){
             let newName = prompt('變更欄位名稱',col.key)
@@ -169,6 +175,10 @@ export default {
                 })
                 col.key = newName
             }
+        },
+        removeRowPrompt(row){
+            if(confirm(`確定移除此列：(${Object.keys(row).join(',').slice(0,20)}...)`))
+                this.setState({rows:this.rows.filter(r=>r!=row)})
         },
         removeColumn(key){
             this.setState({
@@ -203,11 +213,11 @@ export default {
     },
     computed: {
         ...mapState(['groups','groupIndex','tmpFeatures']),
-        ...mapState(['showDataTable','isImporting', 'rows', 'cols','tablePage','search','filename']),
+        ...mapState(['showDataTable','isImporting', 'rows', 'cols','tablePage','search','filename','encoding','encodings']),
         ...mapGetters(['groupFeatures','groupName','groupRange','selectedFeatures','slicedGroupFeatures','filteredRows','propKeys','sortIcon']),
         isImportable(){
             let {lng,lat,WKT} = this.importParams
-            return this.isImporting&&( (lng&&lat)||WKT )
+            return this.isImporting&&( this.tmpFeatures.length||(lng&&lat)||WKT )
         },
     }
 }

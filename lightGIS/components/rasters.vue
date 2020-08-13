@@ -1,14 +1,14 @@
 <template lang="pug">
 .px-2(v-if="tab=='網格'")
-    Draggable(v-model="rasters" @input="gismap.set('rasters',rasters)" :animation="150")
-        .d-flex.align-items-center.border-bottom.border-light(v-for="raster,i in rasters" :key="i")
+    Draggable(v-model="gismap.rasters" :animation="150")
+        .d-flex.align-items-center.border-bottom.border-light(v-for="raster,i in gismap.rasters" :key="i")
             label.cursor-pointer.text-truncate(:for="raster.name" style="margin-bottom:0").flex-grow-1 {{raster.name}}
             .custom-control.custom-switch.mx-1.cursor-pointer
-                input.custom-control-input(type="checkbox" v-model="raster.active" :id="raster.name" @input="gismap.set('rasters',rasters)")
+                input.custom-control-input(type="checkbox" v-model="raster.active" :id="raster.name")
                 label.custom-control-label(:for="raster.name")
             .input-text(draggable="true" ondragstart="event.preventDefault();event.stopPropagation()")
                 input.custom-range(type="range" min="0" max="1" step="0.1" value="0.8" style="direction:rtl;margin-top:6px;width:100px"
-                    v-model.number="raster.opacity" @input="gismap.set('rasters',rasters)")
+                    v-model.number="raster.opacity")
     .input-group.mt-1
         .input-group-prepend(@click="addWMS()")
             .btn.btn-outline-success 新增
@@ -60,17 +60,14 @@ export default {
         },
         addWMS(){
             if(this.url&&this.name){
-                this.rasters.push({url:this.url,name:this.name,opacity:1,active:false})
-                this.gismap.set('rasters',this.rasters)
+                let newRaster = {url:this.url,name:this.name,opacity:1,active:false}
+                this.gismap.set('rasters',[this.gismap.rasters,, newRaster])
             }
         }
     },
     computed: {
         ...mapState(['gismap','tab'])
     },
-    created(){
-        this.rasters = this.getDefaultRaster()
-    }
 }
 </script>
 

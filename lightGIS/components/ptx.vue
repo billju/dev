@@ -1,10 +1,11 @@
 <template lang="pug">
-.px-2(v-if="tab=='PTX'" style="max-height:100%")
+.px-2(v-if="tab=='PTX'" style="max-height:100%") 
     .input-group
         .input-group-prepend 
             span.input-group-text 所在縣市
         select.form-control(v-model="city")
             option(v-for="(val,key) in cities" :key="key" :value="key") {{val}}
+        .btn.btn-outline-secondary.form-control(@click="setState({showDialog:true})") 更多應用
     .btn-group.w-100
         .btn.btn-outline-warning(v-for="(val,key) in tourTypes" :key="key" @click="Tourism(city,key)") {{val}}
     .btn-group.w-100
