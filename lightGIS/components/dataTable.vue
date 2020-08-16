@@ -4,7 +4,7 @@
         table.table.table-dark.w-100.mb-0
             thead
                 tr
-                    th 
+                    th
                     th(v-for="col,ci in cols" :key="ci")
                         .d-flex.align-items-center
                             span.flex-grow-1(style="white-space:nowrap" @click="renameColumnPrompt(col)").cursor-pointer {{col.key}}
@@ -19,12 +19,13 @@
                     
             tbody
                 tr(v-for="row,ri in filteredRows.slice((tablePage-1)*maxRows,tablePage*maxRows)" :key="ri")
-                    td(@click="removeRowPrompt(row)").cursor-pointer {{(tablePage-1)*maxRows+ri+1}}
+                    td(@click="removeRowPrompt(pageStartIndex+ri)").cursor-pointer {{pageStartIndex+ri+1}}
                     td(v-for="col,ci in cols" :key="ci" style="max-width:150px;text-overflow:ellipsis;" 
                         contenteditable @blur="row[col.key]=$event.target.textContent") {{row[col.key]}}
     .d-flex.justify-content-center.align-items-center.bg-white.py-1
         el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="setState({tablePage:$event})")
         input.btn.btn-sm.btn-outline-primary(type="text" :value="search" @input="setState({search:$event.target.value,tablePage:1})" placeholder="搜尋")
+        .btn.btn-sm.btn-outline-secondary(v-if="history.length" @click="undo()") 復原
         .btn.btn-sm.btn-outline-success(v-if="isImportable" @click="confirmImport()") 匯入
         .btn.btn-sm.btn-outline-success(v-else-if="!isImporting" @click="confirmSelect()") 選取
         .btn.btn-sm.btn-outline-success(v-else @click="leftJoin()") 合併
@@ -101,6 +102,7 @@ export default {
         ],
         newColParams: {name:'',colA:'',colB:'',operator:'產生空白欄位',constA:'',constB:''},
         importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
+        history: [], keydownEvent: null,
     }),
     mixins: [utilsMixin,exportMixin],
     methods: {
@@ -121,10 +123,7 @@ export default {
                 this.setState({tmpFeatures: []})
             }else if(lng&&lat){
                 features = this.filteredRows.filter(row=>!(isNaN(row[lng])||isNaN(row[lat]))).map(row=>{
-                    if(lng2&&lat2)
-                        return this.gismap.addVector('LineString',[[row[lng],row[lat]],[row[lng2],row[lat2]]],{...row,'群組':this.filename})
-                    else
-                        return this.gismap.addVector('Point',[row[lng],row[lat]],{...row,'群組':this.filename})
+                    return this.gismap.addVector('Point',[row[lng],row[lat]],{...row,'群組':this.filename})
                 })
                 this.interaction.fitExtent(features)
                 this.handleSelect(features)
@@ -176,11 +175,18 @@ export default {
                 col.key = newName
             }
         },
-        removeRowPrompt(row){
-            if(confirm(`確定移除此列：(${Object.keys(row).join(',').slice(0,20)}...)`))
-                this.setState({rows:this.rows.filter(r=>r!=row)})
+        removeRowPrompt(index){
+            // let isConfirm = confirm(`確定移除第${index+1}列?`)
+            // if(!isConfirm) return
+            let payload = {index, row:this.rows[index] }
+            this.history.push({type:'removeRow', payload})
+            this.setState({rows:this.rows.filter((row,ri)=>ri!=index)})
         },
         removeColumn(key){
+            // let isConfirm = confirm(`確定刪除欄位${key}?`)
+            // if(!isConfirm) return
+            let payload = { key, rows: this.rows.map(row=>row[key]) }
+            this.history.push({type:'removeColumn', payload})
             this.setState({
                 rows: this.rows.map(row=>{
                     delete row[key]
@@ -210,6 +216,30 @@ export default {
                 showDataTable:false
             })
         },
+        undo(){
+            if(this.history.length){
+                let event = this.history.pop()
+                switch(event.type){
+                    case 'removeColumn':
+                        let {key, rows} = event.payload
+                        rows = this.rows.map((row,i)=>{
+                            row[key] = rows[i]
+                            return row
+                        })
+                        this.setState({ rows })
+                        this.renderTable(rows)
+                        break;
+                    case 'removeRow':
+                        let {index, row} = event.payload
+                        rows = this.rows
+                        rows.splice(index,0,row)
+                        this.setState({ rows })
+                        this.renderTable(rows)
+                        break;
+                    default: break;
+                }
+            }
+        }
     },
     computed: {
         ...mapState(['groups','groupIndex','tmpFeatures']),
@@ -219,6 +249,19 @@ export default {
             let {lng,lat,WKT} = this.importParams
             return this.isImporting&&( this.tmpFeatures.length||(lng&&lat)||WKT )
         },
+        pageStartIndex(){
+            return (this.tablePage-1)*this.maxRows
+        }
+    },
+    mounted(){
+        this.keydownEvent = window.addEventListener('keydown',e=>{
+            if(e.ctrlKey&&e.code=='KeyZ'){
+                this.undo()
+            }
+        })
+    },
+    beforeDestroy(){
+        window.removeEventListener('keydown',this.keydownEvent)
     }
 }
 </script>

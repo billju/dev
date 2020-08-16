@@ -130,7 +130,7 @@ export default {
     data:  ()=>({
         activeNames: [],
         defaultStyle: {
-            lineWidth:3,lineDash:[],stroke:'rgba(3,169,244,1)', fill:'rgba(0,0,255,0.3)', 
+            stroke:'rgba(3,169,244,1)', fill:'rgba(0,0,255,0.3)', 
             textStroke:'rgba(255,255,255,1)',fontWeight:3,textFill:'rgba(0,0,0,1)'
         }, 
         anchors: [

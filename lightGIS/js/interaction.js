@@ -98,6 +98,15 @@ export default class Interaction{
         window.addEventListener('resize',()=>{
             this.gismap.handleResize()
         })
+        //custom event
+        this.event = {paste:[]}
+    }
+    dispatchEvent(type,payload){
+        for(let fn of this.event[type]){ fn(payload) }
+    }
+    addEventListener(type,fn){
+        try{ this.event[type].push(fn) }
+        catch{ console.error('no such type of event!') }
     }
     setSelectedFeaturesProp(key,value){
         this.gismap.selectEvent.styling = true
@@ -180,7 +189,9 @@ export default class Interaction{
                 flatten(f.geometry.coordinates).map(c=>{c[0]+=offset[0];c[1]+=offset[1]})
             return this.gismap.addVector(f.geometry.type,f.geometry.coordinates,f.properties,true)
         })
-        this.gismap.setSelectedFeatures(this.gismap.selectEvent.features)
+        let features = this.gismap.selectEvent.features
+        this.gismap.setSelectedFeatures(features)
+        this.dispatchEvent('paste',{features})
     }
     deleteSelected(){
         if(this.gismap.selectEvent.features.length){

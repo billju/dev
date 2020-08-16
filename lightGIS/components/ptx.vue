@@ -14,8 +14,8 @@
     .btn-group.w-100
         .btn.btn-outline-primary(@click="THSR()") 高鐵
         .btn.btn-outline-primary(@click="TRA()") 台鐵
-        .btn.btn-outline-primary(v-if="TRArows.length" @click="TRALiveBoard()") 動態
-        input.btn.btn-outline-primary(v-if="TRArows.length" type='text' style='width:50px' v-model="TRAStationName" placeholer="車站名稱")
+        //- .btn.btn-outline-primary(v-if="TRArows.length" @click="TRALiveBoard()") 動態
+        //- input.btn.btn-outline-primary(v-if="TRArows.length" type='text' style='width:50px' v-model="TRAStationName" placeholer="車站名稱")
     .btn-group.w-100
         .btn.btn-outline-secondary(v-for="(val,key) in metroOperators" :key="key" @click="MetroRoute(key)") {{val}}
     div(v-if="(rows.length||busETA.length)")
@@ -23,15 +23,15 @@
             .btn.btn-outline-success.form-control(@click="searchBus()") 搜尋
             input(type="text" v-model="keyword" placeholder="輸入關鍵字" @input="searching=true")
         .flex-grow-1(v-if="searching" style="max-height:600px;overflow-y:auto")
-            table.table.table-dark.table-striped.table-hover
+            table.table.table-sm.table-dark.table-striped.table-hover.w-100
                 thead
                     tr
-                        th(v-for="col in cols" :key="col") {{col}}
+                        th(v-for="col in cols" :key="col" :style="colStyle") {{col}}
                 tbody
                     tr(v-for="row,i in filteredRows" :key="i")
-                        td(v-for="col in cols" :key="col") {{row[col]}}
+                        td(v-for="col in cols" :key="col" :style="colStyle") {{row[col]}}
         .flex-grow-1(v-else style="max-height:600px;overflow-y:auto")
-            el-tabs(v-model="busTab" stretch)
+            el-tabs(v-model="busTab" stretch :class="'bg-light'")
                 el-tab-pane(label="去程" name="去程")
                     ETA(:busETA="busETA.filter(x=>x.dir==0)")
                 el-tab-pane(label="返程" name="返程")
@@ -42,6 +42,8 @@
 import { mapState } from 'vuex'
 import utilsMixin from '../mixins/utilsMixin.js'
 import ETA from './eta.vue'
+import axios from 'axios'
+
 export default {
     name: 'PTX',
     components: {ETA},
@@ -71,7 +73,8 @@ export default {
         },
         fetchJSON(url){
             return new Promise((resolve,reject)=>{
-                fetch(url).then(res=>res.json()).then(json=>{
+                axios.get(url).then(res=>{
+                    let json = res.data
                     if(Array.isArray(json)&&json.length)
                         resolve(json)
                     else
@@ -190,8 +193,8 @@ export default {
         },
         async BusRoutes(city='Taichung'){
             let props = {
-                'RouteUID':'UID',
                 'RouteName.Zh_tw':'路線',
+                'RouteUID':'UID',
                 'DepartureStopNameZh':'起點',
                 'DestinationStopNameZh':'迄點'
             }
@@ -391,7 +394,25 @@ export default {
     },
     computed:{
         filteredRows(){
-            return this.rows.filter(row=>Object.values(row).some(v=>v.match(this.keyword)))
+            if(!this.keyword) return this.rows
+            return this.rows.map(row=>{
+                let score = 100
+                for(let col in row){
+                    let match = row[col].match(this.keyword)
+                    if(match){
+                        score-= match.index+match.input.length
+                        return {score,row}
+                    }else{
+                        score-= 2*row[col].length
+                    }
+                }
+                return false
+            }).filter(m=>m).sort((a,b)=>{
+                return b.score-a.score
+            }).map(m=>m.row)
+        },
+        colStyle(){
+            return {width: `${100/this.cols.length}%`}
         },
         ...mapState(['gismap','interaction','tab'])
     },

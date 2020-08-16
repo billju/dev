@@ -26,7 +26,7 @@
         el-switch(:value="allowAnimation" @change="toggleAnimation($event)")
     .d-flex.align-items-center.justify-content-between.px-2.py-2.border-bottom
         span 縮放間距
-        el-input-number(size="mini" v-model="gismap.zoomEvent.delta" :min="0.1" :max="1" :step="0.1")
+        el-input-number(size="mini" v-model="gismap.zoomEvent.delta" :min="0.1" :max="1" :step="0.05")
     .px-2.py-2.border-bottom
         span 縮放範圍
         span.float-right {{gismap.view.zoom}} / {{zoomRange}}
@@ -59,7 +59,7 @@ export default {
     mixins: [importMixin,exportMixin,utilsMixin],
     components: {Draggable},
     data: ()=>({
-        zoomRange: [0,20],
+        zoomRange: [0,17],
     }),
     computed: {
         ...mapState(['fileExtension','filename','bgColor','extensions','encoding','encodings','search','showScale','allowAnimation']),

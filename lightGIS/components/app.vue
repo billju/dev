@@ -19,10 +19,10 @@
         Styles(v-show="selectedFeatures.length")
     transition(name="fade-up")
         DataTable(v-if="showDataTable")
-    transition(name="fade-left")
-        Intro(v-if="showDialog")
-    transition(name="fade-up")
-        LoadingPage(v-if="isLoading")
+    //- transition(name="fade-left")
+    //-     Intro(v-if="showDialog")
+    //- transition(name="fade-up")
+    //-     LoadingPage(v-if="isLoading")
 </template>
 
 <script>
@@ -61,6 +61,10 @@ export default {
                 let {latitude,longitude} = pos.coords
                 this.gismap.panTo(this.gismap.lnglat2coord([longitude,latitude]))
             })
+        },
+        parseURL(){
+            let url = new URL(document.URL)
+            url.searchParams()
         }
     },
     computed:{
@@ -103,12 +107,18 @@ export default {
                 this.heatmap.setData({max:20, data})
             }
         })
-        this.setState({
-            gismap,
-            interaction: new Interaction(this.$refs['mapContainer'],gismap),
-            heatmap: new Heatmap(this.$refs['gismap'])
+        gismap.addEventListener('moveend',e=>{
+            let url = `@${e.lnglat[1].toFixed(7)},${e.lnglat[0].toFixed(7)},${e.zoom.toFixed(2)}z`
+            let title = url
+            // window.history.replaceState({},title,url)
         })
-        this.getCurrentPosition()
+        let interaction = new Interaction(this.$refs['mapContainer'],gismap)
+        interaction.addEventListener('paste',e=>{
+            e.features.map(f=>{f.properties['群組']=this.groupName})
+        })
+        let heatmap = new Heatmap(this.$refs['gismap'])
+        this.setState({ gismap, interaction, heatmap })
+        // this.getCurrentPosition()
     }
 }
 </script>

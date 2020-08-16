@@ -122,11 +122,12 @@ export default class GisMap{
         this.imageShapes = []
         this.tiles = {}
         // custom events
-        this.event = {render:[],select:[],drawend:[]}
+        this.isMoveEnd = false
+        this.event = {render:[],select:[],drawend:[],moveend:[]}
         this.notRenderPoints = false
         // default events
         let xyz = {x:this.view.center.x,y:this.view.center.y,z:this.view.zoom}
-        this.zoomEvent = {before:xyz,after:xyz,t:0,frames:25,delta:0.5,zStep:1}
+        this.zoomEvent = {before:xyz,after:xyz,t:0,frames:25,delta:0.25,zStep:1}
         this.moveEvent = {x:0,y:0,vx:0,vy:0,t:0,frames:90,active:false,moved:false,currentCoord:[0,0]}
         this.panEvent = {before:xyz,after:xyz,t:0,frames:60}
         this.drawEvent = {path:[],active:false,snap:false}
@@ -170,6 +171,16 @@ export default class GisMap{
                 this.view.zoom = z
                 this.updateView()
                 this.panEvent.t--
+            }
+            let isMoveEnd = this.moveEvent.t==0&&this.zoomEvent.t==0&&this.panEvent.t==0
+            if(isMoveEnd!=this.isMoveEnd){
+                this.isMoveEnd = isMoveEnd
+                if(isMoveEnd){
+                    let {center, zoom} = this.view
+                    let {x,y} = center
+                    let lnglat = this.coord2lnglat([x,y])
+                    this.dispatchEvent('moveend',{lnglat,zoom})
+                }
             }
             // raster
             this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height)
@@ -535,6 +546,7 @@ export default class GisMap{
     handleWheel(e){
         e.preventDefault()
         let isTouchPad = e.wheelDeltaY ? e.wheelDeltaY === -3 * e.deltaY : e.deltaMode === 0
+        if(navigator.userAgent.match(/(MSIE)|(Trident)/)) isTouchPad = false
         if(isTouchPad) this.zoomEvent.delta = 0.1
         var coord = this.client2coord([e.clientX,e.clientY])
         var delta = this.zoomEvent.delta

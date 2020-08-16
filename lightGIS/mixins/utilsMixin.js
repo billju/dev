@@ -23,7 +23,7 @@ export default {
                             propKey = keys[0]
                     }
                 }
-                let newGroup = {name,theme,start:0,active:true,opacity:1,propKey,sort:0}
+                let newGroup = {name,theme,start:0,active:true,opacity:1,lastOpa:1,propKey,sort:0,solo:false}
                 this.setState({ groups: [...this.groups, newGroup] })
             }
         },

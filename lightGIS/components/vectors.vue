@@ -3,6 +3,8 @@
     .w-100.px-2.py-1(v-for="group,i in groups" :key="i" :class="groupIndex==i?`border border-${group.theme}`:'border-bottom'" @click="setState({groupIndex:i})")
         .py-1
             span(:class="group.opacity==0?'text-secondary':'text-light'") {{group.name}}
+                el-tooltip(v-if="groupIndex==i" content="重新命名" placement="bottom")
+                    i.el-icon-edit-outline.ml-2(@click="renameGroupPrompt()").cursor-pointer
             select.float-right(v-model="group.propKey" :disabled="groupIndex!=i")
                 option(v-if="groupIndex!=i") {{group.propKey}}
                 option(v-else v-for="key in propKeys" :key="key" :value="key") {{key}}
@@ -14,6 +16,9 @@
                         v-model.number="group.opacity" @input="setGroupProps(groupName,'opacity',$event.target.value)")
                     .btn.btn-sm.btn-outline-info(slot="reference")
                         i.el-icon-magic-stick
+                el-tooltip(content="SOLO" placement="bottom")
+                    .btn.btn-sm(:class="group.solo?'btn-warning':'btn-outline-info'" @click="toggleSolo()")
+                        i.el-icon-switch-button
                 el-tooltip(content="排序" placement="bottom")
                     .btn.btn-sm.btn-outline-info(@click="sortGroupFeature()")
                         i(:class="sortIcon")
@@ -23,9 +28,6 @@
                 el-tooltip(content="選取全部" placement="bottom")
                     .btn.btn-outline-info(@click="handleSelect(groupFeatures)")
                         i.el-icon-finished
-                el-tooltip(content="重新命名" placement="bottom")
-                    .btn.btn-outline-info(@click="renameGroupPrompt()")
-                        i.el-icon-edit-outline
                 el-tooltip(content="移除群組" placement="bottom")
                     .btn.btn-outline-danger(@click="removeGroupPrompt()")
                         i.el-icon-close
@@ -49,6 +51,27 @@ export default {
     name: 'Vectors',
     mixins: [utilsMixin],
     methods: {
+        toggleSolo(){
+            let solo = !this.groups[this.groupIndex].solo
+            this.setArrayOfObject('groups',this.groupIndex,{solo})
+            for(let i=0;i<this.groups.length;i++){
+                if(i!=this.groupIndex){
+                    this.setArrayOfObject('groups',i,{
+                        opacity: solo?0:this.groups[i].lastOpa,
+                        lastOpa: this.groups[i].opacity
+                    })
+                }
+            }
+            this.gismap.vectors.filter(f=>f.properties['群組']!=this.groupName).map(f=>{
+                if(solo){
+                    f.properties['lastOpa'] = f.properties['opacity']??1
+                    f.properties['opacity'] = 0
+                }else if(f.properties['lastOpa']){
+                    f.properties['opacity'] = f.properties['lastOpa']
+                    delete f.properties['lastOpa']
+                }
+            })
+        },
         sortGroupFeature(){
             let propKey = this.groups[this.groupIndex].propKey
             let dir = this.groups[this.groupIndex].sort
@@ -62,10 +85,11 @@ export default {
             })
         },
         handleClickSelect(feature){
-            if(this.selectedFeatures.includes(feature)){
-                this.handleSelect(this.selectedFeatures.filter(f=>f!=feature))
-            }else if(this.gismap.selectEvent.ctrlKey){
-                this.handleSelect([...this.selectedFeatures,feature])
+            if(this.gismap.selectEvent.ctrlKey){
+                if(this.selectedFeatures.includes(feature))
+                    this.handleSelect(this.selectedFeatures.filter(f=>f!=feature))
+                else
+                    this.handleSelect([...this.selectedFeatures,feature])
             }else if(this.gismap.selectEvent.shiftKey&&
                 this.selectedFeatures.some(f=>this.groupFeatures.includes(f))){
                 let features = this.selectedFeatures.map(sf=>this.groupFeatures.findIndex(gf=>gf==sf)).filter(i=>i!=-1)
