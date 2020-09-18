@@ -1,41 +1,20 @@
 <template lang="pug">
 .position-fixed.w-100.h-100.d-flex.flex-column(style="left:0;top:0;")
     .w-100.flex-grow-1.bg-dark(style="max-height:100%;overflow:auto")
-        table.table.table-dark.w-100.mb-0
-            thead
-                tr
-                    th
-                    th(v-for="col,ci in cols" :key="ci")
-                        .d-flex.align-items-center
-                            span.flex-grow-1(style="white-space:nowrap" @click="renameColumnPrompt(col)").cursor-pointer {{col.key}}
-                            span.d-flex.cursor-pointer
-                                i.el-icon-d-caret(v-if="col.sort==0" @click="col.sort=1")
-                                i.el-icon-top(v-else-if="col.sort==1" @click="col.sort=-1")
-                                i.el-icon-bottom(v-else @click="col.sort=0")
-                            i.el-icon-close.cursor-pointer(@click="removeColumn(col.key);$event.stopPropagation()")
-                        select.w-100(v-model="col.filter" @change="updateColumnList();setState({tablePage:1})")
-                            option(value="")
-                            option(v-for="li in col.list" :key="li" :value="li") {{li}}
-                    
-            tbody
-                tr(v-for="row,ri in filteredRows.slice((tablePage-1)*maxRows,tablePage*maxRows)" :key="ri")
-                    td(@click="removeRowPrompt(pageStartIndex+ri)").cursor-pointer {{pageStartIndex+ri+1}}
-                    td(v-for="col,ci in cols" :key="ci" style="max-width:150px;text-overflow:ellipsis;" 
-                        contenteditable @blur="row[col.key]=$event.target.textContent") {{row[col.key]}}
+        Spreadsheet.text-light(ref="spreadsheet" :rows="pagedRows" :cols="cols" @rename="renameColumnPrompt($event)" @remove="removeColumnPrompt($event)")
     .d-flex.justify-content-center.align-items-center.bg-white.py-1
-        el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="setState({tablePage:$event})")
-        input.btn.btn-sm.btn-outline-primary(type="text" :value="search" @input="setState({search:$event.target.value,tablePage:1})" placeholder="搜尋")
-        .btn.btn-sm.btn-outline-secondary(v-if="history.length" @click="undo()") 復原
+        el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="setState({tablePage:$event});$refs['spreadsheet'].resize()")
+        input.btn.btn-sm.btn-outline-primary(type="text" :value="search" @input="setState({search:$event.target.value,tablePage:1})" placeholder="搜尋"  @keydown.stop)
         .btn.btn-sm.btn-outline-success(v-if="isImportable" @click="confirmImport()") 匯入
         .btn.btn-sm.btn-outline-success(v-else-if="!isImporting" @click="confirmSelect()") 選取
         .btn.btn-sm.btn-outline-success(v-else @click="leftJoin()") 合併
         el-popover(placement="top" trigger="click")
             .btn.btn-sm.btn-outline-info(slot="reference") 其他
             InputGroup(label="每頁顯示" :class="'align-items-center'")
-                input.custom-range.form-control(type="range" v-model.number="maxRows" min="5" max="100" @change="setState({tablePage:1})")
+                input.custom-range.form-control(type="range" v-model.number="maxRows" min="5" max="100" @change="setState({tablePage:1});$refs['spreadsheet'].resize()")
             .w-100.border-bottom.mb-1.pb-1(v-if="isImporting")
                 InputGroup(label="新增群組-名稱")
-                    input.form-control(type="text" :value="filename" @input="setState({filename:$event.target.value})")
+                    input.form-control(type="text" :value="filename" @input="setState({filename:$event.target.value})" @keydown.stop)
                 InputGroup(label="緯度-欄位")
                     select.form-control(v-model="importParams.lat")
                         option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
@@ -57,7 +36,7 @@
                         option(v-for="key in propKeys" :key="key" :value="key") {{key}}
             .w-100.border-bottom.mb-1.pb-1
                 InputGroup(label="新欄位名稱")
-                    input.form-control(type="text" v-model="newColParams.name")
+                    input.form-control(type="text" v-model="newColParams.name" @keydown.stop)
                 InputGroup(label="新增方式")
                     select.form-control(v-model="newColParams.operator")
                         option(v-for="operator in operators" :key="operator.name" :value="operator.fn") {{operator.name}}
@@ -68,9 +47,9 @@
                     select.form-control(v-model="newColParams.colB")
                         option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
                 InputGroup(label="常數A")
-                    input.form-control(type="text" v-model="newColParams.constA")
+                    input.form-control(type="text" v-model="newColParams.constA" @keydown.stop)
                 InputGroup(label="常數B")
-                    input.form-control(type="text" v-model="newColParams.constB")
+                    input.form-control(type="text" v-model="newColParams.constB" @keydown.stop)
                 .w-100.btn.btn-sm.btn-outline-success(@click="createNewColumn()") 新增欄位
             .w-100.btn-group.btn-group-sm
                 .btn.btn-outline-warning(@click="exportJSON(rows)") 匯出JSON
@@ -85,10 +64,11 @@ import {mapState, mapGetters} from 'vuex'
 import utilsMixin from '../mixins/utilsMixin.js'
 import exportMixin from '../mixins/exportMixin.js'
 import InputGroup from './inputGroup.vue'
+import Spreadsheet from './spreadsheet.vue'
 
 export default {
     name: 'DataTable',
-    components: {InputGroup},
+    components: {InputGroup,Spreadsheet},
     data: ()=>({
         maxRows: 20, operators: [
             {name:'產生空白欄位',fn:(a,b)=>''},
@@ -102,7 +82,6 @@ export default {
         ],
         newColParams: {name:'',colA:'',colB:'',operator:'產生空白欄位',constA:'',constB:''},
         importParams: {lat:'',lng:'',WKT:'',rightTableColumn:''},
-        history: [], keydownEvent: null,
     }),
     mixins: [utilsMixin,exportMixin],
     methods: {
@@ -158,6 +137,7 @@ export default {
             })
             this.setState({ rows })
             this.renderTable(rows)
+            this.$refs['spreadsheet'].resize()
         },
         renameColumnPrompt(col){
             let newName = prompt('變更欄位名稱',col.key)
@@ -175,25 +155,17 @@ export default {
                 col.key = newName
             }
         },
-        removeRowPrompt(index){
-            // let isConfirm = confirm(`確定移除第${index+1}列?`)
-            // if(!isConfirm) return
-            let payload = {index, row:this.rows[index] }
-            this.history.push({type:'removeRow', payload})
-            this.setState({rows:this.rows.filter((row,ri)=>ri!=index)})
-        },
-        removeColumn(key){
-            // let isConfirm = confirm(`確定刪除欄位${key}?`)
-            // if(!isConfirm) return
-            let payload = { key, rows: this.rows.map(row=>row[key]) }
-            this.history.push({type:'removeColumn', payload})
+        removeColumnPrompt(col){
+            let isConfirm = confirm(`確定刪除欄位${col.key}?`)
+            if(!isConfirm) return
             this.setState({
                 rows: this.rows.map(row=>{
-                    delete row[key]
+                    delete row[col.key]
                     return row
                 }),
-                cols: this.cols.filter(col=>col.key!=key)
+                cols: this.cols.filter(c=>c.key!=col.key)
             })
+            this.$refs['spreadsheet'].resize()
         },
         updateColumnList(){
             for(let col of this.cols){
@@ -216,30 +188,6 @@ export default {
                 showDataTable:false
             })
         },
-        undo(){
-            if(this.history.length){
-                let event = this.history.pop()
-                switch(event.type){
-                    case 'removeColumn':
-                        let {key, rows} = event.payload
-                        rows = this.rows.map((row,i)=>{
-                            row[key] = rows[i]
-                            return row
-                        })
-                        this.setState({ rows })
-                        this.renderTable(rows)
-                        break;
-                    case 'removeRow':
-                        let {index, row} = event.payload
-                        rows = this.rows
-                        rows.splice(index,0,row)
-                        this.setState({ rows })
-                        this.renderTable(rows)
-                        break;
-                    default: break;
-                }
-            }
-        }
     },
     computed: {
         ...mapState(['groups','groupIndex','tmpFeatures']),
@@ -251,17 +199,18 @@ export default {
         },
         pageStartIndex(){
             return (this.tablePage-1)*this.maxRows
+        },
+        pagedRows(){
+            let si = (this.tablePage-1)*this.maxRows
+            let ei = this.tablePage*this.maxRows
+            return this.filteredRows.slice(si,ei)
         }
     },
     mounted(){
-        this.keydownEvent = window.addEventListener('keydown',e=>{
-            if(e.ctrlKey&&e.code=='KeyZ'){
-                this.undo()
-            }
-        })
+        
     },
     beforeDestroy(){
-        window.removeEventListener('keydown',this.keydownEvent)
+        
     }
 }
 </script>

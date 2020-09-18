@@ -39,7 +39,7 @@ export default {
         renderTable(rows){
             let cols = [...new Set(rows.flatMap(obj=>Object.keys(obj)))]
             cols = cols.map(col=>({
-                key:col, sort:0, filter:'',
+                key:col, sort:0, filter:[],
                 list:[...new Set(rows.map(obj=>obj[col]))]
                     .sort((a,b)=>this.sortRule(a,b,null,1)).slice(0,100)
             }))

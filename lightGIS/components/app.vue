@@ -19,10 +19,10 @@
         Styles(v-show="selectedFeatures.length")
     transition(name="fade-up")
         DataTable(v-if="showDataTable")
-    //- transition(name="fade-left")
-    //-     Intro(v-if="showDialog")
-    //- transition(name="fade-up")
-    //-     LoadingPage(v-if="isLoading")
+    transition(name="fade-left")
+        Intro(v-if="showDialog")
+    transition(name="fade-up")
+        LoadingPage(v-if="isLoading")
 </template>
 
 <script>
@@ -56,12 +56,6 @@ export default {
     }, 
     mixins: [importMixin, exportMixin, utilsMixin],
     methods: {
-        getCurrentPosition(){
-            navigator.geolocation.getCurrentPosition(pos=>{
-                let {latitude,longitude} = pos.coords
-                this.gismap.panTo(this.gismap.lnglat2coord([longitude,latitude]))
-            })
-        },
         parseURL(){
             let url = new URL(document.URL)
             url.searchParams()
@@ -117,8 +111,7 @@ export default {
             e.features.map(f=>{f.properties['群組']=this.groupName})
         })
         let heatmap = new Heatmap(this.$refs['gismap'])
-        this.setState({ gismap, interaction, heatmap })
-        // this.getCurrentPosition()
+        this.setState({ gismap, interaction, heatmap }) 
     }
 }
 </script>

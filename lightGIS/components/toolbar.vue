@@ -2,8 +2,11 @@
 .w-100.btn-group-vertical
     .btn(v-for="t in tabs" :key="t" style="white-space:pre"
         :class="t==tab?'btn-dark':'btn-secondary'" @click="setState({tab:t})") {{t}}
+    el-tooltip(content="定位" placement="right")
+        .btn.btn-primary(@click="getCurrentPosition()")
+            i.el-icon-position
     el-tooltip(content="新增群組" placement="right")
-        .btn.btn-primary(@click="addGroupPrompt()") 
+        .btn.btn-primary(@click="addGroupPrompt()")
             i.el-icon-plus
     el-tooltip(content="置頂" placement="right")
         .btn.btn-info(@click="interaction.moveLayerTo('top')")
@@ -39,9 +42,16 @@ export default {
         addGroupPrompt(){
             this.addGroup(prompt('新增群組',`群組${this.groups.length+1}`))
         },
+        getCurrentPosition(){
+            navigator.geolocation.getCurrentPosition(pos=>{
+                let {latitude,longitude} = pos.coords
+                this.gismap.panTo(this.gismap.lnglat2coord([longitude,latitude]))
+                this.gismap.addVector('Point',[longitude,latitude],{radius:10,'群組':this.groupName})
+            })
+        },
     },
     computed: {
-        ...mapState(['interaction','tab','tabs']),
+        ...mapState(['gismap','interaction','tab','tabs']),
         ...mapGetters(['groupName','selectedFeatures'])
     }
 }

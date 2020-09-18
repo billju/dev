@@ -18,7 +18,7 @@
         //- input.btn.btn-outline-primary(v-if="TRArows.length" type='text' style='width:50px' v-model="TRAStationName" placeholer="車站名稱")
     .btn-group.w-100
         .btn.btn-outline-secondary(v-for="(val,key) in metroOperators" :key="key" @click="MetroRoute(key)") {{val}}
-    div(v-if="(rows.length||busETA.length)")
+    div(v-if="(rows.length||busETAs.length)")
         .input-group
             .btn.btn-outline-success.form-control(@click="searchBus()") 搜尋
             input(type="text" v-model="keyword" placeholder="輸入關鍵字" @input="searching=true")
@@ -33,9 +33,9 @@
         .flex-grow-1(v-else style="max-height:600px;overflow-y:auto")
             el-tabs(v-model="busTab" stretch :class="'bg-light'")
                 el-tab-pane(label="去程" name="去程")
-                    ETA(:busETA="busETA.filter(x=>x.dir==0)")
+                    ETA(:busETAs="busETAs.filter(x=>x.dir==0)")
                 el-tab-pane(label="返程" name="返程")
-                    ETA(:busETA="busETA.filter(x=>x.dir==1)")
+                    ETA(:busETAs="busETAs.filter(x=>x.dir==1)")
 </template>
 
 <script>
@@ -57,7 +57,7 @@ export default {
             Chiayi:'嘉義市',PingtungCounty:'屏東縣',YilanCounty:'宜蘭縣',HualienCounty:'花蓮縣',
             TaitungCounty:'臺東縣',KinmenCounty:'金門縣',PenghuCounty:'澎湖縣',LienchiangCounty:'連江縣'
         }, 
-        cols: [], rows:[], busETA:[], busTab: '去程', searching: true,
+        cols: [], rows:[], busETAs:[], busTab: '去程', searching: true,
         tourTypes:{
             ScenicSpot:'景點',Restaurant:'餐廳',Hotel:'飯店',Activity:'活動'
         },
@@ -172,7 +172,7 @@ export default {
                 let idx = avails.findIndex(x=>x['UID']==row['UID'])
                 let extProps = idx==-1?{}:avails[idx]
                 return this.gismap.addVector('Point',[row['經度'],row['緯度']],{
-                    ...row,...extProps,radius:row['容量']/10,'群組':group
+                    ...row,...extProps,radius:10,'群組':group
                 })
             })
             this.interaction.fitExtent(features)
@@ -244,7 +244,7 @@ export default {
         async BusETA(city=this.city,UID='TXG9'){
             let json = await this.fetchJSON(`https://ptx.transportdata.tw/MOTC/v2/Bus/EstimatedTimeOfArrival/City/${city}?$select=PlateNumb,StopName,EstimateTime&$filter=NextBusTime ne null and RouteUID eq '${UID}'&$orderby=Direction,StopSequence&$format=JSON`)
             if(json instanceof Error) return
-            this.busETA = json.map(row=>{
+            this.busETAs = json.map(row=>{
                 let date = new Date(row['NextBusTime'])
                 let formateTime = ('0'+date.getHours()).substr(-2)+':'+('0'+date.getMinutes()).substr(-2)
                 let formateEst = row['EstimateTime']>60?Math.floor(row['EstimateTime']/60):row['EstimateTime']

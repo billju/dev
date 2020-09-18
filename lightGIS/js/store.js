@@ -15,7 +15,7 @@ const state = {
     heatmap: {},
 
     // settings
-    fileExtension: '.geojson', filename: '', bgColor:'#333333', 
+    fileExtension: '.geojson', filename: 'lightGIS', bgColor:'#333333', 
     extensions:['.geojson','.png','.svg','.csv','.json'], encoding:'utf-8', encodings: ['utf-8','big5','gb2312'],
     search: '', showScale:true, allowAnimation: true, 
 
@@ -103,8 +103,8 @@ const getters = {
         }
         let rows = state.rows.slice()
         for(let col of state.cols)
-            if(col.filter!='')
-                rows = rows.filter(row=>row[col.key]==col.filter)
+            if(col.filter.length)
+                rows = rows.filter(row=>col.filter.includes(row[col.key]))
         if(state.search){
             let cols = state.cols.filter(col=>!col.filter)
             rows = rows.filter(row=>{

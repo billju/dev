@@ -62,7 +62,7 @@ export default {
         zoomRange: [0,17],
     }),
     computed: {
-        ...mapState(['fileExtension','filename','bgColor','extensions','encoding','encodings','search','showScale','allowAnimation']),
+        ...mapState(['fileExtension','filename','bgColor','extensions','encoding','encodings','search','showScale','allowAnimation','tmpFeatures']),
     }
 }
 </script>
