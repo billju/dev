@@ -18,7 +18,7 @@ export default {
             this.downloadLink(href,filename)
         },
         exportFile(features=this.selectedFeatures.length?this.selectedFeatures:this.gismap.vectors){
-            let filename = this.filename??'lightGIS'
+            let filename = this.filename
             let extension = this.fileExtension
             if(extension=='.geojson'){
                 const unproject = this.gismap.coord2lnglat
@@ -102,10 +102,10 @@ export default {
             let aoa = rows.map(obj=>cols.map(col=>obj[col]))
             aoa.unshift(cols)
             let text = aoa.reduce((acc,cur)=>acc+cur.join(',')+'\r\n','')
-            this.downloadText(text,`${this.filename??'lightGIS'}.csv`,'csv')
+            this.downloadText(text,`${this.filename}.csv`,'csv')
         },
         exportJSON(rows){
-            this.downloadText(JSON.stringify(rows),`${this.filename??'lightGIS'}.json`,'plain')
+            this.downloadText(JSON.stringify(rows),`${this.filename}.json`,'plain')
         }
     }
 }

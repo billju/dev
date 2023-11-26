@@ -1,22 +1,20 @@
 <template lang="pug">
-.w-100.h-100
+.w-100.h-100.bg-dark
     .w-100.h-100(ref="mapContainer")
-        canvas.w-100.h-100(ref="gismap" @drop="handleDrop($event)" @dragover="$event.preventDefault()" :style="{background:bgColor}")
-    .position-fixed.d-flex.align-items-center.px-2.py-1(v-if="gismap.view&&showScale" style="right:0;bottom:0;user-select:none;")
+        canvas.w-100.h-100(ref="gismap" v-show="!showDataTable" @drop="handleDrop($event)" @dragover="$event.preventDefault()" :style="{background:bgColor}")
+    .position-fixed.d-flex.align-items-center(v-if="gismap.view&&showScale" style="right:8px;bottom:4px;user-select:none;")
         span.text-shadow {{gismap.view.scaleText}}
         .mx-2.py-1.border(:style="scaleStyle")
-    .position-fixed.h-100.bg-dark.text-light(style="width:320px;top:0;transition:left 0.5s" :style="{left: tab=='隱藏'?'-320px':0}")
-        .position-absolute.bg-secondary(style="top:0;right:-60px;width:60px")
-            Toolbar
-        .px-2.py-2.h-100(style="overflow-y:auto")
-            Rasters
-            Vectors
-            Settings
-            PTX
-            ColorSampler(v-if="tab=='調色'")
-            Tutorial
-    transition(name="fade-left")
-        Styles(v-show="selectedFeatures.length")
+    
+    Toolbar.position-fixed(style="top:0;left:0")
+    .position-fixed.bg-light.px-1.py-3.m-2.rounded.shadow(v-show="tab" style="overflow-y:auto;top:0;left:60px;width:320px;max-height:90vh")
+        Rasters
+        Vectors
+        Settings
+        PTX
+        ColorSampler(v-if="tab=='調色'")
+        Tutorial    
+    Styles(v-if="selectedFeatures.length")
     transition(name="fade-up")
         DataTable(v-if="showDataTable")
     transition(name="fade-left")
@@ -59,7 +57,16 @@ export default {
         parseURL(){
             let url = new URL(document.URL)
             url.searchParams()
-        }
+        },
+        movePopup(){
+            if(this.selectedFeatures.length){
+                let features = this.selectedFeatures
+                let bbox = features[features.length-1].geometry.bbox
+                let bc = this.gismap.getBboxCenter(bbox)
+                let popupCoord = this.gismap.coord2client(bc).map(c=>Math.round(c))
+                this.setState({popupCoord})
+            }
+        },
     },
     computed:{
         // global
@@ -87,6 +94,7 @@ export default {
         gismap.set('rasters',this.rasters)
         gismap.addEventListener('select',e=>{
             this.handleSelect(e.features)
+            this.movePopup()
         })
         gismap.addEventListener('drawend',e=>{
             e.feature.properties['群組'] = this.groupName
@@ -101,7 +109,11 @@ export default {
                 this.heatmap.setData({max:20, data})
             }
         })
+        gismap.addEventListener('moving',e=>{
+            this.movePopup()
+        })
         gismap.addEventListener('moveend',e=>{
+            this.handleSelect(this.selectedFeatures)
             let url = `@${e.lnglat[1].toFixed(7)},${e.lnglat[0].toFixed(7)},${e.zoom.toFixed(2)}z`
             let title = url
             // window.history.replaceState({},title,url)
@@ -110,6 +122,7 @@ export default {
         interaction.addEventListener('paste',e=>{
             e.features.map(f=>{f.properties['群組']=this.groupName})
         })
+        
         let heatmap = new Heatmap(this.$refs['gismap'])
         this.setState({ gismap, interaction, heatmap }) 
     }
@@ -124,15 +137,23 @@ html, body{
     margin: 0;
     height: 100%;
 }
-.custom-control-label:before{
-    background: #343a40;
+select{
+    border: none;
 }
-input[type=range]::-webkit-slider-runnable-track{
+/* .custom-control-label:before{
+    background: #343a40;
+} */
+/* input[type=range]::-webkit-slider-runnable-track{
     background: #adb5bd;
 }
 input[type=range]::-moz-range-track{
     background: #adb5bd;
+} */
+/* 修正element ui 跑版 */
+.el-input-number--mini i{
+    padding: 7px;
 }
+
 .cursor-pointer{
     cursor: pointer;
 }
@@ -147,12 +168,18 @@ input[type=range]::-moz-range-track{
 .fade-enter, .fade-leave-to{
     opacity: 0;
 }
-.fade-up-enter-active, .fade-up-leave-active {
-    transition: opacity .5s,transform .5s;
+/* 轉換特效 fade-up */
+.fade-up-enter-active {
+    animation: fade-up 0.3s ease-out;
 }
-.fade-up-enter, .fade-up-leave-to{
-    opacity: 0;
-    transform: translateY(30%);
+.fade-up-leave-active {
+    animation: fade-up 0.3s reverse ease-in;
+}
+@keyframes fade-up {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
 }
 .fade-right-enter-active, .fade-right-leave-active {
     transition: opacity .5s,transform .5s;

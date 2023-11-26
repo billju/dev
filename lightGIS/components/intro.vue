@@ -23,49 +23,49 @@ export default {
         pageIndex: 0,
         imgs: [
             { 
-                src: "assets/png/shortcut-metro.png", 
+                src: "png/shortcut-metro.png", 
                 title: "繪製路網圖", 
                 text: "PTX>台北捷運>填滿>指定欄位>代號>捷運代號" ,
                 tab: '隱藏',
             },
             {
-                src: "assets/png/shortcut-choropleth.png",
+                src: "png/shortcut-choropleth.png",
                 title: "分層設色圖",
                 text: "加入多邊形>選取>填滿>指定欄位",
                 tab: '向量',
             },
             {
-                src: "assets/png/shortcut-bus.png",
+                src: "png/shortcut-bus.png",
                 title: "公車即時動態",
                 text: "PTX>公車>搜尋路線",
                 tab: 'PTX',
             },
             { 
-                src: "assets/png/shortcut-heatmap.png", 
+                src: "png/shortcut-heatmap.png", 
                 title: "熱點圖", 
                 text: "加入點位資料>設定>熱點圖",
                 tab: '設定',
             },
             {
-                src: "assets/png/shortcut-ibike.png",
+                src: "png/shortcut-ibike.png",
                 title: "公共自行車即時佔位",
                 text: "PTX>即時站位",
                 tab: 'PTX',
             },
             {
-                src: "assets/png/shortcut-measure.png",
+                src: "png/shortcut-measure.png",
                 title: "長度與面積測量",
                 text: "點擊右鍵>連點左鍵兩下結束繪製",
                 tab: '向量',
             },
             {
-                src: "assets/png/shortcut-raster.png",
+                src: "png/shortcut-raster.png",
                 title: "網格疊圖分析",
                 text: "網格>開關切換、推桿調整透明度、拖曳進行排序",
                 tab: '網格',
             },
             { 
-                src: "assets/png/shortcut-table.png", 
+                src: "png/shortcut-table.png", 
                 title: "資料表格檢索", 
                 text: "向量>群組工具列>資料表格",
                 tab: '向量',
@@ -82,7 +82,7 @@ export default {
             })
             switch(title){
                 case '分層設色圖':
-                    fetch('assets/templates/B_population.geojson').then(res=>res.json()).then(json=>{
+                    fetch('templates/B_population.geojson').then(res=>res.json()).then(json=>{
                         let features = this.gismap.geojson(json)
                         features.map(f=>{f.properties['opacity']=f.properties['區域別']=='西屯區'?1:0})
                         features = features.filter(f=>f.properties['區域別']=='西屯區')
@@ -90,7 +90,7 @@ export default {
                         this.addGroup('村里界')
                     });break;
                 case '繪製路網圖':
-                    fetch('assets/templates/TaipeiMetro.geojson').then(res=>res.json()).then(json=>{
+                    fetch('templates/TaipeiMetro.geojson').then(res=>res.json()).then(json=>{
                         let features = this.gismap.geojson(json)
                         this.interaction.fitExtent(features)
                         this.addGroup('台北捷運')

@@ -4,7 +4,7 @@
         Spreadsheet.text-light(ref="spreadsheet" :rows="pagedRows" :cols="cols" @rename="renameColumnPrompt($event)" @remove="removeColumnPrompt($event)")
     .d-flex.justify-content-center.align-items-center.bg-white.py-1
         el-pagination(:page-size="maxRows" :page-count="10" layout="prev,pager,next" :total="filteredRows.length" @current-change="setState({tablePage:$event});$refs['spreadsheet'].resize()")
-        input.btn.btn-sm.btn-outline-primary(type="text" :value="search" @input="setState({search:$event.target.value,tablePage:1})" placeholder="搜尋"  @keydown.stop)
+        input.btn.btn-sm.btn-outline-primary(type="text" :value="search" @input="setState({search:$event.target.value,tablePage:1})" placeholder="搜尋")
         .btn.btn-sm.btn-outline-success(v-if="isImportable" @click="confirmImport()") 匯入
         .btn.btn-sm.btn-outline-success(v-else-if="!isImporting" @click="confirmSelect()") 選取
         .btn.btn-sm.btn-outline-success(v-else @click="leftJoin()") 合併
@@ -14,7 +14,7 @@
                 input.custom-range.form-control(type="range" v-model.number="maxRows" min="5" max="100" @change="setState({tablePage:1});$refs['spreadsheet'].resize()")
             .w-100.border-bottom.mb-1.pb-1(v-if="isImporting")
                 InputGroup(label="新增群組-名稱")
-                    input.form-control(type="text" :value="filename" @input="setState({filename:$event.target.value})" @keydown.stop)
+                    input.form-control(type="text" :value="filename" @input="setState({filename:$event.target.value})")
                 InputGroup(label="緯度-欄位")
                     select.form-control(v-model="importParams.lat")
                         option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
@@ -36,7 +36,7 @@
                         option(v-for="key in propKeys" :key="key" :value="key") {{key}}
             .w-100.border-bottom.mb-1.pb-1
                 InputGroup(label="新欄位名稱")
-                    input.form-control(type="text" v-model="newColParams.name" @keydown.stop)
+                    input.form-control(type="text" v-model="newColParams.name")
                 InputGroup(label="新增方式")
                     select.form-control(v-model="newColParams.operator")
                         option(v-for="operator in operators" :key="operator.name" :value="operator.fn") {{operator.name}}
@@ -47,15 +47,21 @@
                     select.form-control(v-model="newColParams.colB")
                         option(v-for="col,ci in cols" :key="ci" :value="col.key") {{col.key}}
                 InputGroup(label="常數A")
-                    input.form-control(type="text" v-model="newColParams.constA" @keydown.stop)
+                    input.form-control(type="text" v-model="newColParams.constA")
                 InputGroup(label="常數B")
-                    input.form-control(type="text" v-model="newColParams.constB" @keydown.stop)
-                .w-100.btn.btn-sm.btn-outline-success(@click="createNewColumn()") 新增欄位
+                    input.form-control(type="text" v-model="newColParams.constB")
             .w-100.btn-group.btn-group-sm
-                .btn.btn-outline-warning(@click="exportJSON(rows)") 匯出JSON
-                select(:value="encoding" @change="setState({encoding:$event.target.value})")
-                    option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
-                .btn.btn-outline-success(@click="exportCSV(rows)") 匯出CSV
+                button.btn.btn-outline-success(@click="createNewColumn()") 新增欄位
+                el-popover(placement="right" trigger="click")
+                    button.btn.btn-outline-info(slot="reference") 匯出檔案
+                    InputGroup(label="檔案名稱")
+                        input.form-control(type='text' :value="filename" @input="setState({filename:$event.target.value})" placeholder="檔案名稱")
+                    InputGroup(label="編碼格式")
+                        select.form-control(:value="encoding" @change="setState({encoding:$event.target.value})")
+                            option(v-for="enc in encodings" :key="enc" :value="enc") {{enc}}
+                    InputGroup(label="匯出")
+                        .btn.btn-outline-success.form-control(@click="exportJSON(pagedRows)") 匯出JSON
+                        .btn.btn-outline-success.form-control(@click="exportCSV(pagedRows)") 匯出CSV
         .btn.btn-sm.btn-outline-danger(@click="setState({isImporting:false,showDataTable:false});") 關閉
 </template>
 

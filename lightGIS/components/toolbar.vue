@@ -1,7 +1,7 @@
 <template lang="pug">
-.w-100.btn-group-vertical
+.btn-group-vertical(@mouseleave="$emit('leave')")
     .btn(v-for="t in tabs" :key="t" style="white-space:pre"
-        :class="t==tab?'btn-dark':'btn-secondary'" @click="setState({tab:t})") {{t}}
+        :class="t==tab?'btn-dark':'btn-secondary'" @click="setState({tab:tab==t?'':t})") {{t}}
     el-tooltip(content="定位" placement="right")
         .btn.btn-primary(@click="getCurrentPosition()")
             i.el-icon-position

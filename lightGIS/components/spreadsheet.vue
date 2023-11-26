@@ -4,10 +4,11 @@
 		div(v-for="col,ci in cols" :key="ci")
 			.position-relative.d-flex.align-items-center.justify-content-between.p-2(:style="{width:col.width+'px'}")
 				.mr-1(style="word-break:keep-all") {{col.key}}
-				Dropdown(:lists="col.list" @blur="isFocus=true" @focus="isFocus=false" @add-col="" @sort="col.sort=$event" @set-filter="col.filter=$event;resize()"
+				Dropdown(:lists="col.list" @blur="isFocus=true" @focus="isFocus=false" @add-col="" @sort="col.sort=$event;resize()" @set-filter="col.filter=$event;resize()"
 					@rename="$emit('rename',col)" @remove="$emit('remove',col)")
-				.position-absolute.h-100.bg-hover(style="width:8px;cursor:ew-resize" :style="{right:resizer.ci==ci?-resizer.dx-4+'px':'-4px',background:resizer.ci==ci?'grey':''}" @mousedown="resizerStart($event,ci)")
-	.position-absolute.w-100(ref="scroll" style="overflow:auto" :style="scrollStyle")
+				.position-absolute.h-100.bg-hover(style="width:8px;cursor:ew-resize" @mousedown="resizerStart($event,ci)" @dblclick="autoResize()"
+					:style="{right:resizer.ci==ci?-resizer.dx-4+'px':'-4px',background:resizer.ci==ci?'grey':''}")
+	.position-absolute.w-100(ref="scroll" style="overflow:auto" :style="scrollStyle" @mousedown="handleMousedown" @dblclick="handleDblclick")
 		table.table.table-striped.w-100(ref="spreadsheet" style="table-layout:fixed")
 			tbody
 				tr(v-for="(row,ri) in rows" :key="ri")
@@ -166,6 +167,20 @@ export default {
 				this.thead = { clientHeight }
 			})
 		},
+		autoResize(){
+			let {fontSize} = window.getComputedStyle(this.tableRef)
+			let full = parseInt(fontSize)
+			let half = parseInt(fontSize)/2
+			const isAscii = (str)=>/^[\x00-\x7F]*$/.test(str)
+			const getTextWidth = (str)=>str.split('').reduce((acc,cur)=>acc+(isAscii(cur)?half:full),0)
+			for(let col of this.cols){
+				let texts = this.rows.map(row=>row[col.key]??'').map(v=>v.toString())
+				let thead = getTextWidth(col.key)+48
+				let tbody = Math.max(...texts.map(str=>getTextWidth(str)))+24
+				col.width = Math.max(thead,tbody)
+			}
+			this.resize(false)
+		},
 		minmax(input,min,max){return input<min?min:input>max?max:input},
 		checkIsChar(e){ // 判斷鍵盤敲下去輸入的是不是字元
 			let codes = ['Key','Digit','Backqoute','Equal','Minus','Backslash',
@@ -225,8 +240,7 @@ export default {
 				this.rangeStart = {...this.mapEnd}
 				this.rangeEnd = {...this.mapEnd}
 				this.resize()
-			}
-			if(this.resizer.active){
+			}else if(this.resizer.active){
 				let {dx,ci} = this.resizer
 				this.cols[ci].width+= dx
 				this.resizer.ci = -1
@@ -250,8 +264,11 @@ export default {
 			}else if(this.checkIsChar(e)){
 				this.setEdit(this.rangeEnd)
 			}else if(e.code=='Enter'){
-				if(this.rangeEnd.row==this.rows.length-1){
-					this.rows.push(JSON.parse(JSON.stringify(this.rows[this.rows.length-1])))
+				if(e.shiftKey){
+					this.addHistory()
+					let idx = this.rangeStart.row
+					let newRow = JSON.parse(JSON.stringify(this.rows[idx]))
+					this.rows.splice(idx,0,newRow)
 					this.resize()
 				}
 				this.rangeStart.row = ++this.rangeEnd.row
@@ -317,9 +334,12 @@ export default {
 					let colName = this.cols[ci].key
 					this.rows[ri][colName] = undefined
 				}
-				if(Object.values(this.rows[ri]).every(c=>c==undefined))
+				if(Object.values(this.rows[ri]).every(c=>c==undefined)){
 					this.rows.splice(ri,1)
+					this.rangeEnd.row = --this.rangeStart.row
+				}
 			}
+			this.resize();
 		},
 		rangePaste(){
 			if(!this.copying) return
@@ -370,11 +390,13 @@ export default {
 			}
 			this.historyIdx = this.minmax(this.historyIdx+offset,0,this.histories.length-1)
 			let {aoa,rangeStart,rangeEnd} = this.histories[this.historyIdx]
-			aoa.map((row,ri)=>{
-				row.map((col,ci)=>{
+			this.rows = aoa.map((arr,ri)=>{
+				let row = {}
+				arr.map((val,ci)=>{
 					let colName = this.cols[ci].key
-					this.rows[ri][colName] = col
+					row[colName] = val
 				})
+				return row
 			})
 			this.rangeStart = {...rangeStart}
 			this.rangeEnd = {...rangeEnd}
@@ -424,8 +446,8 @@ export default {
 	mounted(){
 		this.resize()
 		this.events = {
-			dblclick: e=>this.handleDblclick(e),
-			mousedown: e=>this.handleMousedown(e),
+			// dblclick: e=>this.handleDblclick(e),
+			// mousedown: e=>this.handleMousedown(e),
 			mousemove: e=>this.handleMousemove(e),
 			mouseup: e=>this.handleMouseup(e),
 			keydown: e=>this.handleKeydown(e),

@@ -2,7 +2,7 @@
 span.position-relative
 	i.fa.fa-caret-down(ref="btn" @click="show=!show;$emit(show?'focus':'blur')" :style="caretStyle")
 	transition(name="fade-up")
-		.position-absolute.bg-light.border.shadow(ref="lists" v-if="show" style="right:0;min-width:280px;z-index:666")
+		.position-absolute.bg-light.border.rounded.shadow(ref="lists" v-if="show" style="right:0;min-width:280px;z-index:666")
 			.input-group.input-group-sm
 				input.form-control(type="text" v-model="search" :placeholder="'搜尋('+filteredLists.length+')'")
 				.input-group-append
@@ -88,15 +88,5 @@ export default {
 .list-hover:hover{
 	background: lightblue;
 	cursor: pointer;
-}
-/* 轉換特效 fade-up */
-.fade-up-enter-active {
-    animation: fade-up 0.3s ease-out;
-}
-@keyframes fade-up {
-    0% {
-        opacity: 0;
-        transform: translateY(10px);
-    }
 }
 </style>

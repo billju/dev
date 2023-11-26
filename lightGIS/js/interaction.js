@@ -59,6 +59,7 @@ export default class Interaction{
                     feature.geometry.bbox = this.gismap.getBbox(coords)
                 })
             }
+            if(e.code=='Delete'||e.code=='Backspace') this.deleteSelected()
             if(this.isKeyup){
                 if(e.ctrlKey&&e.code=='KeyZ'){
                     let features = this.recycle.pop()
@@ -99,13 +100,13 @@ export default class Interaction{
             this.gismap.handleResize()
         })
         //custom event
-        this.event = {paste:[]}
+        this.events = {paste:[],}
     }
     dispatchEvent(type,payload){
-        for(let fn of this.event[type]){ fn(payload) }
+        for(let fn of this.events[type]){ fn(payload) }
     }
     addEventListener(type,fn){
-        try{ this.event[type].push(fn) }
+        try{ this.events[type].push(fn) }
         catch{ console.error('no such type of event!') }
     }
     setSelectedFeaturesProp(key,value){
@@ -136,38 +137,6 @@ export default class Interaction{
         }else{
             return {}
         }
-    }
-    renderStyleTable(feature){
-        let style = this.gismap.getDefaultStyle(feature)
-        for(let key in style){
-            if(key=='lineDash')
-                document.getElementById(key).value = style[key][0]||''
-            else
-                document.getElementById(key).value = style[key]||''
-        }
-        let options = Object.keys(feature.properties).filter(key=>!(key in style))
-        let propText = document.getElementById('propText')
-        propText.innerHTML = options.map(option=>
-            `<option value="${option}">${option}</option>`
-        ).join('')
-        propText.oninput = ()=>{
-            this.gismap.selectEvent.features.map(f=>{
-                f.properties['text'] = f.properties[propText.value]
-            })
-        }
-    }
-    renderPropsTable(properties){
-        this.propsTable.innerHTML = ''
-        Object.entries(properties).map(([key,val])=>{
-            if(val!=undefined){
-                let tr = this.propsTable.insertRow()
-                tr.insertCell().textContent = key
-                let td = tr.insertCell()
-                td.contentEditable = true
-                td.textContent = val
-                td.oninput = e=>{properties[key] = e.target.textContent}
-            }
-        })
     }
     copySelected(){
         if(this.gismap.selectEvent.features.length){

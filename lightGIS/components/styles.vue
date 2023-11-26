@@ -1,20 +1,16 @@
 <template lang="pug">
-.position-fixed.bg-dark.text-light.h-100(style="right:0;top:0;width:300px;overflow-y:auto")
-    el-collapse(v-if="selectedFeatures.length" v-model="activeNames")
-        el-collapse-item(title="屬性" name="屬性")
-            template(slot="title")
-                .px-2 屬性
-            table.table.table-striped.mb-0.text-light
+.position-fixed.bg-light.rounded.shadow(:style="popupStyle")
+    el-tabs(v-if="selectedFeatures.length" type="card" v-model="tabName")
+        el-tab-pane.px-2.pb-2(label="屬性" name="屬性")
+            table.table.table-sm.table-striped.mb-0
                 tbody           
                     tr(v-for="val,key in attributes")
                         td {{key}}
                         td(v-html="val")
-        el-collapse-item(name="文字")
-            template(slot="title")
-                .px-2 文字
+        el-tab-pane.px-2.pb-2(label="文字" name="文字")
             .d-flex.align-items-center.justify-content-between
                 span.px-2.py-1 內容
-                input.flex-grow-1(ref="text-input" type="text" style="width:100px" :value="style['text']" @input="setSFP('text',$event.target.value)")
+                input.flex-grow-1(ref="text-input" type="text" style="width:100px" :value="style['text']" @keydown.stop="" @input="setSFP('text',$event.target.value)")
             .d-flex.align-items-center.justify-content-between 
                 span.px-2.py-1 內容指定欄位
                 select(@change="mapSFP('text',$event.target.value)")
@@ -49,20 +45,13 @@
                 span 字型
                 select.float-right(:value="style['fontFamily']" @input="setSFP('fontFamily',$event.target.value)")
                     option(v-for="fontFamily in fontFamilies" :value="fontFamily") {{fontFamily}}
-        el-collapse-item(name="半徑")
-            template(slot="title")
-                .px-2 半徑
+        el-tab-pane.px-2.pb-2(label="框線" name="框線")
+            .d-flex.align-items-center.justify-content-between.px-2.py-1
+                span 透明度
+                input.custom-range.float-right(type="range" :value="style['opacity']" min='0.1' max='1' step='0.1' style="width:150px;direction:rtl" @input="setSFP('opacity',$event.target.value*1)")
             .d-flex.align-items-center.justify-content-between.px-2.py-1
                 span 半徑
                 el-input-number(size="mini" :value="style['radius']" :min="0" @change="setSFP('radius',$event)")
-        el-collapse-item(name="透明度")
-            template(slot="title")
-                .px-2 透明度
-            span 透明度
-            input.custom-range.float-right(type="range" :value="style['opacity']" min='0.1' max='1' step='0.1' style="width:150px;direction:rtl" @input="setSFP('opacity',$event.target.value*1)")
-        el-collapse-item(name="框線")
-            template(slot="title")
-                .px-2 框線
             .d-flex.align-items-center.justify-content-between.px-2.py-1
                 span 色彩
                 el-color-picker(show-alpha :value="style['stroke']" @active-change="setSFP('stroke',$event)")
@@ -74,9 +63,7 @@
                 span
                     input(type='number' :value="style['lineDash'][0]" min="0" @input="setSFP('lineDash',[$event.target.value*1,$event.target.value*1])")
                     input(type='number' :value="style['lineDashOffset']" min="0" @input="setSFP('lineDashOffset',$event.target.value*1)")
-        el-collapse-item(name="填滿")
-            template(slot="title")
-                .px-2 {{rule.col==''?'填滿':rule.isGradient?'漸層設色':'分層設色'}}
+        el-tab-pane.px-2.pb-2(:label="rule.col==''?'填滿':rule.isGradient?'漸層設色':'分層設色'" name="填滿")
             .px-1.py-1
                 .d-flex.align-items-center.justify-content-between
                     span.px-2.py-1 色彩
@@ -94,12 +81,12 @@
                             @input="updateRule();mapSFP('fill',rule.col,gradientColor)")
                         button.close(@click="rule.gradients.splice(i,1)")
                             span &times;
-                    .btn.btn-warning(@click="rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})")
-                        i.el-icon-plus
-                    .btn.btn-success(@click="fav.gradients.push([...rule.gradients.map(g=>({...g}))])") 新設定
-                    .btn.btn-secondary(v-for="fg,i in fav.gradients" :key="`gd${i}`" 
-                        @click="rule.gradients=[...fg.map(g=>({...g}))];updateRule()"
-                        @contextmenu.prevent="$delete(fav.gradients,i)") 設定{{i+1}}
+                    .btn-group.btn-group-sm
+                        .btn.btn-outline-success(@click="rule.gradients.push({pct:1,rgba:'rgba(0,0,0,1)',arr:[0,0,0,1]})") 新色彩
+                        .btn.btn-success(@click="fav.gradients.push([...rule.gradients.map(g=>({...g}))])") 新設定
+                        .btn.btn-warning(v-for="fg,i in fav.gradients" :key="`gd${i}`" 
+                            @click="rule.gradients=[...fg.map(g=>({...g}))];updateRule()"
+                            @contextmenu.prevent="$delete(fav.gradients,i)") 設定{{i+1}}
                 .w-100(v-else-if="!rule.isGradient&&rule.col")
                     .d-flex.align-items-center(v-for="(val,key) in rule.categories" :key="key")
                         span.flex-grow-1 {{key}}
@@ -107,20 +94,17 @@
                             @change="mapSFP('fill',rule.col,categoryColor);mapSFP('stroke',rule.col,categoryColor)")
                         button.close(@click="$delete(rule.categories,key)")
                             span &times;
-                    .btn.btn-success(@click="fav.categories.push({...rule.categories})") 新設定
-                    .btn.btn-secondary(v-for="fc,i in fav.categories" :key="`cat${i}`" 
-                        @click="rule.categories={...fc.dict};updateRule(fc)"
-                        @contextmenu.prevent="$delete(fc,i)") {{fc.name||`設定${i+1}`}}
-        el-collapse-item(name="常用樣式")
-            template(slot="title")
-                .px-2.d-flex.align-items-center.justify-content-between
-                    span 常用樣式
-                    el-tooltip(content="新增常用樣式(右鍵刪除該樣式)")
-                        .btn.text-light(@click="$event.stopPropagation();addFavorite()") 
-                            i.el-icon-plus
-            .px-1.py-1
-                .btn(v-for="favStyle,i in fav.styles" :key="`fav${i}`" @click="setFavorite(favStyle)" :style="getFavorite(favStyle)"
-                    @contextmenu.prevent="$delete(fav.styles,i)") {{i+1}}
+                    .btn-group.btn-group-sm
+                        .btn.btn-outline-success(@click="fav.categories.push({...rule.categories})") 新設定
+                        .btn.btn-warning(v-for="fc,i in fav.categories" :key="`cat${i}`" 
+                            @click="rule.categories={...fc.dict};updateRule(fc)"
+                            @contextmenu.prevent="$delete(fc,i)") {{fc.name||`設定${i+1}`}}
+        el-tab-pane.px-2.pb-2(label="常用樣式" name="常用樣式")            
+            el-tooltip(content="新增常用樣式(右鍵刪除該樣式)")
+                .btn(@click="$event.stopPropagation();addFavorite()") 
+                    i.el-icon-plus
+            .btn(v-for="favStyle,i in fav.styles" :key="`fav${i}`" @click="setFavorite(favStyle)" :style="getFavorite(favStyle)"
+                @contextmenu.prevent="$delete(fav.styles,i)") {{i+1}}
 </template>
 
 <script>
@@ -128,7 +112,7 @@ import { mapState, mapGetters } from 'vuex'
 export default {
     name: 'Styles',
     data:  ()=>({
-        activeNames: [],
+        tabName: '屬性',
         defaultStyle: {
             stroke:'rgba(3,169,244,1)', fill:'rgba(0,0,255,0.3)', 
             textStroke:'rgba(255,255,255,1)',fontWeight:3,textFill:'rgba(0,0,0,1)'
@@ -163,7 +147,7 @@ export default {
                         '公私共有':'rgba(202,214,159,1)',
                         '公法人':'rgba(215,177,158,1)',
                         '糖':'rgba(239,177,208,1)',
-                        '預設':'rgba(204,204,204,1)'
+                        '(預設)':'rgba(204,204,204,1)'
                     }
                 },{
                     name: '捷運代號',
@@ -214,7 +198,7 @@ export default {
             return `rgba(${arr[0]},${arr[1]},${arr[2]},${arr[3]})`
         },
         categoryColor(input){
-            return this.rule.categories[input]||this.rule.categories['預設']
+            return this.rule.categories[input]||this.rule.categories['(預設)']
         },
         setSFP(key,value){
             this.interaction.setSelectedFeaturesProp(key,value)
@@ -237,7 +221,7 @@ export default {
                 }else{
                     let entries = [...new Set(props)].slice(0,this.colors.length).map((key,i)=>([key,this.colors[i%this.colors.length]]))
                     this.rule.categories = Object.fromEntries(entries)
-                    this.rule.categories['預設'] = ''
+                    this.rule.categories['(預設)'] = ''
                 }
                 this.mapSFP('fill',this.rule.col,this.categoryColor)
                 this.mapSFP('stroke',this.rule.col,this.categoryColor)
@@ -294,7 +278,14 @@ export default {
         colorRule(){
             return this.rule.isGradient?this.gradientColor:this.categoryColor
         },
-        ...mapState(['gismap','interaction','tab']),
+        popupStyle(){
+            return {
+                left: this.popupCoord[0]+'px',
+                top: this.popupCoord[1]-20+'px',
+                transform: 'translate(-50%,-100%)',
+            }
+        },
+        ...mapState(['gismap','interaction','tab','popupCoord']),
         ...mapGetters(['selectedFeatures'])
     },
     created(){
@@ -319,29 +310,23 @@ export default {
 <style scoped>
 input[type="number"]{
     width: 50px;
-    border: 1px solid dodgerblue;
+    border: none;
+    box-shadow: 0 0 3px 1px inset #cccccc;
     border-radius: 3px;
+    margin-left: 4px;
 }
 input[type="text"]{
-    border: 1px solid dodgerblue;
+    border: none;
+    box-shadow: 0 0 3px 1px inset #cccccc;
     border-radius: 3px;
+}
+select{
+    box-shadow: 0 0 3px 1px inset #cccccc;
 }
 .bg-lightblue{
     background: lightblue;
 }
 .bg-lightyellow{
     background: lightyellow;
-}
-</style>
-<style>
-.el-collapse-item__header{
-    background: #343a40 !important;
-    color: white !important;
-}
-.el-collapse-item__content{
-    padding: 5px !important;
-    padding-bottom: 5px !important;
-    background: #6c757d !important;
-    color: white !important;
 }
 </style>

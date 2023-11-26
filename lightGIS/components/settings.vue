@@ -34,15 +34,14 @@
             el-slider(range show-stops :max="20" v-model="zoomRange"
                 @input="gismap.view.minZoom=zoomRange[0];gismap.view.maxZoom=zoomRange[1]")
     Draggable(v-model="gismap.imageShapes" :animation="150")
-        .d-flex.align-items-center.shadow-sm.px-1.py-1.border.cursor-pointer(v-for="imageShape,i in gismap.imageShapes" :key="i" 
+        .d-flex.align-items-center.shadow.px-1.py-1.border.cursor-pointer(v-for="imageShape,i in gismap.imageShapes" :key="i" 
                 :class="imageShape.editing?'border-danger':'border-light'" @click="imageShape.editing=!imageShape.editing")
-            el-tooltip(:content="imageShape.filename" placement="left")
-                span.text-truncate(style="width:60px") {{imageShape.filename}}
+            span.text-truncate.flex-shrink-0(style="width:100px") {{imageShape.filename}}
             .btn( @click="imageShape.editable=!imageShape.editable")
                 i(:class="imageShape.editable?'el-icon-unlock text-danger':'el-icon-lock text-success'")
             input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl'
                 v-model="imageShape.opacity" draggable='true' ondragstart='event.preventDefault();event.stopPropagation()')
-            .btn.text-light(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
+            .btn(@click="gismap.imageShapes=gismap.imageShapes.filter(x=>x!=imageShape)")
                 i.el-icon-close
     .text-secondary.text-center(v-if="!(gismap.imageShapes&&gismap.imageShapes.length)").py-1.px-2 拖曳匯入圖片開始
 </template>

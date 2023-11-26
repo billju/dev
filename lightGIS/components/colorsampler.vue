@@ -10,15 +10,15 @@
             span RGBA
             el-switch(size="mini" v-model="isHex")
             span HEX
-        .btn.btn-sm.btn-outline-success(@click="copyAll()")
+        .btn.btn-outline-success(title="複製全部" @click="copyAll()")
             i.el-icon-document-copy
     Draggable(v-model="rows" :options="{animation:150}")
         .d-flex.border-bottom(v-for="row,i in rows" :key="i")
             .px-3(:style="{background:row.rgba}")
             .flex-grow-1.px-2 {{isHex?row.hex:row.rgba}}
-            .btn.btn-sm.btn-outline-success(@click="copy(isHex?row.hex:row.rgba)")
+            .btn.btn-sm.btn-outline-success(title="複製至剪貼簿" @click="copy(isHex?row.hex:row.rgba)")
                 i.el-icon-document-copy
-            .btn.btn-sm.btn-outline-danger(@click="$delete(rows,i)")
+            .btn.btn-sm.btn-outline-danger(title="刪除一列" @click="$delete(rows,i)")
                 i.el-icon-minus
 </template>
 

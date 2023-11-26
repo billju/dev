@@ -2,7 +2,7 @@
 .w-100(v-if="tab=='向量'")
     .w-100.px-2.py-1(v-for="group,i in groups" :key="i" :class="groupIndex==i?`border border-${group.theme}`:'border-bottom'" @click="setState({groupIndex:i})")
         .py-1
-            span(:class="group.opacity==0?'text-secondary':'text-light'") {{group.name}}
+            span(:class="group.opacity==0?'text-secondary':'text-dark'") {{group.name}}
                 el-tooltip(v-if="groupIndex==i" content="重新命名" placement="bottom")
                     i.el-icon-edit-outline.ml-2(@click="renameGroupPrompt()").cursor-pointer
             select.float-right(v-model="group.propKey" :disabled="groupIndex!=i")
@@ -11,11 +11,11 @@
         div(v-if="groupIndex==i")
             .btn-group.btn-group-sm.float-right
                 el-popover(placement="right" trigger="click")
+                    .btn.btn-sm.btn-outline-info(slot="reference")
+                        i.el-icon-magic-stick
                     span 透明度
                     input.custom-range(type='range' min='0' max='1' step='0.1' value='0.8' style='direction:rtl' 
                         v-model.number="group.opacity" @input="setGroupProps(groupName,'opacity',$event.target.value)")
-                    .btn.btn-sm.btn-outline-info(slot="reference")
-                        i.el-icon-magic-stick
                 el-tooltip(content="SOLO" placement="bottom")
                     .btn.btn-sm(:class="group.solo?'btn-warning':'btn-outline-info'" @click="toggleSolo()")
                         i.el-icon-switch-button
@@ -29,12 +29,12 @@
                     .btn.btn-outline-info(@click="handleSelect(groupFeatures)")
                         i.el-icon-finished
                 el-tooltip(content="移除群組" placement="bottom")
-                    .btn.btn-outline-danger(@click="removeGroupPrompt()")
+                    .btn.btn-outline-info(@click="removeGroupPrompt()")
                         i.el-icon-close
             ol.pr-3.my-1(style="clear:both;user-select:none")
                 li.cursor-pointer.border-bottom(v-for="feature,i in slicedGroupFeatures" :key="i" 
                     :value="group.start+i+1"
-                    :class="selectedFeatures.includes(feature)?'text-danger':feature.properties['opacity']==0?'text-secondary':'text-light'"
+                    :class="selectedFeatures.includes(feature)?'text-danger':feature.properties['opacity']==0?'text-secondary':'text-dark'"
                     @click="handleClickSelect(feature)"
                     @contextmenu="$event.preventDefault();handleClickSelect(feature);interaction.fitExtent([feature])") 
                         span {{type2icon[feature.geometry.type]}}

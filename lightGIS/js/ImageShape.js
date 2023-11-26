@@ -86,14 +86,14 @@ export default class ImageShape{
         ]
     }
     contains(p){
-        var isContain = false
-        var [minX, minY, maxX, maxY] = this.bbox
+        let isContain = false
+        let [minX, minY, maxX, maxY] = this.bbox
         if (p[0] < minX || p[0] > maxX || p[1] < minY || p[1] > maxY) {
             return false;
         }
-        for(var i=0, j=this.coords.length-1; i<this.coords.length; j=i++) {
-            var p1 = this.coords[j]
-            var p2 = this.coords[i]
+        for(let i=0, j=this.coords.length-1; i<this.coords.length; j=i++) {
+            let p1 = this.coords[j]
+            let p2 = this.coords[i]
             if(
                 (p2[1] > p[1]) != (p1[1] > p[1]) &&
                 (p[0] < (p1[0] - p2[0]) * (p[1] - p2[1]) / (p1[1] - p2[1]) + p2[0])
@@ -124,8 +124,8 @@ export default class ImageShape{
         }
     }
     updateBbox(){
-        var xArr = this.coords.map(c=>c[0])
-        var yArr = this.coords.map(c=>c[1])
+        let xArr = this.coords.map(c=>c[0])
+        let yArr = this.coords.map(c=>c[1])
         this.bbox =  [
             Math.min(...xArr),
             Math.min(...yArr),
@@ -134,8 +134,8 @@ export default class ImageShape{
         ]
     }
     updateAnchor(){
-        var {x,y,w,h,r} = this.frame
-        var add = (v1,v2)=>({x:v1.x+v2.x,y:v1.y+v2.y})
+        let {x,y,w,h,r} = this.frame
+        let add = (v1,v2)=>({x:v1.x+v2.x,y:v1.y+v2.y})
         this.anchor = {
             RO: add({x,y},this.rotate({x:0,y:-h/2-30},r)),
             LT: add({x,y},this.rotate({x:-w/2,y:-h/2},r)),
@@ -149,8 +149,8 @@ export default class ImageShape{
         }   
     }
     updateCoords(){
-        var {x,y,w,h,r} = this.frame
-        var frame = this.initFrame
+        let {x,y,w,h,r} = this.frame
+        let frame = this.initFrame
         this.initCoords.map((coord,i)=>{
             let vToC = {x:coord[0]-frame.x,y:coord[1]-frame.y}
             vToC = this.rotate(vToC,-frame.r) //先轉正
@@ -171,12 +171,12 @@ export default class ImageShape{
         this.isVerticalFlipped = !this.isVerticalFlipped
     }
     handleMousedown(e){
-        var {x,y,w,h,r} = this.frame
+        let {x,y,w,h,r} = this.frame
         this.event.verticalFlip = false
         for(let key in this.anchor){
-            var dx = e.clientX-this.anchor[key].x
-            var dy = this.anchor[key].y-e.clientY
-            var dis = Math.sqrt(dx*dx+dy*dy)
+            let dx = e.clientX-this.anchor[key].x
+            let dy = this.anchor[key].y-e.clientY
+            let dis = Math.sqrt(dx*dx+dy*dy)
             if(dis<this.bufferRadius){
                 switch(key){
                     case 'LT':
@@ -217,8 +217,8 @@ export default class ImageShape{
     }
     handleMousemove(e){
         if(this.event.type!=null){
-            var {x,y,w,h,r} = this.frame
-            var dx, dy, dr, dis
+            let {x,y,w,h,r} = this.frame
+            let dx, dy, dr, dis
             if(this.event.ctrlKey){
                 dx = e.clientX-x
                 dy = y-e.clientY
@@ -232,8 +232,8 @@ export default class ImageShape{
             }
             if(this.event.type=='RO'){
                 if(this.event.shiftKey){
-                    var step = Math.PI/12
-                    var int = Math.round((dr-Math.PI/2)/step)
+                    let step = Math.PI/12
+                    let int = Math.round((dr-Math.PI/2)/step)
                     this.frame.r = int*step
                 }else{
                     this.frame.r = dr-Math.PI/2
@@ -244,9 +244,9 @@ export default class ImageShape{
                 this.event.point.x = e.clientX
                 this.event.point.y = e.clientY
             }else{
-                var pw = dis*Math.cos(dr-r)
-                var ph = dis*Math.sin(dr-r)
-                var vToC = {x:0,y:0}
+                let pw = dis*Math.cos(dr-r)
+                let ph = dis*Math.sin(dr-r)
+                let vToC = {x:0,y:0}
                 if(['RT','RB','LT','LB'].includes(this.event.type)){
                     if(this.event.shiftKey){
                         if(Math.sin(dr-(this.event.radian+r))>0){
@@ -269,14 +269,14 @@ export default class ImageShape{
                     this.frame.x = this.event.point.x+vToC.x
                     this.frame.y = this.event.point.y+vToC.y
                 }
-                var shouldHorizontalFlip = 
+                let shouldHorizontalFlip = 
                     (Math.sin(dr-r)>0&&['RB','B','LB'].includes(this.event.type)) ||
                     (Math.sin(dr-r)<0&&['RT','T','LT'].includes(this.event.type))
                 if(shouldHorizontalFlip){
                     this.frame.r+= Math.PI
                 }
-                var sign = this.event.verticalFlip?1:-1
-                var shouldVerticalFlip = 
+                let sign = this.event.verticalFlip?1:-1
+                let shouldVerticalFlip = 
                     (Math.cos(dr-r)*sign>0&&['RT','R','RB'].includes(this.event.type))||
                     (Math.cos(dr-r)*sign<0&&['LT','L','LB'].includes(this.event.type))
                 if(shouldVerticalFlip){
@@ -301,9 +301,9 @@ export default class ImageShape{
         this.event.ctrlKey=false
     }
     drawFrame(ctx){
-        var anchor = this.anchor
-        var coords = Object.values(anchor)
-        var lineOrder = ['RO','T','RT','RB','LB','LT','T']
+        let anchor = this.anchor
+        let coords = Object.values(anchor)
+        let lineOrder = ['RO','T','RT','RB','LB','LT','T']
         ctx.beginPath()
         lineOrder.map((key,i)=>{
             if(i==0){
@@ -312,6 +312,8 @@ export default class ImageShape{
                 ctx.lineTo(anchor[key].x,anchor[key].y)
             }
         })
+        ctx.strokeStyle = 'dodgerblue'
+        ctx.lineWidth = 2
         ctx.stroke()
         ctx.closePath()
         ctx.beginPath()

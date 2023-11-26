@@ -34,7 +34,7 @@ export default {
         }
     },
     mounted(){
-        this.svgAnimation(this.$refs.loadingPage,'assets/light.svg',()=>{
+        this.svgAnimation(this.$refs.loadingPage,'light.svg',()=>{
             this.setState({isLoading:false})
         })
     }
