@@ -16,21 +16,6 @@ html(lang="en")
         header
             #loading-page.bg-dark.w-100.vh-100.position-fixed(style="z-index:100;transition: 1s")
                 #pumping-circle
-            //nav.navbar(style="display:none")
-                .container
-                    a.navbar-brand(href='#') chuboy
-                    input.navbar-toggler(type='checkbox')
-                    .hamburger.bg-cyan
-                        div
-                    ul.navbar-menu
-                        li
-                            a(href='#') home
-                        li
-                            a(href='#') portfolios
-                        li
-                            a(href='#') articles
-                        li
-                            a(href='#') about
         main#smooth-scroll-container
             #smooth-scroll-translator
                 section.vh-100.overflow-hidden.position-relative.text-light
@@ -54,45 +39,64 @@ html(lang="en")
                             h1 FRONTEND
                             h1.d-none.d-md-block FRONTEND
                             h1.d-none.d-sm-block FRONTEND
-                        .row.bg-info.w-100.py-3(data-once="fade-up")
+                        .row.bg-dark.w-100.py-3(data-once="fade-up")
                             .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
                                 .neon-btn
                                     .d-flex.flex-column.justify-content-center
-                                        h1.display-1.border-bottom Vue
-                                        h3.display-3 音樂清單
+                                        h1.display-1.border-bottom MIDI
+                                        h3.display-3 琴譜編輯軟體
                                         .d-flex.justify-content-center
-                                            .badge.badge-light.mx-1 media player
-                                            .badge.badge-light.mx-1 firebase
-                                            .badge.badge-light.mx-1 youtube api
+                                            .badge.badge-light.mx-1 digital
+                                            .badge.badge-light.mx-1 work
+                                            .badge.badge-light.mx-1 station
                                     span
                                     span
                                     span
                                     span
                             .col-sm-12.col-md-6.px-3.py-3
-                                h1.heading(style="opacity:0.5") 專為電腦使用者設計「以清單為導向」的播放器，部屬在Firebase且擁有熱門排行統計的功能，使用者可以建立與分享自己的音樂清單。
-                                a(href="https://musicplayer-666.web.app/")
+                                h1.text-light.heading(style="opacity:0.5") 網頁版琴譜工作站，不僅可編輯MID檔，也能做實時練習，來為音樂人保持靈感泉源。
+                                a(href="https://chuboy.dev/midi")
                                     video(style="max-width:100%" autoplay loop muted)
-                                        source(src="assets/mvbox.mp4" type="video/mp4")
+                                        source(src="assets/midi.mp4" type="video/mp4")
+                        .py-5
+                        .row.bg-info.w-100.py-3(data-once="fade-up")
+                            .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
+                                .neon-btn
+                                    .d-flex.flex-column.justify-content-center
+                                        h1.display-1.border-bottom TVJS
+                                        h3.display-3 股票回測介面
+                                        .d-flex.justify-content-center
+                                            .badge.badge-light.mx-1 vue
+                                            .badge.badge-light.mx-1 fastapi
+                                            .badge.badge-light.mx-1 證券交易所爬蟲
+                                    span
+                                    span
+                                    span
+                                    span
+                            .col-sm-12.col-md-6.px-3.py-3
+                                h1.heading(style="opacity:0.5") 分析不同股票並制定技術指標策略，為投資人找到屬於自己的投資組合。
+                                a(href="https://chuboy.dev/law/tvjs")
+                                    video(style="max-width:100%" autoplay loop muted)
+                                        source(src="assets/tvjs.mp4" type="video/mp4")
                         .py-5
                         .row.flex-row-reverse.bg-primary.w-100.py-3(data-once="fade-up")
                             .col-sm-12.col-md-6.d-flex.justify-content-center.align-items-center.text-light
                                 .neon-btn
                                     .d-flex.flex-column.justify-content-center
-                                        h1.display-1.border-bottom React
-                                        h3.display-3 聊天室
+                                        h1.display-1.border-bottom LAW
+                                        h3.display-3 法規搜索引擎
                                         .d-flex.justify-content-center
-                                            .badge.badge-light.mx-1 node server
-                                            .badge.badge-light.mx-1 sqlite
-                                            .badge.badge-light.mx-1 socket.io
-                                            .badge.badge-light.mx-1 Next.js SSR
+                                            .badge.badge-light.mx-1 NLP
+                                            .badge.badge-light.mx-1 BERT
+                                            .badge.badge-light.mx-1 主管法規爬蟲
                                     span
                                     span
                                     span
                                     span
                             .col-sm-12.col-md-6.px-3.py-3
-                                h1.text-light.heading(style="opacity:0.5") 部屬在虛擬機的全端網頁作品(採用JessHsu的設計稿)，透過Web Socket，使用者可以即時地傳輸訊息與圖片。
-                                a(href="http://chatroom-websocket.com/")
-                                    img(style="max-width:100%" src="assets/chatroom.gif", alt="")
+                                h1.text-light.heading(style="opacity:0.5") 透過自然語言模型技術，對用戶提問進行語意搜尋，不需關鍵字完整比對，更容易找到目標法規。
+                                a(href="https://chuboy.dev/law/")
+                                    img(style="max-width:100%" src="assets/law.gif", alt="")
                         .py-5
                         .w-100.d-flex.justify-content-around.bg-danger.py-3
                             h1 BACKEND
@@ -102,7 +106,7 @@ html(lang="en")
                             .col-sm-12.col-md-6.d-flex.flex-column.justify-content-center.align-items-center
                                 .neon-btn
                                     .d-flex.flex-column.justify-content-center
-                                        h1.display-1.border-bottom Python
+                                        h1.display-1.border-bottom MARKDOWN
                                         h3.display-3 文章點滴
                                         .d-flex.justify-content-center
                                             .badge.badge-light.mx-1 爬蟲
@@ -116,8 +120,8 @@ html(lang="en")
                             .col-sm-12.col-md-6.d-flex.flex-wrap.align-items-center
                                 .list-group.w-100.text-center.py-3.px-3
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/2aiF1bNaQrOHnYpln9SxaQ" target="_blank") 爬蟲菜單
-                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/82tLFMonR1CNdVfN7RMJXQ" target="_blank") 資料庫筆記
-                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/fxoAisnGRCKJLA8msKrTVA" target="_blank") Flask筆記
+                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/1AhsGeLNRga6LLTwVQ65ig" target="_blank") Linux 指令大全
+                                    a.list-group-item.list-group-item-warning(href="https://hackmd.io/Zx2flP23T4apmwSYcjBXxQ" target="_blank") 統計筆記
                                     a.list-group-item.list-group-item-warning(href="https://hackmd.io/DaH8WZpgRR6A6UO_qIKPYw" target="_blank") 資料科學
                                     a.list-group-item.list-group-item-warning(href="https://github.com/billju/lazyplotly" target="_blank") 上架套件
                 section.overflow-hidden.w-100
